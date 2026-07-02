@@ -61,7 +61,11 @@ export default function InterviewPage() {
     try {
       const sb = createClient()
       const { data: { session } } = await sb.auth.getSession()
-      if (!session) { setError('You must be signed in to start. Please sign in first.'); setStarting(false); return }
+      if (!session) {
+        setError('No local session found. Please sign out and sign back in at /login.')
+        setStarting(false)
+        return
+      }
 
       const res  = await fetch('/api/interview/start', {
         method: 'POST',
@@ -78,7 +82,8 @@ export default function InterviewPage() {
           router.push('/pricing')
           return
         }
-        setError(data.error ?? 'Failed to start interview.')
+        // Show raw error + hint to visit debug endpoint
+        setError(`API error (${res.status}): ${data.error ?? 'unknown'} — visit /api/auth/debug for details`)
         setStarting(false)
         return
       }
