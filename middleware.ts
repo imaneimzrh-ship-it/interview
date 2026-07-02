@@ -2,6 +2,11 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
+  // Force HTTPS — session cookies are Secure-only and won't work on HTTP
+  if (req.headers.get('x-forwarded-proto') === 'http') {
+    return NextResponse.redirect(`https://${req.nextUrl.host}${req.nextUrl.pathname}${req.nextUrl.search}`, 308)
+  }
+
   let res = NextResponse.next({ request: req })
   const sb = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
