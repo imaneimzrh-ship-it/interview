@@ -4,9 +4,15 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
   const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/dashboard'
+
   if (code) {
     const sb = await createClient()
-    await sb.auth.exchangeCodeForSession(code)
+    const { error } = await sb.auth.exchangeCodeForSession(code)
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`)
+    }
   }
-  return NextResponse.redirect(`${origin}/dashboard`)
+
+  return NextResponse.redirect(`${origin}/login?message=Link expired or already used. Request a new one.`)
 }
