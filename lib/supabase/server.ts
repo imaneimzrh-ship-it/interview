@@ -19,11 +19,20 @@ export async function createClient() {
   )
 }
 
-// Admin client for token verification (service role, bypasses RLS)
+// Admin client — token verification only, not for data queries
 function adminClient() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
+
+// Anon client with the user's JWT injected → RLS resolves auth.uid() correctly
+function authedClient(accessToken: string) {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { global: { headers: { Authorization: `Bearer ${accessToken}` } } }
   )
 }
 
@@ -60,22 +69,25 @@ async function tokenFromCookie(): Promise<string | null> {
 }
 
 export async function getServerUser(req?: NextRequest) {
-  // 1. Authorization header (explicit from client, most reliable if available)
+  const admin = adminClient()
+
+  // 1. Authorization header (explicit from client)
   const authHeader = req?.headers.get('authorization')
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
-    const { data: { user }, error } = await adminClient().auth.getUser(token)
+    const { data: { user }, error } = await admin.auth.getUser(token)
     if (user && !error) {
-      return { sb: await createClient(), user }
+      return { sb: authedClient(token), user }
     }
   }
 
-  // 2. Direct cookie parsing (bypasses @supabase/ssr v0.3 getSession() bug)
+  // 2. Direct cookie parsing — bypasses @supabase/ssr v0.3 getSession() bug
+  //    (cookie exists but getSession() returns null due to library parsing failure)
   const token = await tokenFromCookie()
   if (token) {
-    const { data: { user }, error } = await adminClient().auth.getUser(token)
+    const { data: { user }, error } = await admin.auth.getUser(token)
     if (user && !error) {
-      return { sb: await createClient(), user }
+      return { sb: authedClient(token), user }
     }
   }
 
