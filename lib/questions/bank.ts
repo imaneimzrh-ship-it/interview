@@ -278,7 +278,7 @@ export const GENERAL_QUESTIONS: Question[] = [
   },
 ]
 
-export const AI_ROLES = ['ai_engineer','ml_engineer','prompt_engineer','mlops_engineer','ai_researcher','ai_safety_engineer','llm_engineer']
+export const AI_ROLES = ['ai_engineer','ml_engineer','prompt_engineer','mlops_engineer','ai_researcher','ai_safety_engineer','llm_engineer','llm_engineer','ai_agent_developer','generative_ai_dev','ai_infrastructure','forward_deployed','computer_vision','nlp_engineer','ai_native_engineer','data_scientist_ai','ai_data_engineer','rlhf_specialist','ai_evaluator','ai_automation','ai_product_manager','ai_solutions_architect']
 export const GENERAL_ROLES = ['software_engineer','product_manager','data_scientist','designer','marketing','sales','finance','operations','general']
 
 export const ROLE_LABELS: Record<string, string> = {
