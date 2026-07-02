@@ -49,8 +49,7 @@ function LoginForm() {
         }
         setLoading(false); return
       }
-      router.push(next)
-      router.refresh()
+      window.location.href = next
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       setLoading(false)
