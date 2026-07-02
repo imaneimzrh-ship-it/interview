@@ -1,10 +1,10 @@
 'use client'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function Signup() {
+function SignupForm() {
   const router = useRouter()
   const params = useSearchParams()
   const [name, setName] = useState('')
@@ -28,10 +28,8 @@ export default function Signup() {
       },
     })
     if (err) { setError(err.message); setLoading(false); return }
-    // Sign in immediately (skip email confirmation for now in dev)
     const { error: signInErr } = await sb.auth.signInWithPassword({ email, password })
     if (signInErr) {
-      // Email confirmation required
       router.push('/login?message=Check your email to confirm your account.')
     } else {
       router.push(isPro ? '/pricing?checkout=1' : '/interview')
@@ -92,4 +90,8 @@ export default function Signup() {
       </div>
     </div>
   )
+}
+
+export default function Signup() {
+  return <Suspense fallback={null}><SignupForm /></Suspense>
 }

@@ -1,10 +1,10 @@
 'use client'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function Login() {
+function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
   const [email, setEmail] = useState('')
@@ -67,4 +67,8 @@ export default function Login() {
       </div>
     </div>
   )
+}
+
+export default function Login() {
+  return <Suspense fallback={null}><LoginForm /></Suspense>
 }

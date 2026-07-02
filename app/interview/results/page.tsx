@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -34,7 +34,7 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
   )
 }
 
-export default function ResultsPage() {
+function ResultsInner() {
   const params = useSearchParams()
   const router = useRouter()
   const id = params.get('id')
@@ -169,4 +169,8 @@ export default function ResultsPage() {
       </div>
     </div>
   )
+}
+
+export default function ResultsPage() {
+  return <Suspense fallback={null}><ResultsInner /></Suspense>
 }

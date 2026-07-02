@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { Suspense, useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -15,7 +15,7 @@ function TypingDots() {
   )
 }
 
-export default function SessionPage() {
+function SessionInner() {
   const params = useSearchParams()
   const router = useRouter()
   const sessionId    = params.get('id')
