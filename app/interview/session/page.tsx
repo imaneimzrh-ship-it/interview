@@ -227,3 +227,7 @@ function SessionInner() {
     </div>
   )
 }
+
+export default function SessionPage() {
+  return <Suspense fallback={null}><SessionInner /></Suspense>
+}
