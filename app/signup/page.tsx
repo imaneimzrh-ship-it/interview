@@ -70,7 +70,7 @@ function SignupForm() {
           password: pw,
           options: {
             data: { full_name: name.trim() },
-            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+            emailRedirectTo: 'https://sonneai.com/api/auth/callback',
           },
         }),
         timeoutPromise,

@@ -63,12 +63,17 @@ function LoginForm() {
     try {
       const sb = createClient()
       const { error: err } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=/reset-password`,
+        redirectTo: 'https://sonneai.com/api/auth/callback?next=/reset-password',
       })
-      if (err) { setError(err.message); setResetting(false); return }
+      if (err) {
+        const msg = err.message && err.message !== '{}' ? err.message : 'Could not send reset email. Make sure this email is registered.'
+        setError(msg)
+        setResetting(false)
+        return
+      }
       setResetSent(true)
     } catch {
-      setError('Failed to send reset email. Check your connection.')
+      setError('Could not send reset email. Check your connection and try again.')
     } finally {
       setResetting(false)
     }
