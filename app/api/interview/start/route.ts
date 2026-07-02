@@ -1,61 +1,122 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerUser } from '@/lib/supabase/server'
-import { pickQuestions, AI_ROLES } from '@/lib/questions/bank'
-import { openInterview } from '@/lib/claude/interview'
+import { openQuestion } from '@/lib/claude/interviewer'
 
 export async function POST(req: NextRequest) {
   try {
     const { sb, user } = await getServerUser()
     if (!user) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
-    const { role, company = 'none' } = await req.json()
-    if (!role) return NextResponse.json({ error: 'Role is required.' }, { status: 400 })
+    const { module_slug, lang = 'en' } = await req.json()
+    if (!module_slug) return NextResponse.json({ error: 'module_slug required.' }, { status: 400 })
 
-    const isAiRole = AI_ROLES.includes(role)
-
-    // Plan check
-    const { data: profile } = await sb.from('profiles').select('plan, trial_used').eq('id', user.id).single()
+    // Check tier
+    const { data: profile } = await sb.from('profiles').select('plan').eq('id', user.id).single()
     if (!profile) return NextResponse.json({ error: 'Profile not found.' }, { status: 404 })
-    if (isAiRole && profile.plan !== 'pro') return NextResponse.json({ error: 'AI role interviews require Pro. Upgrade for $19/month.', upgrade: true }, { status: 403 })
-    if (profile.plan === 'free' && profile.trial_used >= 2) return NextResponse.json({ error: 'Free tier limit reached. Upgrade to Pro for unlimited sessions.', upgrade: true }, { status: 403 })
 
-    // Pick questions
-    const questions = pickQuestions(role, company, 10)
-    if (!questions.length) return NextResponse.json({ error: 'No questions found for this role.' }, { status: 400 })
+    // Free tier: check if they've used their one session
+    if (profile.plan === 'free') {
+      const { count } = await sb
+        .from('interview_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .neq('status', 'abandoned')
+      if ((count ?? 0) >= 1) {
+        return NextResponse.json({
+          error: 'Free tier allows 1 session. Upgrade to practice more.',
+          upgrade: true,
+        }, { status: 403 })
+      }
+    }
+
+    // Load module + role track
+    const { data: module_ } = await sb
+      .from('skill_modules')
+      .select(`*, role_tracks(id, slug)`)
+      .eq('slug', module_slug)
+      .eq('is_active', true)
+      .single()
+
+    if (!module_) return NextResponse.json({ error: `Module "${module_slug}" not found.` }, { status: 404 })
+
+    // Load all sub-skills + their questions for this module (ordered)
+    const { data: subSkills } = await sb
+      .from('sub_skills')
+      .select(`*, questions(*)`)
+      .eq('skill_module_id', module_.id)
+      .order('display_order')
+
+    if (!subSkills?.length) return NextResponse.json({ error: 'No sub-skills found for this module.' }, { status: 500 })
 
     // Create session
-    const { data: session, error: sessionErr } = await sb
+    const { data: session, error: sErr } = await sb
       .from('interview_sessions')
-      .insert({ user_id: user.id, role, company, is_ai_role: isAiRole, q_total: questions.length, status: 'active' })
+      .insert({
+        user_id: user.id,
+        role_track_id: module_.role_tracks.id,
+        skill_module_id: module_.id,
+        language: lang,
+        modality: 'text',
+        tier: profile.plan,
+        status: 'active',
+        current_sub_skill_idx: 0,
+      })
       .select().single()
 
-    if (sessionErr || !session) {
-      console.error('Session creation error:', sessionErr)
-      return NextResponse.json({ error: 'Failed to create session. Check Supabase connection.' }, { status: 500 })
+    if (sErr || !session) {
+      console.error('Session create error:', sErr)
+      return NextResponse.json({ error: 'Failed to create session.' }, { status: 500 })
     }
 
-    // Get first AI message
-    const firstMsg = await openInterview(questions[0], 1, questions.length, company)
+    // Get first sub-skill + question
+    const firstSubSkill = subSkills[0]
+    const firstQuestion = firstSubSkill.questions?.[0]
+    if (!firstQuestion) return NextResponse.json({ error: 'No question found.' }, { status: 500 })
 
-    // Store first message
-    await sb.from('interview_messages').insert({
-      session_id: session.id, user_id: user.id,
-      role: 'assistant', content: firstMsg, q_num: 1,
+    // Get opening message from interviewer
+    const openingMessage = await openQuestion({
+      lang: lang as 'en' | 'fr',
+      moduleName: lang === 'fr' ? module_.name_fr : module_.name_en,
+      subSkill: {
+        id: firstSubSkill.id,
+        slug: firstSubSkill.slug,
+        name_en: firstSubSkill.name_en,
+        name_fr: firstSubSkill.name_fr,
+      },
+      question: {
+        id: firstQuestion.id,
+        body_en: firstQuestion.body_en,
+        body_fr: firstQuestion.body_fr,
+        rubric_strong: firstQuestion.rubric_strong,
+        rubric_medium: firstQuestion.rubric_medium,
+        rubric_weak: firstQuestion.rubric_weak,
+        follow_up_probes: firstQuestion.follow_up_probes ?? [],
+      },
+      subSkillsCompleted: [],
+      totalSubSkills: subSkills.length,
     })
 
-    // Increment trial counter for free users
-    if (profile.plan === 'free') {
-      await sb.from('profiles').update({ trial_used: profile.trial_used + 1 }).eq('id', user.id)
-    }
+    // Store opening turn (assistant message only, no user answer yet)
+    await sb.from('session_turns').insert({
+      session_id: session.id,
+      user_id: user.id,
+      turn_number: 0,
+      question_id: firstQuestion.id,
+      sub_skill_id: firstSubSkill.id,
+      question_text: lang === 'fr' ? firstQuestion.body_fr : firstQuestion.body_en,
+      answer_text: '',
+    })
 
     return NextResponse.json({
       sessionId: session.id,
-      firstMessage: firstMsg,
-      questionIds: questions.map(q => q.id),
-      totalQuestions: questions.length,
+      openingMessage,
+      currentSubSkillIdx: 0,
+      totalSubSkills: subSkills.length,
+      moduleNameEn: module_.name_en,
+      moduleNameFr: module_.name_fr,
     })
   } catch (err) {
     console.error('Start error:', err)
-    return NextResponse.json({ error: `Server error: ${err instanceof Error ? err.message : 'Unknown error'}` }, { status: 500 })
+    return NextResponse.json({ error: `Server error: ${err instanceof Error ? err.message : 'unknown'}` }, { status: 500 })
   }
 }
