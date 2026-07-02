@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 const MODULES = [
   {
@@ -58,9 +59,16 @@ export default function InterviewPage() {
     setStarting(true)
     setError('')
     try {
+      const sb = createClient()
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session) { setError('You must be signed in to start. Please sign in first.'); setStarting(false); return }
+
       const res  = await fetch('/api/interview/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ module_slug: selected, lang }),
       })
       const data = await res.json()

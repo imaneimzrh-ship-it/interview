@@ -2,6 +2,13 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+
+async function authHeader(): Promise<Record<string, string>> {
+  const { data: { session } } = await createClient().auth.getSession()
+  if (session?.access_token) return { 'Authorization': `Bearer ${session.access_token}` }
+  return {}
+}
 
 interface Report {
   top_strength: string; top_gap: string
@@ -88,17 +95,20 @@ function ReportInner() {
 
   useEffect(() => {
     if (!sessionId) { router.push('/interview'); return }
-    fetch(`/api/interview/report?id=${sessionId}`)
-      .then(r => r.json())
-      .then(d => { if (d.report) { setReport(d.report); setSession(d.session) } else setError(d.error ?? 'Failed to load.') })
-      .catch(() => setError('Network error.'))
-      .finally(() => setLoading(false))
+    authHeader().then(hdrs =>
+      fetch(`/api/interview/report?id=${sessionId}`, { headers: hdrs })
+        .then(r => r.json())
+        .then(d => { if (d.report) { setReport(d.report); setSession(d.session) } else setError(d.error ?? 'Failed to load.') })
+        .catch(() => setError('Network error.'))
+        .finally(() => setLoading(false))
+    )
   }, [sessionId])
 
   async function deleteSession() {
     if (!confirm(lang_ === 'fr' ? 'Supprimer cette session et toutes les données associées ?' : 'Delete this session and all associated data?')) return
     setDeleting(true)
-    const res = await fetch(`/api/interview/delete?id=${sessionId}`, { method: 'DELETE' })
+    const hdrs = await authHeader()
+    const res = await fetch(`/api/interview/delete?id=${sessionId}`, { method: 'DELETE', headers: hdrs })
     if (res.ok) router.push('/interview/history')
     else { setError('Failed to delete.'); setDeleting(false) }
   }

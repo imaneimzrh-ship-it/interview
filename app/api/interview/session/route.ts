@@ -4,7 +4,7 @@ import { openQuestion } from '@/lib/claude/interviewer'
 
 export async function GET(req: NextRequest) {
   try {
-    const { sb, user } = await getServerUser()
+    const { sb, user } = await getServerUser(req)
     if (!user) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
     const sessionId = req.nextUrl.searchParams.get('id')

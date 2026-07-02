@@ -4,10 +4,11 @@ import { openQuestion } from '@/lib/claude/interviewer'
 
 export async function POST(req: NextRequest) {
   try {
-    const { sb, user } = await getServerUser()
+    const body = await req.json()
+    const { sb, user } = await getServerUser(req)
     if (!user) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
-    const { module_slug, lang = 'en' } = await req.json()
+    const { module_slug, lang = 'en' } = body
     if (!module_slug) return NextResponse.json({ error: 'module_slug required.' }, { status: 400 })
 
     // Check tier

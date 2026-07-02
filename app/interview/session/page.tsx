@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 interface Msg { role: 'user' | 'assistant'; content: string }
 
@@ -60,6 +61,12 @@ function SessionInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId])
 
+  async function authHeader(): Promise<Record<string, string>> {
+    const { data: { session } } = await createClient().auth.getSession()
+    if (session?.access_token) return { 'Authorization': `Bearer ${session.access_token}` }
+    return {}
+  }
+
   async function loadInitial() {
     const cached = sessionStorage.getItem(`session_${sessionId}_opening`)
     if (cached) {
@@ -68,7 +75,8 @@ function SessionInner() {
       setTotalSS(parseInt(totalStr ?? '4'))
       return
     }
-    const res  = await fetch(`/api/interview/session?id=${sessionId}`)
+    const hdrs = await authHeader()
+    const res  = await fetch(`/api/interview/session?id=${sessionId}`, { headers: hdrs })
     const data = await res.json()
     if (data.openingMessage) {
       setMessages([{ role: 'assistant', content: data.openingMessage }])
@@ -88,9 +96,10 @@ function SessionInner() {
     setMessages(prev => [...prev, { role: 'user', content: text }])
 
     try {
+      const hdrs = await authHeader()
       const res  = await fetch('/api/interview/turn', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...hdrs },
         body: JSON.stringify({ sessionId, userMessage: text, currentSubSkillIdx: subSkillIdx }),
       })
       const data = await res.json()
@@ -125,9 +134,10 @@ function SessionInner() {
 
   async function endSession() {
     setScoring(true)
+    const hdrs = await authHeader()
     const res  = await fetch('/api/interview/end', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...hdrs },
       body: JSON.stringify({ sessionId }),
     })
     const data = await res.json()
@@ -140,9 +150,10 @@ function SessionInner() {
   }
 
   async function flagTurn(turnIdx: number, note: string) {
+    const hdrs = await authHeader()
     await fetch('/api/interview/flag', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...hdrs },
       body: JSON.stringify({ sessionId, targetType: 'turn', targetId: `turn_${turnIdx}`, note }),
     })
   }
