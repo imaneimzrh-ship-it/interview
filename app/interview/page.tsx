@@ -2,218 +2,207 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 
 const MODULES = [
   {
-    slug: 'rag_system_design',
-    emoji: '🔍',
-    name_en: 'RAG System Design',
-    name_fr: 'Conception de Systèmes RAG',
-    desc_en: 'Chunking strategy · Retrieval quality · Reranking · Freshness',
-    desc_fr: 'Stratégie de découpage · Qualité de récupération · Reclassement · Fraîcheur',
-    sub_en: ['Chunking Strategy', 'Retrieval Quality', 'Reranking', 'Freshness & Updates'],
-    sub_fr: ['Stratégie de découpage', 'Qualité de récupération', 'Reclassement', 'Fraîcheur et mises à jour'],
+    id: 'rag_system_design', emoji: '🔍',
+    name: 'RAG System Design', name_fr: 'Conception de Systèmes RAG',
+    desc: 'Chunking strategy · Retrieval quality · Reranking · Freshness',
+    skills: ['Chunking Strategy','Retrieval Quality','Reranking','Freshness & Updates'],
+    isPro: false, tier: 'FREE', tierColor: '#059669', tierBg: '#ECFDF5', tierBorder: '#A7F3D0',
+    why: 'Most commonly tested in applied AI engineer roles. Start here.',
   },
   {
-    slug: 'agent_orchestration',
-    emoji: '🕵️',
-    name_en: 'Agent / Multi-Agent Orchestration',
-    name_fr: 'Orchestration d\'Agents',
-    desc_en: 'Tool use · Planning · Failure handling · Multi-agent coordination',
-    desc_fr: 'Utilisation d\'outils · Planification · Gestion des pannes · Coordination',
-    sub_en: ['Tool Use Design', 'Planning & Decomposition', 'Failure Handling', 'Multi-Agent Coordination'],
-    sub_fr: ['Conception des outils', 'Planification', 'Gestion des pannes', 'Coordination multi-agents'],
+    id: 'agent_orchestration', emoji: '🕵️',
+    name: 'Agent / Multi-Agent Orchestration', name_fr: 'Orchestration d\'Agents',
+    desc: 'Tool use · Planning & decomposition · Failure handling · Multi-agent coordination',
+    skills: ['Tool Use Design','Planning & Decomposition','Failure Handling','Multi-Agent Coordination'],
+    isPro: true, tier: 'PRO', tierColor: '#1D4ED8', tierBg: '#EFF6FF', tierBorder: '#BFDBFE',
+    why: 'Agent design is now tested at every major AI lab. Critical for 2026 roles.',
   },
   {
-    slug: 'evaluation_testing',
-    emoji: '🧪',
-    name_en: 'Evaluation & Testing',
-    name_fr: 'Évaluation & Tests',
-    desc_en: 'Eval design · Hallucination detection · Offline vs online · Regression',
-    desc_fr: 'Conception de l\'éval · Détection des hallucinations · Hors ligne vs en ligne',
-    sub_en: ['Eval Design', 'Hallucination Detection', 'Offline vs Online Eval', 'Regression Testing'],
-    sub_fr: ['Conception de l\'évaluation', 'Détection des hallucinations', 'Éval hors ligne/en ligne', 'Tests de régression'],
+    id: 'evaluation_testing', emoji: '🧪',
+    name: 'Evaluation & Testing', name_fr: 'Évaluation & Tests',
+    desc: 'Eval design · Hallucination detection · Offline vs online · Regression testing',
+    skills: ['Eval Design','Hallucination Detection','Offline vs Online Eval','Regression Testing'],
+    isPro: true, tier: 'PRO', tierColor: '#92400E', tierBg: '#FFFBEB', tierBorder: '#FDE68A',
+    why: 'Eval methodology is what separates junior from senior AI engineers.',
   },
   {
-    slug: 'production_mlops',
-    emoji: '⚙️',
-    name_en: 'Production / MLOps',
-    name_fr: 'Production / MLOps',
-    desc_en: 'Monitoring · Cost/latency tradeoffs · Versioning · Deployment safety',
-    desc_fr: 'Surveillance · Compromis coût/latence · Versionnement · Sécurité du déploiement',
-    sub_en: ['Monitoring & Observability', 'Cost/Latency Tradeoffs', 'Versioning & Rollback', 'Deployment Safety'],
-    sub_fr: ['Surveillance et observabilité', 'Compromis coût/latence', 'Versionnement', 'Sécurité du déploiement'],
+    id: 'production_mlops', emoji: '⚙️',
+    name: 'Production / MLOps', name_fr: 'Production / MLOps',
+    desc: 'Monitoring · Cost/latency tradeoffs · Versioning & rollback · Deployment safety',
+    skills: ['Monitoring & Observability','Cost/Latency Tradeoffs','Versioning & Rollback','Deployment Safety'],
+    isPro: true, tier: 'PRO', tierColor: '#5B21B6', tierBg: '#F5F3FF', tierBorder: '#DDD6FE',
+    why: 'Production thinking is what companies test to filter real engineers.',
   },
 ]
 
-export default function InterviewPage() {
-  const router = useRouter()
-  const [selected,  setSelected]  = useState<string | null>(null)
-  const [lang,      setLang]      = useState<'en' | 'fr'>('en')
-  const [starting,  setStarting]  = useState(false)
-  const [error,     setError]     = useState('')
+export default function InterviewHub() {
+  const router   = useRouter()
+  const [selected, setSelected] = useState<string | null>(null)
+  const [lang,     setLang]     = useState<'en' | 'fr'>('en')
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState('')
 
-  async function startInterview() {
+  const selectedModule = MODULES.find(m => m.id === selected)
+
+  async function start() {
     if (!selected) return
-    setStarting(true)
-    setError('')
+    setLoading(true); setError('')
     try {
-      const sb = createClient()
-      const { data: { session } } = await sb.auth.getSession()
-      if (!session) {
-        setError('No local session found. Please sign out and sign back in at /login.')
-        setStarting(false)
-        return
-      }
-
       const res  = await fetch('/api/interview/start', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ module_slug: selected, lang }),
       })
       const data = await res.json()
-
       if (!res.ok) {
-        if (data.upgrade) {
-          router.push('/pricing')
-          return
-        }
-        // Show raw error + hint to visit debug endpoint
-        setError(`API error (${res.status}): ${data.error ?? 'unknown'} — visit /api/auth/debug for details`)
-        setStarting(false)
-        return
+        if (data.upgrade) { router.push('/pricing?reason=upgrade'); return }
+        setError(data.error ?? 'Failed to start. Try again.'); setLoading(false); return
       }
-
-      // Cache opening message for session page
-      sessionStorage.setItem(`session_${data.sessionId}_opening`, data.openingMessage)
-      sessionStorage.setItem(`session_${data.sessionId}_totalSS`, String(data.totalSubSkills))
-
-      router.push(`/interview/session?id=${data.sessionId}&lang=${lang}`)
+      router.push(`/interview/session?id=${data.sessionId}&lang=${lang}&module=${selected}`)
     } catch {
-      setError('Network error. Please try again.')
-      setStarting(false)
+      setError('Network error. Check your connection.')
+      setLoading(false)
     }
   }
 
-  const selectedModule = MODULES.find(m => m.slug === selected)
-
   return (
-    <div className="min-h-screen bg-[#09090C]" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="min-h-screen bg-[#F8F9FB]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-[#1C1D28] bg-[rgba(9,9,12,0.9)] backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#4776F7] flex items-center justify-center text-white text-xs font-bold">S</div>
-            <span className="font-semibold text-sm text-[#F0F2FA]">Sonne AI</span>
+      <nav className="bg-white border-b border-[#E5E7EB]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-sm shadow-sm">S</div>
+            <span className="font-semibold text-[#111827] text-[15px]">Sonne AI</span>
           </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-xs text-[#7A829A] hover:text-[#F0F2FA] transition-colors">Dashboard</Link>
-          </div>
+          <Link href="/dashboard" className="text-sm text-[#6B7280] hover:text-[#111827] transition-colors">Dashboard</Link>
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#F0F2FA] mb-1">Choose a module</h1>
-          <p className="text-sm text-[#7A829A]">Each module covers 4 sub-skills with adaptive questions and a full diagnostic report.</p>
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold text-[#111827] mb-2">Choose a module</h1>
+          <p className="text-[#6B7280]">Each module covers 4 sub-skills with adaptive questions and a full diagnostic report.</p>
         </div>
 
-        {/* Language selector */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setLang('en')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${lang === 'en' ? 'bg-[#4776F7] text-white' : 'border border-[#1C1D28] text-[#7A829A] hover:text-[#F0F2FA]'}`}>
-            English
-          </button>
-          <button
-            onClick={() => setLang('fr')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${lang === 'fr' ? 'bg-[#4776F7] text-white' : 'border border-[#1C1D28] text-[#7A829A] hover:text-[#F0F2FA]'}`}>
-            Français
-          </button>
+        {/* Language toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white border border-[#E5E7EB] rounded-xl p-1 flex gap-1 shadow-sm">
+            {(['en','fr'] as const).map(l => (
+              <button key={l} onClick={() => setLang(l)}
+                className="px-5 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ background: lang === l ? '#2563EB' : 'transparent', color: lang === l ? 'white' : '#6B7280' }}>
+                {l === 'en' ? '🇬🇧 English' : '🇫🇷 Français'}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Module grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        {/* Module cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           {MODULES.map(m => {
-            const isSelected = selected === m.slug
-            const subs = lang === 'fr' ? m.sub_fr : m.sub_en
+            const isSelected = selected === m.id
             return (
-              <button
-                key={m.slug}
-                onClick={() => setSelected(isSelected ? null : m.slug)}
-                className={`text-left p-5 rounded-xl border transition-all ${isSelected
-                  ? 'border-[#4776F7] bg-[rgba(71,118,247,0.08)]'
-                  : 'border-[#1C1D28] bg-[#111218] hover:border-[#2A2B38]'}`}>
-                <div className="text-2xl mb-3">{m.emoji}</div>
-                <div className="text-sm font-semibold text-[#F0F2FA] mb-1">
-                  {lang === 'fr' ? m.name_fr : m.name_en}
+              <button key={m.id} onClick={() => setSelected(m.id)}
+                className="text-left p-5 rounded-xl border-2 transition-all"
+                style={{
+                  background: isSelected ? '#EFF6FF' : 'white',
+                  borderColor: isSelected ? '#2563EB' : '#E5E7EB',
+                  boxShadow: isSelected ? '0 0 0 3px rgba(37,99,235,.1)' : '0 1px 3px rgba(0,0,0,.05)',
+                  transform: isSelected ? 'translateY(-1px)' : 'none',
+                }}>
+
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{m.emoji}</span>
+                    {isSelected && <span className="text-[#2563EB] text-lg">✓</span>}
+                  </div>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: m.tierBg, border: `1px solid ${m.tierBorder}`, color: m.tierColor }}>
+                    {m.tier}
+                  </span>
                 </div>
-                <div className="text-xs text-[#7A829A] mb-3">
-                  {lang === 'fr' ? m.desc_fr : m.desc_en}
-                </div>
-                <div className="space-y-1">
-                  {subs.map((s, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-[#7A829A]">
-                      <span className="w-1 h-1 rounded-full bg-[#3D4260] flex-shrink-0" />
+
+                <h3 className="font-semibold text-[#111827] text-sm mb-0.5">{m.name}</h3>
+                <p className="text-xs text-[#9CA3AF] mb-3">{m.name_fr}</p>
+
+                <div className="space-y-1 mb-3">
+                  {m.skills.map(s => (
+                    <div key={s} className="flex items-center gap-1.5 text-xs text-[#6B7280]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D1D5DB] flex-shrink-0" />
                       {s}
                     </div>
                   ))}
                 </div>
-                {isSelected && (
-                  <div className="mt-3 flex items-center gap-1.5 text-xs text-[#4776F7] font-medium">
-                    <span className="w-3.5 h-3.5 rounded-full border-2 border-[#4776F7] flex items-center justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#4776F7]" />
-                    </span>
-                    Selected
-                  </div>
+
+                {!m.isPro && (
+                  <p className="text-xs text-[#059669] font-medium">✓ Included in free tier</p>
                 )}
               </button>
             )
           })}
         </div>
 
-        {/* Start button */}
-        {error && (
-          <div className="mb-4 bg-[rgba(232,64,64,0.1)] border border-[rgba(232,64,64,0.2)] rounded-lg px-4 py-3 text-sm text-[#E84040]">
-            {error}
+        {/* Selected module summary */}
+        {selectedModule && (
+          <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-4 mb-6 flex items-start gap-3 animate-slide-up">
+            <span className="text-xl">{selectedModule.emoji}</span>
+            <div>
+              <p className="text-sm font-semibold text-[#065F46]">{selectedModule.name} selected</p>
+              <p className="text-xs text-[#059669] mt-0.5">{selectedModule.why}</p>
+            </div>
           </div>
         )}
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={startInterview}
-            disabled={!selected || starting}
-            className="bg-[#4776F7] text-white font-medium px-8 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity text-sm">
-            {starting
-              ? <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {lang === 'fr' ? 'Démarrage...' : 'Starting...'}
-                </span>
-              : selectedModule
-                ? (lang === 'fr' ? `Commencer ${selectedModule.name_fr} →` : `Start ${selectedModule.name_en} →`)
-                : (lang === 'fr' ? 'Sélectionnez un module' : 'Select a module')}
-          </button>
-          {selected && !starting && (
-            <p className="text-xs text-[#7A829A]">
-              {lang === 'fr' ? '~15 min · 4 sous-compétences · rapport complet inclus' : '~15 min · 4 sub-skills · full diagnostic included'}
-            </p>
-          )}
-        </div>
+        {error && (
+          <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-4 mb-5 text-sm text-[#DC2626] flex justify-between items-center">
+            {error}
+            <button onClick={() => setError('')} className="text-[#DC2626]/50 hover:text-[#DC2626]">×</button>
+          </div>
+        )}
 
-        <div className="mt-8 pt-6 border-t border-[#1C1D28]">
-          <p className="text-xs text-[#3D4260]">
-            {lang === 'fr'
-              ? 'Le tier gratuit inclut 1 session complète. Mettez à niveau pour des sessions illimitées sur tous les modules.'
-              : 'Free tier includes 1 full session. Upgrade for unlimited sessions across all modules.'}
-            {' '}<Link href="/pricing" className="text-[#4776F7] hover:underline">{lang === 'fr' ? 'Voir les tarifs →' : 'See pricing →'}</Link>
+        {/* Start button */}
+        <button onClick={start} disabled={!selected || loading}
+          className="w-full py-4 rounded-xl text-base font-semibold transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: selected ? '#2563EB' : '#E5E7EB',
+            color: selected ? 'white' : '#9CA3AF',
+          }}>
+          {loading ? (
+            <span className="flex items-center justify-center gap-3">
+              <span style={{ width:18,height:18,border:'2.5px solid rgba(255,255,255,.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 1s linear infinite',display:'inline-block' }} />
+              Starting your interview...
+            </span>
+          ) : selected ? (
+            `Start interview — ${selectedModule?.name} →`
+          ) : (
+            'Select a module above to start'
+          )}
+        </button>
+
+        <p className="text-center text-sm text-[#9CA3AF] mt-4">
+          You can practice in English or French. The interview adapts to your specific answers.
+        </p>
+
+        {/* Free tier info */}
+        <div className="mt-6 bg-white border border-[#E5E7EB] rounded-xl p-4 text-center">
+          <p className="text-sm text-[#6B7280]">
+            <span className="font-medium text-[#111827]">Free tier:</span> includes 1 full session · any module · text mode · headline diagnostic.{' '}
+            <Link href="/pricing" className="text-[#2563EB] hover:underline font-medium">Upgrade for unlimited access →</Link>
           </p>
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+        .animate-slide-up { animation: slideUp .25s ease; }
+      `}</style>
     </div>
   )
 }

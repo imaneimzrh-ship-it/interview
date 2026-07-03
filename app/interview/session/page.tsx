@@ -1,223 +1,132 @@
 'use client'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
-interface Msg {
-  role: 'user' | 'assistant' | 'system'
-  content: string
+interface Msg { role: 'user' | 'assistant'; content: string; idx?: number }
+
+const SS_LABELS: Record<string, string[]> = {
+  rag_system_design:  ['Chunking Strategy','Retrieval Quality','Reranking','Freshness'],
+  agent_orchestration:['Tool Use','Planning','Failure Handling','Multi-Agent'],
+  evaluation_testing: ['Eval Design','Hallucination','Offline/Online','Regression'],
+  production_mlops:   ['Monitoring','Cost/Latency','Versioning','Deployment Safety'],
 }
 
-const DISCLOSURE = {
-  en: 'This session stores your transcript and diagnostic results to generate your report. You can delete this session at any time from your session history. Avoid sharing real employer names or confidential project details — the diagnostic works just as well with anonymised examples.',
-  fr: 'Cette session enregistre votre transcription et vos résultats de diagnostic pour générer votre rapport. Vous pouvez supprimer cette session à tout moment depuis votre historique. Évitez de mentionner des noms d\'employeurs réels ou des détails confidentiels — le diagnostic fonctionne aussi bien avec des exemples anonymisés.',
+async function authHeader(): Promise<Record<string, string>> {
+  const { data: { session } } = await createClient().auth.getSession()
+  if (session?.access_token) return { Authorization: `Bearer ${session.access_token}` }
+  return {}
 }
 
-const SUB_SKILL_LABELS: Record<string, string[]> = {
-  rag_system_design:    ['Chunking Strategy', 'Retrieval Quality', 'Reranking', 'Freshness & Updates'],
-  agent_orchestration:  ['Tool Use Design', 'Planning & Decomposition', 'Failure Handling', 'Multi-Agent Coordination'],
-  evaluation_testing:   ['Eval Design', 'Hallucination Detection', 'Offline vs Online Eval', 'Regression Testing'],
-  production_mlops:     ['Monitoring & Observability', 'Cost/Latency Tradeoffs', 'Versioning & Rollback', 'Deployment Safety'],
-}
-
-function Flag({ onFlag, label }: { onFlag: (note: string) => void; label: string }) {
+function Flag({ onFlag }: { onFlag: (note: string) => void }) {
   const [open, setOpen] = useState(false)
   const [note, setNote] = useState('')
-  if (open) return (
-    <div className="flex items-center gap-1.5 mt-1">
-      <input className="text-xs bg-[#09090C] border border-[#1C1D28] rounded px-2 py-1 text-[#7A829A] w-48"
-        placeholder="Why? (optional)" value={note} onChange={e => setNote(e.target.value)} />
-      <button onClick={() => { onFlag(note); setOpen(false); setNote('') }} className="text-xs text-[#E8A020] hover:underline">Send</button>
-      <button onClick={() => setOpen(false)} className="text-xs text-[#3D4260] hover:underline">Cancel</button>
-    </div>
+  if (!open) return (
+    <button onClick={() => setOpen(true)} className="text-xs text-[#D1D5DB] hover:text-[#F59E0B] transition-colors mt-1.5 flex items-center gap-1 ml-11">
+      ⚑ Flag this question
+    </button>
   )
   return (
-    <button onClick={() => setOpen(true)} className="text-xs text-[#3D4260] hover:text-[#E8A020] transition-colors mt-1 flex items-center gap-1">
-      <span>⚑</span> {label}
-    </button>
+    <div className="flex items-center gap-2 mt-1.5 ml-11">
+      <input className="text-xs border border-[#E5E7EB] rounded-lg px-2.5 py-1.5 bg-white text-[#374151] w-44 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+        placeholder="Why? (optional)" value={note} onChange={e => setNote(e.target.value)} />
+      <button onClick={() => { onFlag(note); setOpen(false); setNote('') }} className="text-xs bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] px-2.5 py-1.5 rounded-lg hover:bg-[#FDE68A] transition-colors">Send</button>
+      <button onClick={() => setOpen(false)} className="text-xs text-[#9CA3AF] hover:text-[#6B7280]">Cancel</button>
+    </div>
   )
 }
 
 function SessionInner() {
-  const params     = useSearchParams()
-  const router     = useRouter()
-  const sessionId  = params.get('id')
-  const moduleSlug = params.get('module') ?? ''
-  const lang       = (params.get('lang') ?? 'en') as 'en' | 'fr'
+  const params    = useSearchParams()
+  const router    = useRouter()
+  const sessionId = params.get('id')
+  const lang      = (params.get('lang') ?? 'en') as 'en' | 'fr'
+  const module_   = params.get('module') ?? ''
 
-  const [messages,       setMessages]       = useState<Msg[]>([])
-  const [input,          setInput]          = useState('')
-  const [sending,        setSending]        = useState(false)
-  const [isTyping,       setIsTyping]       = useState(false)
-  const [subSkillIdx,    setSubSkillIdx]    = useState(0)
-  const [totalSS,        setTotalSS]        = useState(4)
-  const [done,           setDone]           = useState(false)
-  const [scoring,        setScoring]        = useState(false)
-  const [skipping,       setSkipping]       = useState(false)
-  const [error,          setError]          = useState('')
-  const [elapsed,        setElapsed]        = useState(0)
-  const [showDisclosure, setShowDisclosure] = useState(true)
-  const [currentModule,  setCurrentModule]  = useState(moduleSlug)
+  const [messages,   setMessages]   = useState<Msg[]>([])
+  const [input,      setInput]      = useState('')
+  const [sending,    setSending]    = useState(false)
+  const [isTyping,   setIsTyping]   = useState(false)
+  const [subIdx,     setSubIdx]     = useState(0)
+  const [total,      setTotal]      = useState(4)
+  const [done,       setDone]       = useState(false)
+  const [scoring,    setScoring]    = useState(false)
+  const [error,      setError]      = useState('')
+  const [elapsed,    setElapsed]    = useState(0)
+  const [showInfo,   setShowInfo]   = useState(true)
+  const [skipLoad,   setSkipLoad]   = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
-  const timerRef  = useRef<ReturnType<typeof setInterval>>()
+  const timerRef  = useRef<NodeJS.Timeout>()
 
-  const subSkillNames = SUB_SKILL_LABELS[currentModule] ?? []
+  const labels = SS_LABELS[module_] ?? ['Q1','Q2','Q3','Q4']
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isTyping])
-
-  useEffect(() => {
-    timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
-    return () => clearInterval(timerRef.current)
-  }, [])
+  useEffect(() => { timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000); return () => clearInterval(timerRef.current) }, [])
 
   useEffect(() => {
     if (!sessionId) { router.push('/interview'); return }
-    loadInitial()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId])
-
-  async function authHeader(): Promise<Record<string, string>> {
-    const { data: { session } } = await createClient().auth.getSession()
-    if (session?.access_token) return { 'Authorization': `Bearer ${session.access_token}` }
-    return {}
-  }
-
-  async function loadInitial() {
-    const cached     = sessionStorage.getItem(`session_${sessionId}_opening`)
-    const cachedMod  = sessionStorage.getItem(`session_${sessionId}_module`)
+    const cached = sessionStorage.getItem(`session_${sessionId}_opening`)
+    const cachedTotal = sessionStorage.getItem(`session_${sessionId}_totalSS`)
     if (cached) {
       setMessages([{ role: 'assistant', content: cached }])
-      const totalStr = sessionStorage.getItem(`session_${sessionId}_totalSS`)
-      setTotalSS(parseInt(totalStr ?? '4'))
-      if (cachedMod) setCurrentModule(cachedMod)
+      if (cachedTotal) setTotal(Number(cachedTotal))
       return
     }
-    const hdrs = await authHeader()
-    const res  = await fetch(`/api/interview/session?id=${sessionId}`, { headers: hdrs })
-    const data = await res.json()
-    if (data.openingMessage) {
-      setMessages([{ role: 'assistant', content: data.openingMessage }])
-      setTotalSS(data.totalSubSkills ?? 4)
-      if (data.moduleSlug) setCurrentModule(data.moduleSlug)
-    } else if (data.error) {
-      setError(data.error)
-    }
-  }
+    authHeader().then(hdrs =>
+      fetch(`/api/interview/session?id=${sessionId}`, { headers: hdrs })
+        .then(r => r.json())
+        .then(d => {
+          if (d.openingMessage) { setMessages([{ role: 'assistant', content: d.openingMessage }]); setTotal(d.totalSubSkills ?? 4) }
+          if (d.error) setError(d.error)
+        })
+        .catch(() => setError('Failed to load session.'))
+    )
+  }, [sessionId])
 
   async function send() {
     const text = input.trim()
     if (!text || sending || done) return
-    setInput('')
-    setSending(true)
-    setIsTyping(true)
-    setError('')
-    setMessages(prev => [...prev, { role: 'user', content: text }])
-
+    setInput(''); setSending(true); setIsTyping(true); setError('')
+    setMessages(prev => [...prev, { role: 'user', content: text, idx: prev.length }])
     try {
       const hdrs = await authHeader()
       const res  = await fetch('/api/interview/turn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...hdrs },
-        body: JSON.stringify({ sessionId, userMessage: text, currentSubSkillIdx: subSkillIdx }),
+        body: JSON.stringify({ sessionId, userMessage: text, currentSubSkillIdx: subIdx }),
       })
       const data = await res.json()
       setIsTyping(false)
-
-      if (!res.ok) {
-        setError(data.error ?? 'Error.')
-        setMessages(prev => prev.slice(0, -1))
-        setSending(false)
-        return
-      }
-
-      setMessages(prev => [...prev, { role: 'assistant', content: data.aiResponse }])
-
-      if (data.shouldAdvance) {
-        const completedName = subSkillNames[subSkillIdx] ?? `Sub-skill ${subSkillIdx + 1}`
-        const nextName      = subSkillNames[data.nextSubSkillIdx] ?? `Sub-skill ${data.nextSubSkillIdx + 1}`
-        setSubSkillIdx(data.nextSubSkillIdx)
-
-        if (!data.isComplete) {
-          setTimeout(() => {
-            setMessages(prev => [...prev, {
-              role: 'system',
-              content: lang === 'fr'
-                ? `✓ ${completedName} terminé · Passage à : ${nextName}`
-                : `✓ ${completedName} complete · Moving to: ${nextName}`,
-            }])
-          }, 300)
-        }
-      }
-
-      if (data.nextOpeningMessage) {
-        setTimeout(() => setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }]), 800)
-      }
-
-      if (data.isComplete) {
-        setDone(true)
-        clearInterval(timerRef.current)
-        setTimeout(endSession, 1500)
-      }
-    } catch {
-      setIsTyping(false)
-      setError(lang === 'fr' ? 'Erreur réseau.' : 'Network error.')
-      setMessages(prev => prev.slice(0, -1))
-    } finally {
-      setSending(false)
-      inputRef.current?.focus()
-    }
+      if (!res.ok) { setError(data.error ?? 'Error.'); setMessages(prev => prev.slice(0,-1)); setSending(false); return }
+      setMessages(prev => [...prev, { role: 'assistant', content: data.aiResponse, idx: prev.length }])
+      if (data.shouldAdvance) setSubIdx(data.nextSubSkillIdx)
+      if (data.nextOpeningMessage) setTimeout(() => setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }]), 500)
+      if (data.isComplete) { setDone(true); clearInterval(timerRef.current); setTimeout(endSession, 1500) }
+    } catch { setIsTyping(false); setError('Network error.'); setMessages(prev => prev.slice(0,-1)) }
+    finally { setSending(false); inputRef.current?.focus() }
   }
 
-  async function skipSubSkill() {
-    if (skipping || done) return
-    const label = lang === 'fr' ? 'Passer cette sous-compétence ?' : 'Skip this sub-skill?'
-    if (!confirm(label)) return
-    setSkipping(true)
-    setError('')
-
-    const completedName = subSkillNames[subSkillIdx] ?? `Sub-skill ${subSkillIdx + 1}`
-
+  async function skip() {
+    if (skipLoad || done) return
+    setSkipLoad(true)
+    setMessages(prev => [...prev, { role: 'user', content: lang === 'fr' ? '(Question passée)' : '(Skipped)' }])
+    setIsTyping(true)
     try {
       const hdrs = await authHeader()
       const res  = await fetch('/api/interview/skip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...hdrs },
-        body: JSON.stringify({ sessionId, currentSubSkillIdx: subSkillIdx }),
+        body: JSON.stringify({ sessionId, currentSubSkillIdx: subIdx }),
       })
       const data = await res.json()
-
-      if (!res.ok) { setError(data.error ?? 'Skip failed.'); setSkipping(false); return }
-
-      setMessages(prev => [...prev, {
-        role: 'system',
-        content: lang === 'fr'
-          ? `⏭ ${completedName} passé`
-          : `⏭ ${completedName} skipped`,
-      }])
-
-      if (data.isComplete) {
-        setDone(true)
-        clearInterval(timerRef.current)
-        setTimeout(endSession, 1000)
-      } else {
-        const nextName = subSkillNames[data.nextSubSkillIdx] ?? `Sub-skill ${data.nextSubSkillIdx + 1}`
-        setSubSkillIdx(data.nextSubSkillIdx)
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            role: 'system',
-            content: lang === 'fr' ? `→ ${nextName}` : `→ ${nextName}`,
-          }])
-        }, 300)
-        if (data.nextOpeningMessage) {
-          setTimeout(() => setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }]), 700)
-        }
-      }
-    } catch {
-      setError('Network error.')
-    } finally {
-      setSkipping(false)
-    }
+      setIsTyping(false)
+      if (data.isComplete) { setDone(true); clearInterval(timerRef.current); setTimeout(endSession, 1200); return }
+      setSubIdx(data.nextSubSkillIdx)
+      if (data.nextOpeningMessage) setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }])
+    } catch { setIsTyping(false); setError('Skip failed.'); setMessages(prev => prev.slice(0,-1)) }
+    finally { setSkipLoad(false); inputRef.current?.focus() }
   }
 
   async function endSession() {
@@ -229,137 +138,165 @@ function SessionInner() {
       body: JSON.stringify({ sessionId }),
     })
     const data = await res.json()
-    if (res.ok) {
-      router.push(`/interview/report?id=${sessionId}`)
-    } else {
-      setError(data.error ?? 'Failed to generate report.')
-      setScoring(false)
-    }
+    if (res.ok) router.push(`/interview/report?id=${sessionId}&lang=${lang}`)
+    else { setError(data.error ?? 'Report generation failed.'); setScoring(false) }
   }
 
-  async function flagTurn(turnIdx: number, note: string) {
+  async function flagMsg(msgIdx: number, note: string) {
     const hdrs = await authHeader()
     await fetch('/api/interview/flag', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...hdrs },
-      body: JSON.stringify({ sessionId, targetType: 'turn', targetId: `turn_${turnIdx}`, note }),
+      body: JSON.stringify({ sessionId, targetType: 'turn', targetId: `turn_${msgIdx}`, note }),
     })
   }
 
-  const mm       = String(Math.floor(elapsed / 60)).padStart(2, '0')
-  const ss_      = String(elapsed % 60).padStart(2, '0')
-  const progress = Math.min(100, Math.round((subSkillIdx / totalSS) * 100))
-  const currentSSName = subSkillNames[subSkillIdx] ?? `Sub-skill ${subSkillIdx + 1}`
-
   if (scoring) return (
-    <div className="min-h-screen bg-[#09090C] flex items-center justify-center" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div className="text-center">
-        <div className="w-12 h-12 border-2 border-[#4776F7]/30 border-t-[#4776F7] rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-[#F0F2FA] font-medium mb-1">{lang === 'fr' ? 'Génération du rapport...' : 'Generating your report...'}</p>
-        <p className="text-sm text-[#7A829A]">{lang === 'fr' ? 'Environ 15 secondes.' : 'About 15 seconds.'}</p>
+    <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div className="text-center bg-white rounded-2xl border border-[#E5E7EB] p-12" style={{ boxShadow: '0 10px 40px rgba(0,0,0,.08)' }}>
+        <div className="w-16 h-16 bg-[#EFF6FF] rounded-full flex items-center justify-center mx-auto mb-5">
+          <div style={{ width:28,height:28,border:'3px solid #BFDBFE',borderTopColor:'#2563EB',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
+        </div>
+        <h2 className="text-xl font-bold text-[#111827] mb-2">{lang === 'fr' ? 'Génération du rapport...' : 'Generating your report...'}</h2>
+        <p className="text-[#6B7280] text-sm">{lang === 'fr' ? 'Environ 15 secondes.' : 'About 15 seconds. Your sub-skill scores are being calculated.'}</p>
       </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
 
+  const mm  = String(Math.floor(elapsed/60)).padStart(2,'0')
+  const ss_ = String(elapsed%60).padStart(2,'0')
+
   return (
-    <div className="min-h-screen bg-[#09090C] flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="min-h-screen bg-[#F8F9FB] flex flex-col" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+
       {/* Header */}
-      <div className="border-b border-[#1C1D28] bg-[#111218] flex-shrink-0 px-4 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="w-2 h-2 rounded-full bg-[#1DB954]" style={{ boxShadow: '0 0 0 4px rgba(29,185,84,.12)' }} />
-          <span className="text-xs text-[#7A829A] font-medium hidden sm:block">
-            {lang === 'fr' ? 'Entretien en cours' : 'Live interview'}
-          </span>
-        </div>
-        <div className="flex items-center gap-3 flex-1 justify-center max-w-xs mx-4">
-          <div className="flex gap-1 flex-1">
-            {Array.from({ length: totalSS }).map((_, i) => (
-              <div key={i} className="h-1.5 flex-1 rounded-full transition-all duration-500"
-                style={{ background: i < subSkillIdx ? '#1DB954' : i === subSkillIdx ? '#4776F7' : '#1C1D28' }} />
-            ))}
+      <div className="bg-white border-b border-[#E5E7EB] flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#4ADE80] flex-shrink-0" style={{ boxShadow: '0 0 0 4px rgba(74,222,128,.2)' }} />
+              <span className="text-sm font-semibold text-[#111827] truncate">
+                {lang === 'fr' ? 'Entretien en direct' : 'Live interview'}
+              </span>
+              <span className="text-[#D1D5DB] hidden sm:block">·</span>
+              <span className="text-sm text-[#6B7280] hidden sm:block truncate">
+                {labels[subIdx] ?? `Sub-skill ${subIdx+1}`}
+              </span>
+            </div>
+
+            <div className="hidden md:flex items-center gap-1.5">
+              {Array.from({ length: total }).map((_, i) => (
+                <div key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                  style={{
+                    background: i < subIdx ? '#ECFDF5' : i === subIdx ? '#EFF6FF' : '#F9FAFB',
+                    border: `1px solid ${i < subIdx ? '#A7F3D0' : i === subIdx ? '#BFDBFE' : '#E5E7EB'}`,
+                    color: i < subIdx ? '#065F46' : i === subIdx ? '#1D4ED8' : '#9CA3AF',
+                  }}>
+                  {i < subIdx ? '✓ ' : i === subIdx ? '● ' : ''}{labels[i] ?? `Q${i+1}`}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="font-mono text-sm text-[#6B7280] tabular-nums">{mm}:{ss_}</span>
+              {!done && (
+                <button onClick={skip} disabled={skipLoad}
+                  className="text-xs text-[#6B7280] bg-[#F9FAFB] border border-[#E5E7EB] px-3 py-1.5 rounded-lg hover:bg-[#F3F4F6] hover:text-[#111827] transition-all disabled:opacity-50">
+                  {skipLoad ? '...' : (lang === 'fr' ? 'Passer →' : 'Skip →')}
+                </button>
+              )}
+              <button onClick={() => { if (confirm(lang==='fr'?'Quitter ?':'Exit? Progress is saved.')) router.push('/dashboard') }}
+                className="text-xs text-[#9CA3AF] hover:text-[#6B7280] px-2 py-1.5 rounded-lg hover:bg-[#F9FAFB] transition-all">
+                Exit ×
+              </button>
+            </div>
           </div>
-          <span className="text-xs text-[#7A829A] whitespace-nowrap">{subSkillIdx + 1}/{totalSS}</span>
-          <span className="font-mono text-xs text-[#7A829A]">{mm}:{ss_}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {!done && (
-            <button onClick={skipSubSkill} disabled={skipping || sending}
-              className="text-xs text-[#3D4260] hover:text-[#E8A020] transition-colors px-2 py-1 disabled:opacity-50">
-              {skipping ? '...' : (lang === 'fr' ? 'Passer ⏭' : 'Skip ⏭')}
-            </button>
-          )}
-          <button
-            onClick={() => { if (confirm(lang === 'fr' ? 'Quitter ?' : 'Exit this session?')) router.push('/interview') }}
-            className="text-xs text-[#7A829A] hover:text-[#F0F2FA] transition-colors px-2 py-1">
-            {lang === 'fr' ? '×' : 'Exit ×'}
-          </button>
+
+          <div className="flex items-center gap-1 mt-2 md:hidden">
+            {Array.from({ length: total }).map((_, i) => (
+              <div key={i} className="h-1.5 flex-1 rounded-full transition-all"
+                style={{ background: i < subIdx ? '#4ADE80' : i === subIdx ? '#2563EB' : '#E5E7EB' }} />
+            ))}
+            <span className="text-xs text-[#9CA3AF] ml-2 whitespace-nowrap">{subIdx+1}/{total}</span>
+          </div>
         </div>
       </div>
 
-      {/* Sub-skill label */}
-      <div className="border-b border-[#1C1D28] bg-[#0D0D12] px-4 py-1.5 text-center">
-        <span className="text-xs text-[#4776F7] font-medium">{currentSSName}</span>
-      </div>
-
-      {/* Disclosure banner */}
-      {showDisclosure && (
-        <div className="bg-[#1A2550] border-b border-[#4776F7]/20 px-4 py-3 flex items-start justify-between gap-4">
-          <p className="text-xs text-[#7A829A] leading-relaxed max-w-2xl">{DISCLOSURE[lang]}</p>
-          <button onClick={() => setShowDisclosure(false)} className="text-xs text-[#4776F7] hover:underline flex-shrink-0">OK</button>
+      {showInfo && (
+        <div className="bg-[#FFFBEB] border-b border-[#FDE68A] px-4 py-2.5 flex items-center justify-between gap-4">
+          <p className="text-xs text-[#92400E]">
+            📋 This session saves your transcript and diagnostic. You can delete it anytime from the dashboard. Avoid sharing confidential employer details if you prefer.
+          </p>
+          <button onClick={() => setShowInfo(false)} className="text-xs text-[#D97706] font-medium hover:underline flex-shrink-0">Got it</button>
         </div>
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 max-w-3xl w-full mx-auto">
-        <div className="space-y-4">
-          {messages.map((msg, i) => {
-            if (msg.role === 'system') return (
-              <div key={i} className="flex justify-center">
-                <div className="px-3 py-1.5 rounded-full bg-[#1C1D28] text-xs text-[#7A829A]">
+      <div className="flex-1 overflow-y-auto py-8 px-4">
+        <div className="max-w-3xl mx-auto space-y-6">
+
+          {messages.length === 0 && !error && (
+            <div className="text-center py-16">
+              <div className="w-12 h-12 bg-[#EFF6FF] rounded-xl flex items-center justify-center mx-auto mb-4">
+                <div style={{ width:20,height:20,border:'2.5px solid #BFDBFE',borderTopColor:'#2563EB',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
+              </div>
+              <p className="text-[#6B7280] text-sm">{lang==='fr'?'Chargement...':'Loading your interview...'}</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-4 flex items-center justify-between">
+              <span className="text-sm text-[#DC2626]">{error}</span>
+              <button onClick={() => setError('')} className="text-[#DC2626]/50 hover:text-[#DC2626] text-lg">×</button>
+            </div>
+          )}
+
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`} style={{ animation: 'slideUp .25s ease' }}>
+              <div className="flex-shrink-0 mt-0.5">
+                {msg.role === 'assistant' ? (
+                  <div className="w-9 h-9 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold text-xs shadow-sm">AI</div>
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-[#F3F4F6] border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-bold text-xs">Y</div>
+                )}
+              </div>
+              <div className="max-w-[78%] flex flex-col">
+                {msg.role === 'assistant' && (
+                  <span className="text-xs text-[#9CA3AF] mb-1.5 ml-1">AI Interviewer · {labels[subIdx] ?? 'Question'}</span>
+                )}
+                <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                  msg.role === 'assistant'
+                    ? 'bg-white border border-[#E5E7EB] rounded-tl-sm text-[#111827]'
+                    : 'bg-[#2563EB] text-white rounded-tr-sm'
+                }`} style={{
+                  boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,.06)' : '0 2px 6px rgba(37,99,235,.3)',
+                  fontStyle: msg.content.includes('Skipped') || msg.content.includes('passée') ? 'italic' : 'normal',
+                  opacity: msg.content.includes('Skipped') || msg.content.includes('passée') ? 0.5 : 1,
+                }}>
                   {msg.content}
                 </div>
+                {msg.role === 'assistant' && i > 0 && (
+                  <Flag onFlag={(note) => flagMsg(i, note)} />
+                )}
               </div>
-            )
-            return (
-              <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${msg.role === 'assistant' ? 'bg-[rgba(71,118,247,0.12)] border border-[rgba(71,118,247,0.3)] text-[#4776F7]' : 'bg-[#1C1D28] border border-[#2A2B38] text-[#7A829A]'}`}>
-                  {msg.role === 'assistant' ? 'AI' : 'Y'}
-                </div>
-                <div className="max-w-[78%]">
-                  <div className={`px-4 py-3 rounded-xl text-sm leading-relaxed ${msg.role === 'assistant' ? 'bg-[#111218] border border-[#1C1D28] rounded-tl-sm text-[#F0F2FA]' : 'bg-[rgba(71,118,247,0.12)] border border-[rgba(71,118,247,0.2)] rounded-tr-sm text-[#F0F2FA]'}`}>
-                    {msg.content}
-                  </div>
-                  {msg.role === 'assistant' && i > 0 && (
-                    <Flag onFlag={(note) => flagTurn(i, note)} label={lang === 'fr' ? 'Signaler cette question' : 'Flag this question'} />
-                  )}
-                </div>
-              </div>
-            )
-          })}
+            </div>
+          ))}
 
           {isTyping && (
-            <div className="flex gap-3">
-              <div className="w-7 h-7 rounded-full bg-[rgba(71,118,247,0.12)] border border-[rgba(71,118,247,0.3)] flex items-center justify-center text-[#4776F7] text-xs font-medium flex-shrink-0">AI</div>
-              <div className="bg-[#111218] border border-[#1C1D28] rounded-xl rounded-tl-sm px-4 py-3">
-                <div className="flex gap-1 items-center h-4">
-                  {[0, 1, 2].map(i => (
-                    <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#7A829A]"
-                      style={{ animation: `blink 1.4s ${i * 0.2}s ease-in-out infinite` }} />
-                  ))}
+            <div className="flex gap-3" style={{ animation: 'slideUp .2s ease' }}>
+              <div className="w-9 h-9 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0">AI</div>
+              <div className="bg-white border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3.5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
+                <div className="flex items-center gap-1.5">
+                  <span className="dot dot-1" /><span className="dot dot-2" /><span className="dot dot-3" />
                 </div>
               </div>
             </div>
           )}
 
           {done && !scoring && (
-            <div className="bg-[rgba(29,185,84,0.1)] border border-[rgba(29,185,84,0.2)] rounded-xl px-4 py-3 text-sm text-[#1DB954] text-center">
-              {lang === 'fr' ? '✓ Entretien terminé — génération du rapport...' : '✓ Interview complete — generating your report...'}
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-[rgba(232,64,64,0.1)] border border-[rgba(232,64,64,0.2)] rounded-lg px-4 py-3 text-sm text-[#E84040]">
-              {error}
+            <div className="bg-[#ECFDF5] border border-[#A7F3D0] rounded-xl p-4 text-sm text-[#065F46] font-medium text-center" style={{ animation: 'slideUp .3s ease' }}>
+              ✓ {lang === 'fr' ? 'Entretien terminé — génération du rapport en cours...' : 'Interview complete — generating your diagnostic report...'}
             </div>
           )}
 
@@ -368,36 +305,40 @@ function SessionInner() {
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 border-t border-[#1C1D28] bg-[#111218] px-4 py-3">
-        <div className="max-w-3xl mx-auto flex gap-3 items-end">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-            disabled={sending || done}
-            placeholder={done
-              ? (lang === 'fr' ? 'Entretien terminé' : 'Interview complete')
-              : (lang === 'fr' ? 'Votre réponse...' : 'Your answer...')}
-            className="flex-1 resize-none min-h-[48px] max-h-[140px] bg-[#09090C] border border-[#1C1D28] rounded-lg px-3.5 py-3 text-sm text-[#F0F2FA] placeholder:text-[#3D4260] focus:outline-none focus:ring-1 focus:ring-[#4776F7] focus:border-[#4776F7] transition-colors"
-            rows={1}
-          />
-          <button
-            onClick={send}
-            disabled={!input.trim() || sending || done}
-            className="bg-[#4776F7] text-white rounded-lg px-3 py-3 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity">
-            {sending
-              ? <span className="w-4 h-4 block border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-            }
-          </button>
+      <div className="flex-shrink-0 bg-white border-t border-[#E5E7EB]" style={{ boxShadow: '0 -1px 6px rgba(0,0,0,.05)' }}>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex gap-3 items-end">
+            <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+              disabled={sending || done}
+              placeholder={done
+                ? (lang==='fr'?'Entretien terminé':'Interview complete')
+                : (lang==='fr'?'Votre réponse... (Entrée pour envoyer)':'Your answer... (Enter to send, Shift+Enter for new line)')}
+              rows={2}
+              className="flex-1 resize-none bg-[#F8F9FB] border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all max-h-40"
+              style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,.04)' }}
+            />
+            <button onClick={send} disabled={!input.trim() || sending || done}
+              className="w-12 h-12 bg-[#2563EB] text-white rounded-xl flex items-center justify-center flex-shrink-0 hover:bg-[#1D4ED8] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              style={{ boxShadow: '0 2px 6px rgba(37,99,235,.3)' }}>
+              {sending
+                ? <span style={{ width:16,height:16,border:'2px solid rgba(255,255,255,.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 1s linear infinite',display:'block' }} />
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+              }
+            </button>
+          </div>
         </div>
-        <p className="text-center text-xs text-[#3D4260] mt-1.5">
-          {lang === 'fr' ? 'Entrée pour envoyer · Maj+Entrée pour nouvelle ligne' : 'Enter to send · Shift+Enter for new line'}
-        </p>
       </div>
 
-      <style>{`@keyframes blink { 0%,100%{opacity:.2;transform:scale(.85)}50%{opacity:1;transform:scale(1)} }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:translateY(0) } }
+        .dot { width:7px; height:7px; border-radius:50%; background:#CBD5E1; display:inline-block; }
+        .dot-1 { animation: bounce 1.2s 0s ease-in-out infinite; }
+        .dot-2 { animation: bounce 1.2s .2s ease-in-out infinite; }
+        .dot-3 { animation: bounce 1.2s .4s ease-in-out infinite; }
+        @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+      `}</style>
     </div>
   )
 }
