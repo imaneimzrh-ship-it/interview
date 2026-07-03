@@ -3,11 +3,21 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-interface Msg { role: 'user' | 'assistant'; content: string }
+interface Msg {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+}
 
 const DISCLOSURE = {
   en: 'This session stores your transcript and diagnostic results to generate your report. You can delete this session at any time from your session history. Avoid sharing real employer names or confidential project details — the diagnostic works just as well with anonymised examples.',
   fr: 'Cette session enregistre votre transcription et vos résultats de diagnostic pour générer votre rapport. Vous pouvez supprimer cette session à tout moment depuis votre historique. Évitez de mentionner des noms d\'employeurs réels ou des détails confidentiels — le diagnostic fonctionne aussi bien avec des exemples anonymisés.',
+}
+
+const SUB_SKILL_LABELS: Record<string, string[]> = {
+  rag_system_design:    ['Chunking Strategy', 'Retrieval Quality', 'Reranking', 'Freshness & Updates'],
+  agent_orchestration:  ['Tool Use Design', 'Planning & Decomposition', 'Failure Handling', 'Multi-Agent Coordination'],
+  evaluation_testing:   ['Eval Design', 'Hallucination Detection', 'Offline vs Online Eval', 'Regression Testing'],
+  production_mlops:     ['Monitoring & Observability', 'Cost/Latency Tradeoffs', 'Versioning & Rollback', 'Deployment Safety'],
 }
 
 function Flag({ onFlag, label }: { onFlag: (note: string) => void; label: string }) {
@@ -15,7 +25,8 @@ function Flag({ onFlag, label }: { onFlag: (note: string) => void; label: string
   const [note, setNote] = useState('')
   if (open) return (
     <div className="flex items-center gap-1.5 mt-1">
-      <input className="text-xs bg-[#09090C] border border-[#1C1D28] rounded px-2 py-1 text-[#7A829A] w-48" placeholder="Why? (optional)" value={note} onChange={e => setNote(e.target.value)} />
+      <input className="text-xs bg-[#09090C] border border-[#1C1D28] rounded px-2 py-1 text-[#7A829A] w-48"
+        placeholder="Why? (optional)" value={note} onChange={e => setNote(e.target.value)} />
       <button onClick={() => { onFlag(note); setOpen(false); setNote('') }} className="text-xs text-[#E8A020] hover:underline">Send</button>
       <button onClick={() => setOpen(false)} className="text-xs text-[#3D4260] hover:underline">Cancel</button>
     </div>
@@ -28,10 +39,11 @@ function Flag({ onFlag, label }: { onFlag: (note: string) => void; label: string
 }
 
 function SessionInner() {
-  const params    = useSearchParams()
-  const router    = useRouter()
-  const sessionId = params.get('id')
-  const lang      = (params.get('lang') ?? 'en') as 'en' | 'fr'
+  const params     = useSearchParams()
+  const router     = useRouter()
+  const sessionId  = params.get('id')
+  const moduleSlug = params.get('module') ?? ''
+  const lang       = (params.get('lang') ?? 'en') as 'en' | 'fr'
 
   const [messages,       setMessages]       = useState<Msg[]>([])
   const [input,          setInput]          = useState('')
@@ -41,12 +53,16 @@ function SessionInner() {
   const [totalSS,        setTotalSS]        = useState(4)
   const [done,           setDone]           = useState(false)
   const [scoring,        setScoring]        = useState(false)
+  const [skipping,       setSkipping]       = useState(false)
   const [error,          setError]          = useState('')
   const [elapsed,        setElapsed]        = useState(0)
   const [showDisclosure, setShowDisclosure] = useState(true)
+  const [currentModule,  setCurrentModule]  = useState(moduleSlug)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
   const timerRef  = useRef<ReturnType<typeof setInterval>>()
+
+  const subSkillNames = SUB_SKILL_LABELS[currentModule] ?? []
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isTyping])
 
@@ -68,11 +84,13 @@ function SessionInner() {
   }
 
   async function loadInitial() {
-    const cached = sessionStorage.getItem(`session_${sessionId}_opening`)
+    const cached     = sessionStorage.getItem(`session_${sessionId}_opening`)
+    const cachedMod  = sessionStorage.getItem(`session_${sessionId}_module`)
     if (cached) {
       setMessages([{ role: 'assistant', content: cached }])
       const totalStr = sessionStorage.getItem(`session_${sessionId}_totalSS`)
       setTotalSS(parseInt(totalStr ?? '4'))
+      if (cachedMod) setCurrentModule(cachedMod)
       return
     }
     const hdrs = await authHeader()
@@ -81,6 +99,7 @@ function SessionInner() {
     if (data.openingMessage) {
       setMessages([{ role: 'assistant', content: data.openingMessage }])
       setTotalSS(data.totalSubSkills ?? 4)
+      if (data.moduleSlug) setCurrentModule(data.moduleSlug)
     } else if (data.error) {
       setError(data.error)
     }
@@ -113,10 +132,28 @@ function SessionInner() {
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: data.aiResponse }])
-      if (data.shouldAdvance) setSubSkillIdx(data.nextSubSkillIdx)
-      if (data.nextOpeningMessage) {
-        setTimeout(() => setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }]), 400)
+
+      if (data.shouldAdvance) {
+        const completedName = subSkillNames[subSkillIdx] ?? `Sub-skill ${subSkillIdx + 1}`
+        const nextName      = subSkillNames[data.nextSubSkillIdx] ?? `Sub-skill ${data.nextSubSkillIdx + 1}`
+        setSubSkillIdx(data.nextSubSkillIdx)
+
+        if (!data.isComplete) {
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: 'system',
+              content: lang === 'fr'
+                ? `✓ ${completedName} terminé · Passage à : ${nextName}`
+                : `✓ ${completedName} complete · Moving to: ${nextName}`,
+            }])
+          }, 300)
+        }
       }
+
+      if (data.nextOpeningMessage) {
+        setTimeout(() => setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }]), 800)
+      }
+
       if (data.isComplete) {
         setDone(true)
         clearInterval(timerRef.current)
@@ -129,6 +166,57 @@ function SessionInner() {
     } finally {
       setSending(false)
       inputRef.current?.focus()
+    }
+  }
+
+  async function skipSubSkill() {
+    if (skipping || done) return
+    const label = lang === 'fr' ? 'Passer cette sous-compétence ?' : 'Skip this sub-skill?'
+    if (!confirm(label)) return
+    setSkipping(true)
+    setError('')
+
+    const completedName = subSkillNames[subSkillIdx] ?? `Sub-skill ${subSkillIdx + 1}`
+
+    try {
+      const hdrs = await authHeader()
+      const res  = await fetch('/api/interview/skip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...hdrs },
+        body: JSON.stringify({ sessionId, currentSubSkillIdx: subSkillIdx }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) { setError(data.error ?? 'Skip failed.'); setSkipping(false); return }
+
+      setMessages(prev => [...prev, {
+        role: 'system',
+        content: lang === 'fr'
+          ? `⏭ ${completedName} passé`
+          : `⏭ ${completedName} skipped`,
+      }])
+
+      if (data.isComplete) {
+        setDone(true)
+        clearInterval(timerRef.current)
+        setTimeout(endSession, 1000)
+      } else {
+        const nextName = subSkillNames[data.nextSubSkillIdx] ?? `Sub-skill ${data.nextSubSkillIdx + 1}`
+        setSubSkillIdx(data.nextSubSkillIdx)
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            role: 'system',
+            content: lang === 'fr' ? `→ ${nextName}` : `→ ${nextName}`,
+          }])
+        }, 300)
+        if (data.nextOpeningMessage) {
+          setTimeout(() => setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }]), 700)
+        }
+      }
+    } catch {
+      setError('Network error.')
+    } finally {
+      setSkipping(false)
     }
   }
 
@@ -160,7 +248,8 @@ function SessionInner() {
 
   const mm       = String(Math.floor(elapsed / 60)).padStart(2, '0')
   const ss_      = String(elapsed % 60).padStart(2, '0')
-  const progress = Math.round((subSkillIdx / totalSS) * 100)
+  const progress = Math.min(100, Math.round((subSkillIdx / totalSS) * 100))
+  const currentSSName = subSkillNames[subSkillIdx] ?? `Sub-skill ${subSkillIdx + 1}`
 
   if (scoring) return (
     <div className="min-h-screen bg-[#09090C] flex items-center justify-center" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -174,29 +263,45 @@ function SessionInner() {
 
   return (
     <div className="min-h-screen bg-[#09090C] flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
+      {/* Header */}
       <div className="border-b border-[#1C1D28] bg-[#111218] flex-shrink-0 px-4 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="w-2 h-2 rounded-full bg-[#1DB954]" style={{ boxShadow: '0 0 0 4px rgba(29,185,84,.12)' }} />
-          <span className="text-xs text-[#7A829A] font-medium">
+          <span className="text-xs text-[#7A829A] font-medium hidden sm:block">
             {lang === 'fr' ? 'Entretien en cours' : 'Live interview'}
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-[#7A829A] hidden sm:block">
-            {lang === 'fr' ? `Compétence ${subSkillIdx + 1} sur ${totalSS}` : `Sub-skill ${subSkillIdx + 1} of ${totalSS}`}
-          </span>
-          <div className="w-24 h-1.5 bg-[#1C1D28] rounded-full overflow-hidden">
-            <div className="h-full bg-[#4776F7] rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+        <div className="flex items-center gap-3 flex-1 justify-center max-w-xs mx-4">
+          <div className="flex gap-1 flex-1">
+            {Array.from({ length: totalSS }).map((_, i) => (
+              <div key={i} className="h-1.5 flex-1 rounded-full transition-all duration-500"
+                style={{ background: i < subSkillIdx ? '#1DB954' : i === subSkillIdx ? '#4776F7' : '#1C1D28' }} />
+            ))}
           </div>
+          <span className="text-xs text-[#7A829A] whitespace-nowrap">{subSkillIdx + 1}/{totalSS}</span>
           <span className="font-mono text-xs text-[#7A829A]">{mm}:{ss_}</span>
         </div>
-        <button
-          onClick={() => { if (confirm(lang === 'fr' ? 'Terminer la session ?' : 'End this session?')) router.push('/interview') }}
-          className="text-xs text-[#7A829A] hover:text-[#F0F2FA] transition-colors px-2 py-1">
-          {lang === 'fr' ? 'Quitter ×' : 'Exit ×'}
-        </button>
+        <div className="flex items-center gap-2">
+          {!done && (
+            <button onClick={skipSubSkill} disabled={skipping || sending}
+              className="text-xs text-[#3D4260] hover:text-[#E8A020] transition-colors px-2 py-1 disabled:opacity-50">
+              {skipping ? '...' : (lang === 'fr' ? 'Passer ⏭' : 'Skip ⏭')}
+            </button>
+          )}
+          <button
+            onClick={() => { if (confirm(lang === 'fr' ? 'Quitter ?' : 'Exit this session?')) router.push('/interview') }}
+            className="text-xs text-[#7A829A] hover:text-[#F0F2FA] transition-colors px-2 py-1">
+            {lang === 'fr' ? '×' : 'Exit ×'}
+          </button>
+        </div>
       </div>
 
+      {/* Sub-skill label */}
+      <div className="border-b border-[#1C1D28] bg-[#0D0D12] px-4 py-1.5 text-center">
+        <span className="text-xs text-[#4776F7] font-medium">{currentSSName}</span>
+      </div>
+
+      {/* Disclosure banner */}
       {showDisclosure && (
         <div className="bg-[#1A2550] border-b border-[#4776F7]/20 px-4 py-3 flex items-start justify-between gap-4">
           <p className="text-xs text-[#7A829A] leading-relaxed max-w-2xl">{DISCLOSURE[lang]}</p>
@@ -204,23 +309,33 @@ function SessionInner() {
         </div>
       )}
 
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 max-w-3xl w-full mx-auto">
-        <div className="space-y-5">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${msg.role === 'assistant' ? 'bg-[rgba(71,118,247,0.12)] border border-[rgba(71,118,247,0.3)] text-[#4776F7]' : 'bg-[#1C1D28] border border-[#2A2B38] text-[#7A829A]'}`}>
-                {msg.role === 'assistant' ? 'AI' : 'Y'}
-              </div>
-              <div className="max-w-[78%]">
-                <div className={`px-4 py-3 rounded-xl text-sm leading-relaxed ${msg.role === 'assistant' ? 'bg-[#111218] border border-[#1C1D28] rounded-tl-sm text-[#F0F2FA]' : 'bg-[rgba(71,118,247,0.12)] border border-[rgba(71,118,247,0.2)] rounded-tr-sm text-[#F0F2FA]'}`}>
+        <div className="space-y-4">
+          {messages.map((msg, i) => {
+            if (msg.role === 'system') return (
+              <div key={i} className="flex justify-center">
+                <div className="px-3 py-1.5 rounded-full bg-[#1C1D28] text-xs text-[#7A829A]">
                   {msg.content}
                 </div>
-                {msg.role === 'assistant' && i > 0 && (
-                  <Flag onFlag={(note) => flagTurn(i, note)} label={lang === 'fr' ? 'Signaler cette question' : 'Flag this question'} />
-                )}
               </div>
-            </div>
-          ))}
+            )
+            return (
+              <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 ${msg.role === 'assistant' ? 'bg-[rgba(71,118,247,0.12)] border border-[rgba(71,118,247,0.3)] text-[#4776F7]' : 'bg-[#1C1D28] border border-[#2A2B38] text-[#7A829A]'}`}>
+                  {msg.role === 'assistant' ? 'AI' : 'Y'}
+                </div>
+                <div className="max-w-[78%]">
+                  <div className={`px-4 py-3 rounded-xl text-sm leading-relaxed ${msg.role === 'assistant' ? 'bg-[#111218] border border-[#1C1D28] rounded-tl-sm text-[#F0F2FA]' : 'bg-[rgba(71,118,247,0.12)] border border-[rgba(71,118,247,0.2)] rounded-tr-sm text-[#F0F2FA]'}`}>
+                    {msg.content}
+                  </div>
+                  {msg.role === 'assistant' && i > 0 && (
+                    <Flag onFlag={(note) => flagTurn(i, note)} label={lang === 'fr' ? 'Signaler cette question' : 'Flag this question'} />
+                  )}
+                </div>
+              </div>
+            )
+          })}
 
           {isTyping && (
             <div className="flex gap-3">
@@ -237,8 +352,8 @@ function SessionInner() {
           )}
 
           {done && !scoring && (
-            <div className="bg-[rgba(29,185,84,0.1)] border border-[rgba(29,185,84,0.2)] rounded-xl px-4 py-3 text-sm text-[#1DB954]">
-              {lang === 'fr' ? 'Entretien terminé — génération du rapport...' : 'Interview complete — generating your report...'}
+            <div className="bg-[rgba(29,185,84,0.1)] border border-[rgba(29,185,84,0.2)] rounded-xl px-4 py-3 text-sm text-[#1DB954] text-center">
+              {lang === 'fr' ? '✓ Entretien terminé — génération du rapport...' : '✓ Interview complete — generating your report...'}
             </div>
           )}
 
@@ -252,6 +367,7 @@ function SessionInner() {
         </div>
       </div>
 
+      {/* Input */}
       <div className="flex-shrink-0 border-t border-[#1C1D28] bg-[#111218] px-4 py-3">
         <div className="max-w-3xl mx-auto flex gap-3 items-end">
           <textarea
