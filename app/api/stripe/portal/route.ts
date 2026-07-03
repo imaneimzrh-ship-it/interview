@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://sonneai.com'
     const session = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer,
+      configuration: 'bpc_1TpAdAJI52o88eqM1IyeaCoO',
       return_url: `${appUrl}/dashboard`,
     })
 

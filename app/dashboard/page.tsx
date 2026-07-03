@@ -88,6 +88,16 @@ export default function Dashboard() {
     setReports(prev => prev.filter(r => r.session_id !== id))
   }
 
+  async function openPortal() {
+    const { data: { session } } = await sb.auth.getSession()
+    const res = await fetch('/api/stripe/portal', {
+      method: 'POST',
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+  }
+
   async function signOut() {
     await sb.auth.signOut()
     router.push('/')
@@ -116,10 +126,14 @@ export default function Dashboard() {
             <span className="font-semibold text-sm text-[#F0F2FA]">Sonne AI</span>
           </Link>
           <div className="flex items-center gap-3">
-            {profile?.plan === 'free' && (
+            {profile?.plan === 'free' ? (
               <Link href="/pricing" className="text-xs px-3 py-1 rounded-md bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.2)] text-[#F59E0B] font-medium hover:bg-[rgba(245,158,11,0.15)] transition-colors">
                 Upgrade
               </Link>
+            ) : (
+              <button onClick={openPortal} className="text-xs px-3 py-1 rounded-md bg-[rgba(71,118,247,0.1)] border border-[rgba(71,118,247,0.2)] text-[#4776F7] font-medium hover:bg-[rgba(71,118,247,0.15)] transition-colors">
+                Manage billing
+              </button>
             )}
             <button onClick={signOut} className="text-xs text-[#7A829A] hover:text-[#F0F2FA] transition-colors">Sign out</button>
           </div>
