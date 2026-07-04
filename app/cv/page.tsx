@@ -53,11 +53,16 @@ export default function CvPage() {
   }, [])
 
   async function handleFile(file: File) {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (!['pdf', 'txt', 'md'].includes(ext ?? '')) {
+      setError('Unsupported file type. Please upload a PDF, TXT, or MD file.')
+      return
+    }
     setParsing(true); setError('')
     const form = new FormData(); form.append('file', file)
     const res  = await fetch('/api/cv/parse', { method: 'POST', body: form })
     const d    = await res.json()
-    if (res.ok) setCv(d.text)
+    if (res.ok) { setCv(d.text); setError('') }
     else setError(d.error ?? 'Could not parse file.')
     setParsing(false)
   }
@@ -156,10 +161,13 @@ export default function CvPage() {
                     {cv.length > 0 && <span className="text-xs text-[#7A7267]">{Math.min(cv.length, 6000).toLocaleString()} / 6,000</span>}
                     <input ref={fileRef} type="file" accept=".pdf,.txt,.md" className="hidden"
                       onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }} />
-                    <button onClick={() => fileRef.current?.click()} disabled={parsing}
-                      className="text-xs font-medium border border-[#E7E2D8] text-[#7A7267] hover:text-[#17140F] hover:border-[#C7C2B8] px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50">
-                      {parsing ? '⏳ Parsing...' : '📎 Upload PDF / TXT'}
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                      <button onClick={() => fileRef.current?.click()} disabled={parsing}
+                        className="text-xs font-medium border border-[#E7E2D8] text-[#7A7267] hover:text-[#17140F] hover:border-[#C7C2B8] px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50">
+                        {parsing ? '⏳ Parsing...' : '📎 Upload file'}
+                      </button>
+                      <span className="text-[10px] text-[#B8B2A8]">PDF, TXT or MD only</span>
+                    </div>
                   </div>
                 </div>
                 <textarea
