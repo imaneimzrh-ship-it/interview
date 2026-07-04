@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // Load session
     const { data: session } = await sb
       .from('interview_sessions')
-      .select(`*, skill_modules(name_en, name_fr)`)
+      .select(`*, skill_modules(name_en, name_fr), max_sub_skills`)
       .eq('id', sessionId).eq('user_id', user.id).single()
 
     if (!session) return NextResponse.json({ error: 'Session not found.' }, { status: 404 })
@@ -28,6 +28,9 @@ export async function POST(req: NextRequest) {
       .order('display_order')
 
     if (!subSkills?.length) return NextResponse.json({ error: 'No sub-skills found.' }, { status: 500 })
+
+    // Respect max_sub_skills for short sessions
+    const effectiveTotal = Math.min(subSkills.length, (session as any).max_sub_skills ?? subSkills.length)
 
     const currentSubSkill = subSkills[currentSubSkillIdx]
     const currentQuestion = currentSubSkill?.questions?.[0]
@@ -120,7 +123,7 @@ export async function POST(req: NextRequest) {
       const covered = [...(session.sub_skills_covered ?? []), currentSubSkill.slug]
       nextSubSkillIdx = currentSubSkillIdx + 1
 
-      if (!turnResult.isComplete && nextSubSkillIdx < subSkills.length) {
+      if (!turnResult.isComplete && nextSubSkillIdx < effectiveTotal) {
         const nextSS = subSkills[nextSubSkillIdx]
         const nextQ  = nextSS.questions?.[0]
 
@@ -137,7 +140,7 @@ export async function POST(req: NextRequest) {
               follow_up_probes: nextQ.follow_up_probes ?? [],
             },
             subSkillsCompleted: covered,
-            totalSubSkills: subSkills.length,
+            totalSubSkills: effectiveTotal,
           })
         }
       }

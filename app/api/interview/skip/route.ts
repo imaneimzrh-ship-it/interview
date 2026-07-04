@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
     const { data: session } = await sb
       .from('interview_sessions')
-      .select(`*, skill_modules(name_en, name_fr)`)
+      .select(`*, skill_modules(name_en, name_fr), max_sub_skills`)
       .eq('id', sessionId).eq('user_id', user.id).single()
 
     if (!session) return NextResponse.json({ error: 'Session not found.' }, { status: 404 })
@@ -26,9 +26,11 @@ export async function POST(req: NextRequest) {
 
     if (!subSkills?.length) return NextResponse.json({ error: 'No sub-skills found.' }, { status: 500 })
 
+    const effectiveTotal = Math.min(subSkills.length, (session as any).max_sub_skills ?? subSkills.length)
+
     const currentSS = subSkills[currentSubSkillIdx]
     const nextIdx   = currentSubSkillIdx + 1
-    const isLast    = nextIdx >= subSkills.length
+    const isLast    = nextIdx >= effectiveTotal
 
     // Mark current sub-skill as skipped (store empty answer with grade 0 marker)
     if (currentSS) {
@@ -77,7 +79,7 @@ export async function POST(req: NextRequest) {
           follow_up_probes: nextQ.follow_up_probes ?? [],
         },
         subSkillsCompleted: covered,
-        totalSubSkills: subSkills.length,
+        totalSubSkills: effectiveTotal,
       })
     }
 
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
       isComplete: false,
       nextSubSkillIdx: nextIdx,
       nextOpeningMessage,
-      totalSubSkills: subSkills.length,
+      totalSubSkills: effectiveTotal,
     })
   } catch (err) {
     return NextResponse.json({ error: `Server error: ${err instanceof Error ? err.message : 'unknown'}` }, { status: 500 })

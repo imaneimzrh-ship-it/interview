@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { getServerUser } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
+import { CreditService } from '@/lib/credits'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 const AI_MODEL = 'claude-sonnet-4-6'
@@ -22,7 +25,23 @@ function extractJson(raw: string): unknown {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'anon'
-  if (isRateLimited(ip)) return NextResponse.json({ error: 'Too many requests — try again later.' }, { status: 429 })
+
+  // ── Per-user gate (server-side, DB-enforced) ─────────────────────────────
+  // Authenticated users: 1 free CV score ever (by user_id AND email).
+  // Anonymous users:     IP rate limit as fallback.
+  const { user } = await getServerUser(req)
+  if (user) {
+    const adminSb = adminClient()
+    const alreadyUsed = await CreditService.hasUsedFreeCvScore(adminSb, user.id, user.email ?? '')
+    if (alreadyUsed) {
+      return NextResponse.json({
+        error: 'cv_already_used',
+        message: 'You have already used your free CV score. Sign in to a different account or contact support.',
+      }, { status: 403 })
+    }
+  } else {
+    if (isRateLimited(ip)) return NextResponse.json({ error: 'Too many requests — try again later.' }, { status: 429 })
+  }
 
   let body: { cv: string; lang?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 }) }
@@ -47,6 +66,16 @@ Return ONLY this JSON, no markdown, human text in ${lang}:
     })
     const raw  = (msg.content[0] as any).text as string
     const data = extractJson(raw)
+
+    // Mark usage after successful scoring (not before, so a failed Claude call
+    // doesn't consume the user's one free score)
+    if (user) {
+      const adminSb = adminClient()
+      await CreditService.markCvScoreUsed(adminSb, user.id, user.email ?? '').catch(err =>
+        console.error('[cv/score] markCvScoreUsed failed:', err)
+      )
+    }
+
     return NextResponse.json(data)
   } catch (e: any) {
     console.error('[cv/score]', e)
