@@ -155,6 +155,18 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* CV Diagnostic CTA */}
+        <div className="mb-8 bg-white border border-[#E5E7EB] rounded-xl p-5 flex items-center gap-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+          <div className="text-3xl flex-shrink-0">📄</div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-[#111827] mb-0.5">CV Diagnostic</h3>
+            <p className="text-sm text-[#6B7280]">Score your CV against 5 Applied AI signals and find your weakest area before your interview.</p>
+          </div>
+          <Link href="/cv" className="flex-shrink-0 bg-[#F5A524] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+            Score my CV →
+          </Link>
+        </div>
+
         {/* Sessions */}
         <div className="mb-3">
           <h2 className="text-sm font-semibold text-[#374151]">Recent sessions</h2>
