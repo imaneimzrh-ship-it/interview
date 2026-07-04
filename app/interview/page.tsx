@@ -75,7 +75,7 @@ export default function InterviewHub() {
       <nav className="bg-white border-b border-[#E5E7EB]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-sm shadow-sm">S</div>
+            <div className="w-8 h-8 rounded-lg bg-[#1E2A44] flex items-center justify-center text-white font-bold text-sm shadow-sm">S</div>
             <span className="font-semibold text-[#111827] text-[15px]">Sonne AI</span>
           </Link>
           <Link href="/dashboard" className="text-sm text-[#6B7280] hover:text-[#111827] transition-colors">Dashboard</Link>
@@ -96,7 +96,7 @@ export default function InterviewHub() {
             {(['en','fr'] as const).map(l => (
               <button key={l} onClick={() => setLang(l)}
                 className="px-5 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{ background: lang === l ? '#2563EB' : 'transparent', color: lang === l ? 'white' : '#6B7280' }}>
+                style={{ background: lang === l ? '#1E2A44' : 'transparent', color: lang === l ? 'white' : '#6B7280' }}>
                 {l === 'en' ? '🇬🇧 English' : '🇫🇷 Français'}
               </button>
             ))}
@@ -111,16 +111,16 @@ export default function InterviewHub() {
               <button key={m.id} onClick={() => setSelected(m.id)}
                 className="text-left p-5 rounded-xl border-2 transition-all"
                 style={{
-                  background: isSelected ? '#EFF6FF' : 'white',
-                  borderColor: isSelected ? '#2563EB' : '#E5E7EB',
-                  boxShadow: isSelected ? '0 0 0 3px rgba(37,99,235,.1)' : '0 1px 3px rgba(0,0,0,.05)',
+                  background: isSelected ? '#FFF8EE' : 'white',
+                  borderColor: isSelected ? '#F5A524' : '#E5E7EB',
+                  boxShadow: isSelected ? '0 0 0 3px rgba(245,165,36,.12)' : '0 1px 3px rgba(0,0,0,.05)',
                   transform: isSelected ? 'translateY(-1px)' : 'none',
                 }}>
 
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">{m.emoji}</span>
-                    {isSelected && <span className="text-[#2563EB] text-lg">✓</span>}
+                    {isSelected && <span className="text-[#F5A524] text-lg">✓</span>}
                   </div>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                     style={{ background: m.tierBg, border: `1px solid ${m.tierBorder}`, color: m.tierColor }}>
@@ -170,8 +170,9 @@ export default function InterviewHub() {
         <button onClick={start} disabled={!selected || loading}
           className="w-full py-4 rounded-xl text-base font-semibold transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            background: selected ? '#2563EB' : '#E5E7EB',
-            color: selected ? 'white' : '#9CA3AF',
+            background: selected ? '#F5A524' : '#E5E7EB',
+            color: selected ? '#17140F' : '#9CA3AF',
+            boxShadow: selected ? '0 4px 14px rgba(245,165,36,.3)' : 'none',
           }}>
           {loading ? (
             <span className="flex items-center justify-center gap-3">
@@ -192,8 +193,8 @@ export default function InterviewHub() {
         {/* Free tier info */}
         <div className="mt-6 bg-white border border-[#E5E7EB] rounded-xl p-4 text-center">
           <p className="text-sm text-[#6B7280]">
-            <span className="font-medium text-[#111827]">Free tier:</span> includes 1 full session · any module · text mode · headline diagnostic.{' '}
-            <Link href="/pricing" className="text-[#2563EB] hover:underline font-medium">Upgrade for unlimited access →</Link>
+            <span className="font-medium text-[#111827]">Free tier:</span> includes 1 free session · any module · headline diagnostic.{' '}
+            <Link href="/pricing" className="text-[#F5A524] hover:underline font-medium">Upgrade for unlimited access →</Link>
           </p>
         </div>
       </div>

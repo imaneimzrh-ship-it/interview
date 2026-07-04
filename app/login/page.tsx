@@ -101,7 +101,7 @@ function LoginForm() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-xl bg-blue flex items-center justify-center text-white text-sm font-bold">S</div>
+            <div className="w-8 h-8 rounded-xl bg-[#1E2A44] flex items-center justify-center text-white text-sm font-bold">S</div>
             <span className="font-semibold text-bright">Sonne AI</span>
           </Link>
           <h1 className="text-2xl font-semibold text-bright mb-1">Welcome back</h1>
@@ -164,7 +164,7 @@ function LoginForm() {
             )}
 
             {!redirecting && (
-              <button type="submit" disabled={busy || !email || !pw} className="btn-blue w-full py-3 disabled:opacity-50">
+              <button type="submit" disabled={busy || !email || !pw} className="btn btn-md btn-primary w-full py-3 disabled:opacity-50">
                 {loading
                   ? <span className="flex items-center gap-2 justify-center">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -3,21 +3,21 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { CURRENCY, FREE_TIER, PRO_TIER, PRICING_NOTE, REFUND_NOTE, SUPPORT_EMAIL } from '@/lib/pricing'
 
 export default function Pricing() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error,   setError]   = useState('')
 
   async function startCheckout() {
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       const sb = createClient()
       const { data: { session } } = await sb.auth.getSession()
       if (!session) { router.push('/login?next=/pricing'); return }
 
-      const res = await fetch('/api/stripe/checkout', {
+      const res  = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
@@ -31,107 +31,132 @@ export default function Pricing() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090C]" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <nav className="border-b border-[#1C1D28]">
-        <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#4776F7] flex items-center justify-center text-white text-xs font-bold">S</div>
-            <span className="font-semibold text-sm text-[#F0F2FA]">Sonne AI</span>
+    <div className="min-h-screen" style={{ background: '#FBFAF7', fontFamily: "'Inter', system-ui, sans-serif" }}>
+
+      {/* Nav */}
+      <nav className="border-b border-[#E7E2D8] bg-[#FBFAF7]/80 backdrop-blur-sm sticky top-0 z-20">
+        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-[#1E2A44] flex items-center justify-center"><SunMark /></div>
+            <span className="font-bold text-[#17140F] text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Sonne AI</span>
           </Link>
-          <Link href="/login" className="text-sm text-[#7A829A] hover:text-[#F0F2FA] transition-colors">Sign in</Link>
+          <Link href="/login" className="text-sm text-[#7A7267] hover:text-[#17140F] transition-colors">Sign in</Link>
         </div>
       </nav>
 
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-3xl font-semibold text-[#F0F2FA] mb-3">Simple pricing</h1>
-        <p className="text-[#7A829A] mb-12">Free to start. Upgrade when you're serious about landing AI roles.</p>
+      <main className="max-w-3xl mx-auto px-4 py-16 text-center">
+        <h1 className="text-3xl sm:text-4xl font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          Simple pricing
+        </h1>
+        <p className="text-[#7A7267] mb-12">Free to start. Upgrade when you're serious about landing AI roles.</p>
 
         {error && (
-          <div className="mb-6 bg-[rgba(232,64,64,0.1)] border border-[rgba(232,64,64,0.2)] rounded-lg px-4 py-3 text-sm text-[#E84040]">
+          <div className="mb-8 bg-[#FEF2F2] border border-[#FECACA] rounded-xl px-4 py-3 text-sm text-[#B24C3F]">
             {error}
           </div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-left">
+
           {/* Free */}
-          <div className="bg-[#111218] border border-[#1C1D28] rounded-xl p-6">
-            <div className="text-xs font-medium text-[#7A829A] uppercase tracking-widest mb-3">Free</div>
-            <div className="text-3xl font-semibold text-[#F0F2FA] mb-1">$0</div>
-            <div className="text-xs text-[#7A829A] mb-6">No card required</div>
+          <div className="bg-white rounded-2xl border border-[#E7E2D8] p-6 shadow-sm">
+            <div className="text-xs font-bold text-[#7A7267] uppercase tracking-widest mb-3"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}>{FREE_TIER.name}</div>
+            <div className="text-3xl font-bold text-[#17140F] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              {CURRENCY}0
+            </div>
+            <div className="text-xs text-[#7A7267] mb-6">{FREE_TIER.description}</div>
             <div className="space-y-2.5 mb-6 text-sm">
-              {[
-                '1 full session (4 sub-skills)',
-                'Any of the 4 AI modules',
-                'Adaptive Claude follow-ups',
-                'Full diagnostic report',
-              ].map(f => (
-                <div key={f} className="flex items-center gap-2">
-                  <span className="text-[#4ADE80] text-xs">✓</span>
-                  <span className="text-[#F0F2FA]">{f}</span>
+              {FREE_TIER.features.map(f => (
+                <div key={f} className="flex items-start gap-2">
+                  <span className="text-[#2E7D5B] text-xs mt-0.5 flex-shrink-0">✓</span>
+                  <span className="text-[#17140F]">{f}</span>
                 </div>
               ))}
-              {['Unlimited sessions', 'All module access across sessions'].map(f => (
-                <div key={f} className="flex items-center gap-2">
-                  <span className="text-[#3D4260] text-xs">○</span>
-                  <span className="text-[#7A829A] line-through">{f}</span>
+              {FREE_TIER.locked.map(f => (
+                <div key={f} className="flex items-start gap-2">
+                  <span className="text-[#C7C2B8] text-xs mt-0.5 flex-shrink-0">○</span>
+                  <span className="text-[#B8B2A8] line-through">{f}</span>
                 </div>
               ))}
             </div>
-            <Link href="/signup" className="block text-center border border-[#1C1D28] text-[#F0F2FA] text-sm font-medium py-2.5 rounded-lg hover:border-[#2A2B38] transition-colors">
-              Start free
+            <Link href={FREE_TIER.ctaHref}
+              className="block text-center border border-[#E7E2D8] text-[#17140F] text-sm font-medium py-2.5 rounded-xl hover:border-[#C7C2B8] hover:bg-[#F5F4F0] transition-all"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              {FREE_TIER.cta}
             </Link>
           </div>
 
           {/* Pro */}
-          <div className="bg-[#111218] border border-[rgba(71,118,247,0.3)] rounded-xl p-6" style={{ boxShadow: '0 0 0 1px rgba(71,118,247,0.1), 0 0 24px rgba(71,118,247,0.06)' }}>
-            <div className="text-xs font-medium text-[#4776F7] uppercase tracking-widest mb-3">Pro</div>
-            <div className="text-3xl font-semibold text-[#F0F2FA] mb-1">
-              $19<span className="text-base font-normal text-[#7A829A]">/month</span>
+          <div className="rounded-2xl border-2 border-[#F5A524] p-6 shadow-md relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, #1E2A44 0%, #2d3f61 100%)' }}>
+            <div className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5A524] text-[#17140F]"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}>POPULAR</div>
+            <div className="text-xs font-bold text-[#F5A524] uppercase tracking-widest mb-3"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}>{PRO_TIER.name}</div>
+            <div className="text-3xl font-bold text-white mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              {CURRENCY}{PRO_TIER.price}
+              <span className="text-sm font-normal text-[#C7D0E0]">/{PRO_TIER.period}</span>
             </div>
-            <div className="text-xs text-[#7A829A] mb-6">Cancel anytime</div>
+            <div className="text-xs text-[#9BADC7] mb-6">{PRO_TIER.description}</div>
             <div className="space-y-2.5 mb-6 text-sm">
-              {[
-                'Everything in Free',
-                'Unlimited sessions',
-                'All 4 modules, repeat any module',
-                'RAG · Agents · Evaluation · MLOps',
-                'Adaptive follow-ups per answer',
-                'Full diagnostic report every session',
-                'EN / FR bilingual support',
-              ].map(f => (
+              {PRO_TIER.features.map(f => (
                 <div key={f} className="flex items-start gap-2">
-                  <span className="text-[#4776F7] text-xs mt-0.5 flex-shrink-0">✓</span>
-                  <span className="text-[#F0F2FA]">{f}</span>
+                  <span className="text-[#F5A524] text-xs mt-0.5 flex-shrink-0">✓</span>
+                  <span className="text-[#E8EEFA]">{f}</span>
                 </div>
               ))}
             </div>
-            <button
-              onClick={startCheckout}
-              disabled={loading}
-              className="w-full bg-[#4776F7] text-white text-sm font-medium py-2.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button onClick={startCheckout} disabled={loading}
+              className="w-full text-sm font-bold py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: '#F5A524', color: '#17140F', fontFamily: "'Space Grotesk', sans-serif" }}>
               {loading
                 ? <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="w-4 h-4 border-2 border-[#17140F]/30 border-t-[#17140F] rounded-full animate-spin" />
                     Redirecting...
                   </span>
-                : 'Get Pro →'}
+                : PRO_TIER.cta}
             </button>
           </div>
         </div>
 
         <div className="mt-8 space-y-2 text-center">
-          <p className="text-xs text-[#3D4260]">
-            You're interviewing for roles that pay $150K–$500K+. This costs $19/month.
-          </p>
-          <p className="text-xs text-[#3D4260]">
-            Not satisfied? We offer a full refund within 7 days of purchase — no questions asked.
-          </p>
-          <p className="text-xs text-[#3D4260]">
-            Questions? <a href="mailto:support@sonneai.com" className="text-[#4776F7] hover:underline">support@sonneai.com</a>
+          <p className="text-xs text-[#7A7267]">{PRICING_NOTE}</p>
+          <p className="text-xs text-[#7A7267]">{REFUND_NOTE}</p>
+          <p className="text-xs text-[#7A7267]">
+            Questions?{' '}
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-[#F5A524] hover:underline">{SUPPORT_EMAIL}</a>
           </p>
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-[#E7E2D8] py-8 mt-8">
+        <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#7A7267]">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-md bg-[#1E2A44] flex items-center justify-center"><SunMark /></div>
+            <span>Sonne AI © 2026</span>
+          </div>
+          <div className="flex gap-5">
+            <Link href="/cv"      className="hover:text-[#17140F] transition-colors">CV Diagnostic</Link>
+            <Link href="/login"   className="hover:text-[#17140F] transition-colors">Sign in</Link>
+            <Link href="/privacy" className="hover:text-[#17140F] transition-colors">Privacy</Link>
+            <Link href="/terms"   className="hover:text-[#17140F] transition-colors">Terms</Link>
+          </div>
+        </div>
+      </footer>
     </div>
+  )
+}
+
+function SunMark() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="7" cy="7" r="3" fill="#F5A524"/>
+      {[0,45,90,135,180,225,270,315].map((deg, i) => {
+        const r = Math.PI * deg / 180
+        return <line key={i} x1={7+4*Math.cos(r)} y1={7+4*Math.sin(r)} x2={7+5.5*Math.cos(r)} y2={7+5.5*Math.sin(r)} stroke="#F5A524" strokeWidth="1.2" strokeLinecap="round"/>
+      })}
+    </svg>
   )
 }

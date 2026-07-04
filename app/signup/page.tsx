@@ -116,7 +116,7 @@ function SignupForm() {
           We sent a confirmation link to <strong className="text-bright">{email}</strong>.
           Click the link to activate your account, then come back to sign in.
         </p>
-        <Link href="/login" className="btn-blue w-full justify-center py-3 block">Go to sign in →</Link>
+        <Link href="/login" className="btn btn-md btn-primary w-full justify-center py-3 block">Go to sign in →</Link>
         <p className="text-xs text-dim mt-4">
           Didn&apos;t get it? Check spam, or{' '}
           <button onClick={() => setSuccess(false)} className="text-blue hover:underline">try again</button>.
@@ -130,12 +130,12 @@ function SignupForm() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-xl bg-blue flex items-center justify-center text-white text-sm font-bold">S</div>
+            <div className="w-8 h-8 rounded-xl bg-[#1E2A44] flex items-center justify-center text-white text-sm font-bold">S</div>
             <span className="font-semibold text-bright">Sonne AI</span>
           </Link>
           <h1 className="text-2xl font-semibold text-bright mb-1">Create your account</h1>
           <p className="text-sm text-dim">
-            {isPro ? 'Start Pro — $19/month, cancel anytime' : '2 free sessions included · No card required'}
+            {isPro ? 'Start Pro — €19/month, cancel anytime' : '1 free session included · No card required'}
           </p>
         </div>
 
@@ -206,7 +206,7 @@ function SignupForm() {
             )}
 
             <button type="submit" disabled={loading || !isStrong || !pwMatch || !name || !email}
-              className="btn-blue w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed">
+              className="btn btn-md btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading
                 ? <span className="flex items-center gap-2 justify-center">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

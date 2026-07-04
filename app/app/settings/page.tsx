@@ -153,9 +153,10 @@ export default function SettingsPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-[#374151]">Free plan includes the RAG module and 3 sessions/month. Upgrade for all 4 modules and unlimited practice.</p>
+                <p className="text-sm text-[#374151]">Free plan includes 1 session — any module — plus a headline diagnostic. Upgrade for all 4 modules and unlimited practice.</p>
                 <Link href="/pricing"
-                  className="inline-flex items-center text-sm font-semibold bg-[#2563EB] text-white px-4 py-2.5 rounded-lg hover:bg-[#1D4ED8] transition-all shadow-sm">
+                  className="inline-flex items-center text-sm font-semibold px-4 py-2.5 rounded-lg transition-all shadow-sm"
+                  style={{ background: '#F5A524', color: '#17140F' }}>
                   Upgrade to Pro →
                 </Link>
               </div>

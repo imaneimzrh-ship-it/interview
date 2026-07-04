@@ -65,7 +65,7 @@ export default function StartPage() {
             </div>
             <textarea value={jd} onChange={e => setJd(e.target.value)} rows={4}
               placeholder={`Paste the job description or role you're preparing for...\n\nExample: 'AI Engineer at Anthropic — you will work on RAG systems, agent orchestration, and production LLM deployments...'`}
-              className="w-full text-sm text-[#111827] placeholder:text-[#9CA3AF] bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none transition-all"
+              className="w-full text-sm text-[#111827] placeholder:text-[#9CA3AF] bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/15 focus:border-[#F5A524] resize-none transition-all"
             />
           </div>
 
@@ -77,7 +77,7 @@ export default function StartPage() {
             </div>
             <textarea value={resume} onChange={e => setResume(e.target.value)} rows={4}
               placeholder={`Paste your resume or relevant experience...\n\nExample: '3 years ML engineering. Built RAG systems, deployed LLMs in production, experience with agent frameworks...'`}
-              className="w-full text-sm text-[#111827] placeholder:text-[#9CA3AF] bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] resize-none transition-all"
+              className="w-full text-sm text-[#111827] placeholder:text-[#9CA3AF] bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/15 focus:border-[#F5A524] resize-none transition-all"
             />
           </div>
 
@@ -102,16 +102,16 @@ export default function StartPage() {
                   <button key={m.id} onClick={() => setModule(m.id)}
                     className="text-left p-4 rounded-xl border-2 transition-all"
                     style={{
-                      borderColor: selected ? '#2563EB' : '#E5E7EB',
-                      background: selected ? '#EFF6FF' : 'white',
-                      boxShadow: selected ? '0 0 0 3px rgba(37,99,235,.08)' : '0 1px 2px rgba(0,0,0,.04)',
+                      borderColor: selected ? '#F5A524' : '#E5E7EB',
+                      background: selected ? '#FFF8EE' : 'white',
+                      boxShadow: selected ? '0 0 0 3px rgba(245,165,36,.12)' : '0 1px 2px rgba(0,0,0,.04)',
                     }}>
                     <div className="flex items-start justify-between mb-2">
                       <span className="text-xl">{m.emoji}</span>
                       <div className="flex items-center gap-1">
-                        {selected && <span className="text-[#2563EB] text-sm">✓</span>}
+                        {selected && <span className="text-[#F5A524] text-sm">✓</span>}
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                          style={{ background: m.free ? '#ECFDF5' : '#EFF6FF', color: m.free ? '#065F46' : '#1D4ED8', border: m.free ? '1px solid #A7F3D0' : '1px solid #BFDBFE' }}>
+                          style={{ background: m.free ? '#ECFDF5' : '#EEF1F6', color: m.free ? '#065F46' : '#1E2A44', border: m.free ? '1px solid #A7F3D0' : '1px solid #C7D0E0' }}>
                           {m.free ? 'FREE' : 'PRO'}
                         </span>
                       </div>
@@ -133,7 +133,7 @@ export default function StartPage() {
 
           <button onClick={start} disabled={!module_ || loading}
             className="w-full py-3.5 rounded-xl text-base font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: module_ ? '#2563EB' : '#E5E7EB', color: module_ ? 'white' : '#9CA3AF', boxShadow: module_ ? '0 4px 12px rgba(37,99,235,.25)' : 'none' }}>
+            style={{ background: module_ ? '#F5A524' : '#E5E7EB', color: module_ ? '#17140F' : '#9CA3AF', boxShadow: module_ ? '0 4px 12px rgba(245,165,36,.3)' : 'none' }}>
             {loading ? (
               <span className="flex items-center justify-center gap-3">
                 <span style={{ width:18,height:18,border:'2.5px solid rgba(255,255,255,.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 1s linear infinite',display:'inline-block' }} />

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { CURRENCY, FREE_TIER, PRO_TIER } from '@/lib/pricing'
 
 export default function Home() {
   return (
@@ -166,33 +167,34 @@ export default function Home() {
           <p className="text-[#7A7267] text-sm mt-2">Start free. Upgrade when you need more modules.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Free */}
           <div className="bg-white rounded-xl border border-[#E7E2D8] p-6 shadow-sm">
-            <div className="text-sm font-bold text-[#7A7267] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Free</div>
-            <div className="text-3xl font-bold text-[#17140F] mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>€0</div>
+            <div className="text-sm font-bold text-[#7A7267] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{FREE_TIER.name}</div>
+            <div className="text-3xl font-bold text-[#17140F] mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{CURRENCY}0</div>
             <ul className="space-y-2 text-sm text-[#7A7267] mb-6">
-              <li className="flex gap-2"><span style={{ color: '#2E7D5B' }}>✓</span> CV diagnostic (unlimited)</li>
-              <li className="flex gap-2"><span style={{ color: '#2E7D5B' }}>✓</span> RAG System Design module</li>
-              <li className="flex gap-2"><span style={{ color: '#2E7D5B' }}>✓</span> 3 sessions / month</li>
-              <li className="flex gap-2"><span style={{ color: '#2E7D5B' }}>✓</span> EN + FR</li>
+              {FREE_TIER.features.map(f => (
+                <li key={f} className="flex gap-2"><span style={{ color: '#2E7D5B' }}>✓</span> {f}</li>
+              ))}
             </ul>
-            <Link href="/signup" className="block text-center text-sm font-medium border border-[#E7E2D8] text-[#374151] px-4 py-2.5 rounded-lg hover:bg-[#F5F4F0] transition-all">
-              Get started free →
+            <Link href={FREE_TIER.ctaHref} className="block text-center text-sm font-medium border border-[#E7E2D8] text-[#374151] px-4 py-2.5 rounded-lg hover:bg-[#F5F4F0] transition-all">
+              {FREE_TIER.cta} →
             </Link>
           </div>
+          {/* Pro */}
           <div className="rounded-xl border-2 border-[#F5A524] p-6 shadow-md relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1E2A44 0%, #2d3f61 100%)' }}>
             <div className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5A524] text-[#17140F]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>POPULAR</div>
-            <div className="text-sm font-bold text-[#EEF1F6] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Pro</div>
-            <div className="text-3xl font-bold text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>€19<span className="text-sm font-normal text-[#C7D0E0]">/mo</span></div>
+            <div className="text-sm font-bold text-[#EEF1F6] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{PRO_TIER.name}</div>
+            <div className="text-3xl font-bold text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              {CURRENCY}{PRO_TIER.price}<span className="text-sm font-normal text-[#C7D0E0]">/mo</span>
+            </div>
             <ul className="space-y-2 text-sm text-[#C7D0E0] mb-6">
-              <li className="flex gap-2"><span style={{ color: '#F5A524' }}>✓</span> Everything in Free</li>
-              <li className="flex gap-2"><span style={{ color: '#F5A524' }}>✓</span> All 4 modules unlocked</li>
-              <li className="flex gap-2"><span style={{ color: '#F5A524' }}>✓</span> Unlimited sessions</li>
-              <li className="flex gap-2"><span style={{ color: '#F5A524' }}>✓</span> Full diagnostic breakdown</li>
-              <li className="flex gap-2"><span style={{ color: '#F5A524' }}>✓</span> JD + resume personalization</li>
+              {PRO_TIER.features.map(f => (
+                <li key={f} className="flex gap-2"><span style={{ color: '#F5A524' }}>✓</span> {f}</li>
+              ))}
             </ul>
-            <Link href="/pricing" className="block text-center text-sm font-bold bg-[#F5A524] text-[#17140F] px-4 py-2.5 rounded-lg hover:bg-[#D98A0B] transition-all shadow-sm"
+            <Link href={PRO_TIER.ctaHref} className="block text-center text-sm font-bold bg-[#F5A524] text-[#17140F] px-4 py-2.5 rounded-lg hover:bg-[#D98A0B] transition-all shadow-sm"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Start Pro →
+              {PRO_TIER.cta}
             </Link>
           </div>
         </div>
@@ -207,9 +209,11 @@ export default function Home() {
             <span>Sonne AI © 2026</span>
           </div>
           <div className="flex gap-5">
-            <Link href="/cv" className="hover:text-[#17140F] transition-colors">CV Diagnostic</Link>
+            <Link href="/cv"      className="hover:text-[#17140F] transition-colors">CV Diagnostic</Link>
             <Link href="/pricing" className="hover:text-[#17140F] transition-colors">Pricing</Link>
-            <Link href="/login" className="hover:text-[#17140F] transition-colors">Sign in</Link>
+            <Link href="/login"   className="hover:text-[#17140F] transition-colors">Sign in</Link>
+            <Link href="/privacy" className="hover:text-[#17140F] transition-colors">Privacy</Link>
+            <Link href="/terms"   className="hover:text-[#17140F] transition-colors">Terms</Link>
           </div>
         </div>
       </footer>
