@@ -63,7 +63,7 @@ function SessionInner() {
   const currentQuestion = messages.filter(m => m.role === 'assistant').pop()?.content ?? ''
 
   useEffect(() => {
-    setVoiceOk(!!(window.SpeechRecognition || (window as any).webkitSpeechRecognition) && !!window.speechSynthesis)
+    setVoiceOk(!!(((window as any).SpeechRecognition) || (window as any).webkitSpeechRecognition) && !!window.speechSynthesis)
   }, [])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isTyping])
   useEffect(() => {
@@ -92,7 +92,7 @@ function SessionInner() {
   }, [sessionId])
 
   function startRec() {
-    const SR = window.SpeechRecognition || (window as any).webkitSpeechRecognition
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SR) return
     window.speechSynthesis?.cancel()
     const r = new SR()

@@ -206,7 +206,7 @@ export default function HistoryPage() {
                   <div className="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
                     {isCompleted && s.overall_score !== null && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-base font-bold" style={{ color: scoreColor(s.overall_score) }}>
+                        <span className="text-base font-bold" style={{ color: scoreColor(s.overall_score ?? null) }}>
                           {s.overall_score?.toFixed(1)}<span className="text-xs text-[#9CA3AF] font-normal">/4</span>
                         </span>
                         <TrendBadge trend={s.trend ?? null} />
