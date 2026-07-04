@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import { BAND_COLORS, type Band } from '@/lib/signals'
 
 const SIGNAL_LABELS: Record<string, { en: string; fr: string; icon: string }> = {
@@ -29,11 +30,18 @@ interface CvResult {
 }
 
 export default function CvPage() {
-  const [lang,    setLang]    = useState<'en'|'fr'>('en')
-  const [cv,      setCv]      = useState('')
-  const [loading, setLoading] = useState(false)
-  const [result,  setResult]  = useState<CvResult | null>(null)
-  const [error,   setError]   = useState('')
+  const [lang,     setLang]    = useState<'en'|'fr'>('en')
+  const [cv,       setCv]      = useState('')
+  const [loading,  setLoading] = useState(false)
+  const [result,   setResult]  = useState<CvResult | null>(null)
+  const [error,    setError]   = useState('')
+  const [loggedIn, setLoggedIn] = useState(false)
+  const [saved,    setSaved]    = useState(false)
+  const [saving,   setSaving]   = useState(false)
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data: { user } }) => setLoggedIn(!!user))
+  }, [])
 
   const t = {
     title:        { en: 'CV Readiness Diagnostic', fr: 'Diagnostic de préparation CV' },
@@ -52,9 +60,21 @@ export default function CvPage() {
   }
   const T = (k: keyof typeof t) => t[k][lang]
 
+  async function saveToProfile() {
+    if (!result) return
+    setSaving(true)
+    const { data: { session } } = await createClient().auth.getSession()
+    const hdrs: Record<string,string> = { 'Content-Type': 'application/json' }
+    if (session?.access_token) hdrs.Authorization = `Bearer ${session.access_token}`
+    const res = await fetch('/api/cv/save', { method: 'POST', headers: hdrs, body: JSON.stringify({ cv, report: result }) })
+    if (res.ok) setSaved(true)
+    else setError((await res.json()).error ?? 'Save failed.')
+    setSaving(false)
+  }
+
   async function score() {
     if (!cv.trim() || loading) return
-    setLoading(true); setError(''); setResult(null)
+    setLoading(true); setError(''); setResult(null); setSaved(false)
     try {
       const res  = await fetch('/api/cv/score', {
         method: 'POST',
@@ -257,8 +277,31 @@ export default function CvPage() {
               </div>
             )}
 
+            {/* Save to profile */}
+            {!loggedIn ? (
+              <div className="bg-[#FFF8EE] border border-[#F5A524]/30 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
+                <p className="text-sm text-[#7A7267]">
+                  {lang === 'en' ? 'Sign in to save this report and track your progress.' : 'Connectez-vous pour sauvegarder ce rapport.'}
+                </p>
+                <Link href={`/login?redirect=/cv`} className="text-sm font-semibold text-[#D98A0B] hover:text-[#17140F] whitespace-nowrap"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  {lang === 'en' ? 'Sign in →' : 'Se connecter →'}
+                </Link>
+              </div>
+            ) : saved ? (
+              <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-4 text-sm text-[#2E7D5B] font-medium text-center">
+                ✓ {lang === 'en' ? 'Saved to your profile' : 'Sauvegardé dans votre profil'}
+              </div>
+            ) : (
+              <button onClick={saveToProfile} disabled={saving}
+                className="w-full py-3 rounded-xl border border-[#E7E2D8] bg-white text-sm font-medium text-[#17140F] hover:border-[#C7C2B8] transition-all disabled:opacity-50"
+                style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                {saving ? (lang === 'en' ? 'Saving...' : 'Sauvegarde...') : (lang === 'en' ? '↑ Save to profile' : '↑ Sauvegarder dans le profil')}
+              </button>
+            )}
+
             <div className="flex gap-3 justify-center">
-              <button onClick={() => { setResult(null); setCv('') }}
+              <button onClick={() => { setResult(null); setCv(''); setSaved(false) }}
                 className="text-sm text-[#7A7267] border border-[#E7E2D8] px-4 py-2 rounded-lg hover:bg-white transition-all">
                 {T('tryAgain')}
               </button>

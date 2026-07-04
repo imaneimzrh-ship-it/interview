@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 interface Session {
   id: string; status: string; started_at: string; duration_secs: number | null
   language: string; has_report?: boolean; overall_score?: number | null
-  skill_modules?: { name_en: string }
+  skill_modules?: { name_en: string }; trend?: number | null
 }
 
 function icon(name: string) {
@@ -58,11 +58,19 @@ export default function HistoryPage() {
       r?.forEach((x: any) => { reportMap[x.session_id] = x.overall_score })
     }
 
-    setSessions((s ?? []).map((x: any) => ({
+    // Compute trend: score delta vs previous session with a report
+    const withScores = (s ?? []).map((x: any) => ({
       ...x,
-      has_report: x.id in reportMap,
+      has_report:    x.id in reportMap,
       overall_score: reportMap[x.id] ?? null,
-    })))
+    }))
+    const scored = withScores.filter((x: any) => x.overall_score !== null)
+    setSessions(withScores.map((x: any, _i: number) => {
+      const pos   = scored.findIndex((s: any) => s.id === x.id)
+      const prev  = scored[pos + 1]
+      const trend = x.overall_score !== null && prev ? +(x.overall_score - prev.overall_score).toFixed(1) : null
+      return { ...x, trend }
+    }))
     setLoading(false)
   }
 
@@ -89,6 +97,21 @@ export default function HistoryPage() {
   }
 
   const scoreColor = (s: number | null) => s === null ? '#9CA3AF' : s >= 3 ? '#059669' : s >= 2 ? '#D97706' : '#DC2626'
+
+  function TrendBadge({ trend }: { trend: number | null }) {
+    if (trend === null) return null
+    const up   = trend > 0
+    const zero = trend === 0
+    return (
+      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{
+        background: zero ? '#F3F4F6' : up ? '#ECFDF5' : '#FEF2F2',
+        color:      zero ? '#9CA3AF' : up ? '#059669' : '#DC2626',
+        border:     `1px solid ${zero ? '#E5E7EB' : up ? '#A7F3D0' : '#FECACA'}`,
+      }}>
+        {zero ? '—' : up ? `↑${trend}` : `↓${Math.abs(trend)}`}
+      </span>
+    )
+  }
 
   return (
     <AppLayout>
@@ -136,9 +159,12 @@ export default function HistoryPage() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
                     {isCompleted && s.overall_score !== null && (
-                      <span className="text-base font-bold" style={{ color: scoreColor(s.overall_score) }}>
-                        {s.overall_score?.toFixed(1)}<span className="text-xs text-[#9CA3AF] font-normal">/4</span>
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base font-bold" style={{ color: scoreColor(s.overall_score) }}>
+                          {s.overall_score?.toFixed(1)}<span className="text-xs text-[#9CA3AF] font-normal">/4</span>
+                        </span>
+                        <TrendBadge trend={s.trend ?? null} />
+                      </div>
                     )}
                     {isCompleted && s.has_report && (
                       <Link href={`/interview/report?id=${s.id}&lang=${s.language}`}
