@@ -53,7 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <aside className="w-52 flex-shrink-0 bg-white border-r border-[#E5E7EB] flex flex-col h-screen overflow-y-auto" style={{ minWidth: 208 }}>
       <div className="h-16 flex items-center px-4 border-b border-[#E5E7EB]">
         <Link href="/app/start" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-sm shadow-sm">S</div>
+          <div className="w-8 h-8 rounded-lg bg-[#1E2A44] flex items-center justify-center text-white font-bold text-sm shadow-sm">S</div>
           <div>
             <div className="font-bold text-[#111827] text-sm leading-tight">Sonne AI</div>
             <div className="text-[10px] text-[#9CA3AF] leading-tight">Interview Prep</div>
@@ -71,8 +71,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Link key={item.href} href={item.href}
                   className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all mb-0.5"
                   style={{
-                    background: active ? '#EFF6FF' : 'transparent',
-                    color: active ? '#2563EB' : '#374151',
+                    background: active ? '#FFF8EE' : 'transparent',
+                    color: active ? '#D98A0B' : '#374151',
                     fontWeight: active ? 500 : 400,
                   }}>
                   <span>{item.icon}</span>
@@ -90,7 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             ✓ Pro plan — unlimited
           </div>
         ) : (
-          <Link href="/pricing" className="block bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg px-3 py-2 text-xs text-[#1D4ED8] font-medium hover:bg-[#DBEAFE] transition-colors">
+          <Link href="/pricing" className="block bg-[#FFF8EE] border border-[#F5A524]/30 rounded-lg px-3 py-2 text-xs text-[#C77D2E] font-medium hover:bg-[#FEEFC7] transition-colors">
             ↑ Upgrade to Pro →
           </Link>
         )}
@@ -98,7 +98,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <div className="border-t border-[#E5E7EB] px-3 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#F5A524] flex items-center justify-center text-[#17140F] font-bold text-sm flex-shrink-0">
             {initials}
           </div>
           <div className="flex-1 min-w-0">
@@ -131,7 +131,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-[#2563EB] flex items-center justify-center text-white font-bold text-xs">S</div>
+            <div className="w-7 h-7 rounded-md bg-[#1E2A44] flex items-center justify-center text-white font-bold text-xs">S</div>
             <span className="font-semibold text-[#111827] text-sm">Sonne AI</span>
           </div>
           <div className="w-8" />

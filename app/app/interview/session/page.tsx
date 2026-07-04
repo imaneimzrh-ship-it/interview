@@ -169,8 +169,8 @@ function SessionInner() {
   if (scoring) return (
     <div className="h-screen bg-[#F8F9FB] flex items-center justify-center" style={{ fontFamily:'Inter,sans-serif' }}>
       <div className="text-center bg-white rounded-2xl border border-[#E5E7EB] p-12 shadow-lg">
-        <div className="w-16 h-16 bg-[#EFF6FF] rounded-full flex items-center justify-center mx-auto mb-5">
-          <div style={{ width:28, height:28, border:'3px solid #BFDBFE', borderTopColor:'#2563EB', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
+        <div className="w-16 h-16 bg-[#FFF8EE] rounded-full flex items-center justify-center mx-auto mb-5">
+          <div style={{ width:28, height:28, border:'3px solid rgba(245,165,36,.3)', borderTopColor:'#F5A524', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
         </div>
         <h2 className="text-xl font-bold text-[#111827] mb-2">Generating your report...</h2>
         <p className="text-[#6B7280] text-sm">Scoring all 4 sub-skills — about 15 seconds.</p>
@@ -198,7 +198,7 @@ function SessionInner() {
           {voiceOk && (
             <button onClick={() => { setVoiceOn(v => !v); if (isRecording) stopRec() }}
               className="text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-all"
-              style={{ background: voiceOn ? '#EFF6FF' : '#F9FAFB', borderColor: voiceOn ? '#BFDBFE' : '#E5E7EB', color: voiceOn ? '#2563EB' : '#6B7280' }}>
+              style={{ background: voiceOn ? '#FFF8EE' : '#F9FAFB', borderColor: voiceOn ? '#F5A524' : '#E5E7EB', color: voiceOn ? '#D98A0B' : '#6B7280' }}>
               🎙️ {voiceOn ? 'Voice on' : 'Voice'}
             </button>
           )}
@@ -218,18 +218,18 @@ function SessionInner() {
 
         {/* LEFT: Interviewer panel (desktop only) */}
         <div className="w-72 flex-shrink-0 border-r border-[#E5E7EB] bg-white flex-col hidden lg:flex">
-          <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#EFF6FF] to-white">
+          <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#F5F4F0] to-white">
             <div className="relative mb-5">
-              <div className="w-24 h-24 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-4xl font-bold shadow-lg">AI</div>
+              <div className="w-24 h-24 rounded-full bg-[#1E2A44] flex items-center justify-center text-white text-4xl font-bold shadow-lg">AI</div>
               {isTyping && (
                 <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white border-2 border-[#E5E7EB] flex items-center justify-center">
                   <div className="flex gap-0.5">
-                    {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" style={{ animation:`bounce 1.2s ${i*.2}s ease-in-out infinite` }} />)}
+                    {[0,1,2].map(i => <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#F5A524]" style={{ animation:`bounce 1.2s ${i*.2}s ease-in-out infinite` }} />)}
                   </div>
                 </div>
               )}
               {isSpeaking && (
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#EFF6FF] border-2 border-[#BFDBFE] flex items-center justify-center">
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#FFF8EE] border-2 border-[#F5A524]/30 flex items-center justify-center">
                   <span className="text-xs">🔊</span>
                 </div>
               )}
@@ -253,10 +253,10 @@ function SessionInner() {
               {Array.from({ length: total }).map((_, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                    style={{ background: i < subIdx ? '#ECFDF5' : i === subIdx ? '#EFF6FF' : '#F3F4F6', border: `1px solid ${i < subIdx ? '#A7F3D0' : i === subIdx ? '#BFDBFE' : '#E5E7EB'}`, color: i < subIdx ? '#059669' : i === subIdx ? '#2563EB' : '#9CA3AF' }}>
+                    style={{ background: i < subIdx ? '#ECFDF5' : i === subIdx ? '#FFF8EE' : '#F3F4F6', border: `1px solid ${i < subIdx ? '#A7F3D0' : i === subIdx ? '#F5A524' : '#E5E7EB'}`, color: i < subIdx ? '#059669' : i === subIdx ? '#D98A0B' : '#9CA3AF' }}>
                     {i < subIdx ? '✓' : i+1}
                   </div>
-                  <span className="text-xs" style={{ color: i < subIdx ? '#059669' : i === subIdx ? '#2563EB' : '#9CA3AF', fontWeight: i === subIdx ? 600 : 400 }}>
+                  <span className="text-xs" style={{ color: i < subIdx ? '#059669' : i === subIdx ? '#D98A0B' : '#9CA3AF', fontWeight: i === subIdx ? 600 : 400 }}>
                     {labels[i] ?? `Q${i+1}`}
                   </span>
                 </div>
@@ -268,11 +268,11 @@ function SessionInner() {
         {/* RIGHT: Chat */}
         <div className="flex-1 flex flex-col min-w-0">
           {voiceOn && (
-            <div className="bg-[#EFF6FF] border-b border-[#BFDBFE] px-4 py-2 flex items-center justify-center gap-3 flex-shrink-0">
-              <span className="text-xs text-[#1D4ED8] font-medium">
+            <div className="bg-[#FFF8EE] border-b border-[#F5A524]/30 px-4 py-2 flex items-center justify-center gap-3 flex-shrink-0">
+              <span className="text-xs text-[#C77D2E] font-medium">
                 {isSpeaking ? '🔊 Interviewer speaking...' : isRecording ? '🔴 Recording — speak your answer...' : '🎙️ Voice mode — hold mic to answer'}
               </span>
-              {isSpeaking && <button onClick={() => window.speechSynthesis?.cancel()} className="text-xs text-[#93C5FD] hover:text-[#1D4ED8]">Skip ×</button>}
+              {isSpeaking && <button onClick={() => window.speechSynthesis?.cancel()} className="text-xs text-[#C77D2E]/60 hover:text-[#C77D2E]">Skip ×</button>}
             </div>
           )}
 
@@ -280,7 +280,7 @@ function SessionInner() {
             <div className="max-w-2xl mx-auto space-y-5">
               {messages.length === 0 && (
                 <div className="text-center py-16">
-                  <div style={{ width:24, height:24, border:'2.5px solid #BFDBFE', borderTopColor:'#2563EB', borderRadius:'50%', animation:'spin 1s linear infinite', margin:'0 auto 12px' }} />
+                  <div style={{ width:24, height:24, border:'2.5px solid rgba(245,165,36,.3)', borderTopColor:'#F5A524', borderRadius:'50%', animation:'spin 1s linear infinite', margin:'0 auto 12px' }} />
                   <p className="text-[#9CA3AF] text-sm">Loading your interview...</p>
                 </div>
               )}
@@ -289,7 +289,7 @@ function SessionInner() {
                 <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`} style={{ animation:'slideUp .25s ease' }}>
                   <div className="flex-shrink-0 mt-0.5">
                     {msg.role === 'assistant'
-                      ? <div className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold text-xs shadow-sm">AI</div>
+                      ? <div className="w-8 h-8 rounded-full bg-[#1E2A44] flex items-center justify-center text-white font-bold text-xs shadow-sm">AI</div>
                       : <div className="w-8 h-8 rounded-full bg-[#F3F4F6] border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-bold text-xs">Y</div>
                     }
                   </div>
@@ -297,7 +297,7 @@ function SessionInner() {
                     {msg.role === 'assistant' && i > 0 && (
                       <span className="text-[10px] text-[#9CA3AF] mb-1 ml-1">AI Interviewer · {labels[subIdx] ?? 'Q'}</span>
                     )}
-                    <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === 'assistant' ? 'bg-white border border-[#E5E7EB] rounded-tl-sm text-[#111827]' : 'bg-[#2563EB] text-white rounded-tr-sm'}`}
+                    <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === 'assistant' ? 'bg-white border border-[#E5E7EB] rounded-tl-sm text-[#111827]' : 'bg-[#1E2A44] text-white rounded-tr-sm'}`}
                       style={{ boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,.06)' : '0 2px 6px rgba(37,99,235,.25)', opacity: (msg.content.includes('Skipped') || msg.content.includes('Passée')) ? 0.5 : 1 }}>
                       {msg.content}
                     </div>
@@ -307,7 +307,7 @@ function SessionInner() {
 
               {isTyping && (
                 <div className="flex gap-3" style={{ animation:'slideUp .2s ease' }}>
-                  <div className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0">AI</div>
+                  <div className="w-8 h-8 rounded-full bg-[#1E2A44] flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0">AI</div>
                   <div className="bg-white border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3.5 shadow-sm">
                     <div className="flex items-center gap-1.5">
                       {[0,1,2].map(i => <span key={i} style={{ width:7, height:7, borderRadius:'50%', background:'#CBD5E1', display:'inline-block', animation:`bounce 1.2s ${i*.2}s ease-in-out infinite` }} />)}
@@ -344,7 +344,7 @@ function SessionInner() {
                     onTouchStart={startRec}
                     onTouchEnd={() => { stopRec(); setTimeout(() => { if (input.trim()) send() }, 200) }}
                     disabled={sending || done || isSpeaking}
-                    style={{ width:72, height:72, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, background: isRecording ? '#FEE2E2' : isSpeaking ? '#EFF6FF' : '#2563EB', border: isRecording ? '3px solid #DC2626' : '3px solid transparent', boxShadow: isRecording ? '0 0 0 6px rgba(220,38,38,.2)' : '0 4px 12px rgba(37,99,235,.3)', cursor:'pointer' }}>
+                    style={{ width:72, height:72, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, background: isRecording ? '#FEE2E2' : isSpeaking ? '#FFF8EE' : '#F5A524', border: isRecording ? '3px solid #DC2626' : '3px solid transparent', boxShadow: isRecording ? '0 0 0 6px rgba(220,38,38,.2)' : '0 4px 12px rgba(245,165,36,.3)', cursor:'pointer' }}>
                     {isSpeaking ? '🔊' : isRecording ? '⏹' : '🎤'}
                   </button>
                   <p className="text-xs text-[#9CA3AF] text-center">{isSpeaking ? 'Wait...' : isRecording ? 'Release to send' : 'Hold to speak'}</p>
@@ -357,11 +357,11 @@ function SessionInner() {
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
                     disabled={sending || done} rows={2}
                     placeholder={done ? 'Interview complete' : (lang === 'fr' ? 'Votre réponse... (Entrée pour envoyer)' : 'Your answer... (Enter to send · Shift+Enter for new line)')}
-                    className="flex-1 resize-none bg-[#F8F9FB] border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all max-h-32"
+                    className="flex-1 resize-none bg-[#F8F9FB] border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#F5A524]/15 focus:border-[#F5A524] transition-all max-h-32"
                   />
                   <button onClick={() => send()} disabled={!input.trim() || sending || done}
-                    className="w-12 h-12 bg-[#2563EB] text-white rounded-xl flex items-center justify-center flex-shrink-0 hover:bg-[#1D4ED8] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                    style={{ boxShadow:'0 2px 6px rgba(37,99,235,.3)' }}>
+                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:opacity-90"
+                    style={{ background:'#F5A524', color:'#17140F', boxShadow:'0 2px 6px rgba(245,165,36,.3)' }}>
                     {sending
                       ? <span style={{ width:16, height:16, border:'2px solid rgba(255,255,255,.3)', borderTopColor:'white', borderRadius:'50%', animation:'spin 1s linear infinite', display:'block' }} />
                       : <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>

@@ -132,8 +132,8 @@ export default function HistoryPage() {
     const d = pts.map((p, i) => `${i===0?'M':'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')
     return (
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="overflow-visible">
-        <path d={d} fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="2.5" fill="#2563EB" />)}
+        <path d={d} fill="none" stroke="#F5A524" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="2.5" fill="#F5A524" />)}
       </svg>
     )
   }
@@ -146,7 +146,7 @@ export default function HistoryPage() {
             <h1 className="text-2xl font-bold text-[#111827] mb-1">Past Sessions</h1>
             <p className="text-[#6B7280] text-sm">Your interview history — view reports, resume sessions, or delete.</p>
           </div>
-          <Link href="/app/start" className="bg-[#2563EB] text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors shadow-sm">
+          <Link href="/app/start" className="text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm" style={{ background: '#F5A524', color: '#17140F' }}">
             + New session
           </Link>
         </div>
@@ -157,7 +157,7 @@ export default function HistoryPage() {
             <div className="flex-1">
               <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-widest mb-0.5">Score trend</p>
               <p className="text-xs text-[#6B7280]">
-                {sparkData[0].toFixed(1)} → <span className="font-semibold text-[#2563EB]">{sparkData[sparkData.length-1].toFixed(1)}</span>
+                {sparkData[0].toFixed(1)} → <span className="font-semibold text-[#F5A524]">{sparkData[sparkData.length-1].toFixed(1)}</span>
                 {sparkData[sparkData.length-1] > sparkData[0]
                   ? <span className="text-[#059669] ml-1">↑{(sparkData[sparkData.length-1]-sparkData[0]).toFixed(1)}</span>
                   : sparkData[sparkData.length-1] < sparkData[0]
@@ -174,14 +174,14 @@ export default function HistoryPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div style={{ width:24, height:24, border:'2.5px solid #BFDBFE', borderTopColor:'#2563EB', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
+            <div style={{ width:24, height:24, border:'2.5px solid #F5A524/30', borderTopColor:'#F5A524', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
           </div>
         ) : sessions.length === 0 ? (
           <div className="bg-white rounded-xl border border-[#E5E7EB] p-16 text-center shadow-sm">
             <div className="text-4xl mb-4">🎯</div>
             <h3 className="font-semibold text-[#111827] mb-2">No sessions yet</h3>
             <p className="text-[#6B7280] text-sm mb-6">Start your first interview to see your progress here.</p>
-            <Link href="/app/start" className="bg-[#2563EB] text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-[#1D4ED8] transition-colors shadow-sm">
+            <Link href="/app/start" className="text-sm font-medium px-5 py-2.5 rounded-lg transition-colors shadow-sm" style={{ background: '#F5A524', color: '#17140F' }}>
               Start first session →
             </Link>
           </div>
@@ -214,7 +214,7 @@ export default function HistoryPage() {
                     )}
                     {isCompleted && s.has_report && (
                       <Link href={`/interview/report?id=${s.id}&lang=${s.language}`}
-                        className="text-xs bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] px-3 py-1.5 rounded-lg hover:bg-[#DBEAFE] font-medium whitespace-nowrap">
+                        className="text-xs bg-[#FFF8EE] text-[#C77D2E] border border-[#F5A524]/30 px-3 py-1.5 rounded-lg hover:bg-[#FEEFC7] font-medium whitespace-nowrap">
                         View report →
                       </Link>
                     )}

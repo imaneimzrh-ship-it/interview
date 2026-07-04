@@ -29,7 +29,7 @@ function Flag({ onFlag }: { onFlag: (note: string) => void }) {
   )
   return (
     <div className="flex items-center gap-2 mt-1.5 ml-11">
-      <input className="text-xs border border-[#E5E7EB] rounded-lg px-2.5 py-1.5 bg-white text-[#374151] w-44 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+      <input className="text-xs border border-[#E5E7EB] rounded-lg px-2.5 py-1.5 bg-white text-[#374151] w-44 focus:outline-none focus:ring-1 focus:ring-[#F5A524]"
         placeholder="Why? (optional)" value={note} onChange={e => setNote(e.target.value)} />
       <button onClick={() => { onFlag(note); setOpen(false); setNote('') }} className="text-xs bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] px-2.5 py-1.5 rounded-lg hover:bg-[#FDE68A] transition-colors">Send</button>
       <button onClick={() => setOpen(false)} className="text-xs text-[#9CA3AF] hover:text-[#6B7280]">Cancel</button>
@@ -155,7 +155,7 @@ function SessionInner() {
     <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div className="text-center bg-white rounded-2xl border border-[#E5E7EB] p-12" style={{ boxShadow: '0 10px 40px rgba(0,0,0,.08)' }}>
         <div className="w-16 h-16 bg-[#EFF6FF] rounded-full flex items-center justify-center mx-auto mb-5">
-          <div style={{ width:28,height:28,border:'3px solid #BFDBFE',borderTopColor:'#2563EB',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
+          <div style={{ width:28,height:28,border:'3px solid rgba(245,165,36,.3)',borderTopColor:'#F5A524',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
         </div>
         <h2 className="text-xl font-bold text-[#111827] mb-2">{lang === 'fr' ? 'Génération du rapport...' : 'Generating your report...'}</h2>
         <p className="text-[#6B7280] text-sm">{lang === 'fr' ? 'Environ 15 secondes.' : 'About 15 seconds. Your sub-skill scores are being calculated.'}</p>
@@ -189,9 +189,9 @@ function SessionInner() {
               {Array.from({ length: total }).map((_, i) => (
                 <div key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
                   style={{
-                    background: i < subIdx ? '#ECFDF5' : i === subIdx ? '#EFF6FF' : '#F9FAFB',
-                    border: `1px solid ${i < subIdx ? '#A7F3D0' : i === subIdx ? '#BFDBFE' : '#E5E7EB'}`,
-                    color: i < subIdx ? '#065F46' : i === subIdx ? '#1D4ED8' : '#9CA3AF',
+                    background: i < subIdx ? '#ECFDF5' : i === subIdx ? '#FFF8EE' : '#F9FAFB',
+                    border: `1px solid ${i < subIdx ? '#A7F3D0' : i === subIdx ? '#F5A524' : '#E5E7EB'}`,
+                    color: i < subIdx ? '#065F46' : i === subIdx ? '#D98A0B' : '#9CA3AF',
                   }}>
                   {i < subIdx ? '✓ ' : i === subIdx ? '● ' : ''}{labels[i] ?? `Q${i+1}`}
                 </div>
@@ -216,7 +216,7 @@ function SessionInner() {
           <div className="flex items-center gap-1 mt-2 md:hidden">
             {Array.from({ length: total }).map((_, i) => (
               <div key={i} className="h-1.5 flex-1 rounded-full transition-all"
-                style={{ background: i < subIdx ? '#4ADE80' : i === subIdx ? '#2563EB' : '#E5E7EB' }} />
+                style={{ background: i < subIdx ? '#4ADE80' : i === subIdx ? '#F5A524' : '#E5E7EB' }} />
             ))}
             <span className="text-xs text-[#9CA3AF] ml-2 whitespace-nowrap">{subIdx+1}/{total}</span>
           </div>
@@ -239,7 +239,7 @@ function SessionInner() {
           {messages.length === 0 && !error && (
             <div className="text-center py-16">
               <div className="w-12 h-12 bg-[#EFF6FF] rounded-xl flex items-center justify-center mx-auto mb-4">
-                <div style={{ width:20,height:20,border:'2.5px solid #BFDBFE',borderTopColor:'#2563EB',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
+                <div style={{ width:20,height:20,border:'2.5px solid rgba(245,165,36,.3)',borderTopColor:'#F5A524',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
               </div>
               <p className="text-[#6B7280] text-sm">{lang==='fr'?'Chargement...':'Loading your interview...'}</p>
             </div>
@@ -256,7 +256,7 @@ function SessionInner() {
             <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`} style={{ animation: 'slideUp .25s ease' }}>
               <div className="flex-shrink-0 mt-0.5">
                 {msg.role === 'assistant' ? (
-                  <div className="w-9 h-9 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold text-xs shadow-sm">AI</div>
+                  <div className="w-9 h-9 rounded-full bg-[#1E2A44] flex items-center justify-center text-white font-bold text-xs shadow-sm">AI</div>
                 ) : (
                   <div className="w-9 h-9 rounded-full bg-[#F3F4F6] border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] font-bold text-xs">Y</div>
                 )}
@@ -268,9 +268,9 @@ function SessionInner() {
                 <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                   msg.role === 'assistant'
                     ? 'bg-white border border-[#E5E7EB] rounded-tl-sm text-[#111827]'
-                    : 'bg-[#2563EB] text-white rounded-tr-sm'
+                    : 'bg-[#1E2A44] text-white rounded-tr-sm'
                 }`} style={{
-                  boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,.06)' : '0 2px 6px rgba(37,99,235,.3)',
+                  boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,.06)' : '0 2px 6px rgba(30,42,68,.2)',
                   fontStyle: msg.content.includes('Skipped') || msg.content.includes('passée') ? 'italic' : 'normal',
                   opacity: msg.content.includes('Skipped') || msg.content.includes('passée') ? 0.5 : 1,
                 }}>
@@ -285,7 +285,7 @@ function SessionInner() {
 
           {isTyping && (
             <div className="flex gap-3" style={{ animation: 'slideUp .2s ease' }}>
-              <div className="w-9 h-9 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0">AI</div>
+              <div className="w-9 h-9 rounded-full bg-[#1E2A44] flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0">AI</div>
               <div className="bg-white border border-[#E5E7EB] rounded-2xl rounded-tl-sm px-4 py-3.5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
                 <div className="flex items-center gap-1.5">
                   <span className="dot dot-1" /><span className="dot dot-2" /><span className="dot dot-3" />
@@ -315,12 +315,12 @@ function SessionInner() {
                 ? (lang==='fr'?'Entretien terminé':'Interview complete')
                 : (lang==='fr'?'Votre réponse... (Entrée pour envoyer)':'Your answer... (Enter to send, Shift+Enter for new line)')}
               rows={2}
-              className="flex-1 resize-none bg-[#F8F9FB] border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all max-h-40"
+              className="flex-1 resize-none bg-[#F8F9FB] border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#F5A524]/15 focus:border-[#F5A524] transition-all max-h-40"
               style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,.04)' }}
             />
             <button onClick={send} disabled={!input.trim() || sending || done}
-              className="w-12 h-12 bg-[#2563EB] text-white rounded-xl flex items-center justify-center flex-shrink-0 hover:bg-[#1D4ED8] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              style={{ boxShadow: '0 2px 6px rgba(37,99,235,.3)' }}>
+              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              style={{ background: '#F5A524', color: '#17140F', boxShadow: '0 2px 6px rgba(245,165,36,.3)' }}>
               {sending
                 ? <span style={{ width:16,height:16,border:'2px solid rgba(255,255,255,.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 1s linear infinite',display:'block' }} />
                 : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>

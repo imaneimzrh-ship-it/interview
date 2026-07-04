@@ -99,7 +99,7 @@ export default function Privacy() {
 
           <section>
             <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>9. Governing law</h2>
-            <p>[TO BE COMPLETED — specify jurisdiction, e.g. France / EU / other.]</p>
+            <p>This policy is governed by French law. As a service operated from France and offered to users in the European Economic Area, it is subject to the General Data Protection Regulation (GDPR — Regulation (EU) 2016/679). Any disputes shall be subject to the exclusive jurisdiction of the competent courts of France. EU users may also contact their national data protection authority (in France: <a href="https://www.cnil.fr" className="text-[#F5A524] hover:underline" target="_blank" rel="noopener noreferrer">CNIL</a>).</p>
           </section>
 
           <section>

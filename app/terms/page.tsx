@@ -100,7 +100,7 @@ export default function Terms() {
 
           <section>
             <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>11. Governing law</h2>
-            <p>[TO BE COMPLETED — specify jurisdiction, e.g. France / EU / other.]</p>
+            <p>These Terms are governed by French law. Any dispute arising from or related to these Terms or use of the Service shall be subject to the exclusive jurisdiction of the competent courts of France. If you are a consumer resident in the European Union, you also benefit from the mandatory consumer protection provisions of your country of residence.</p>
           </section>
 
           <section>

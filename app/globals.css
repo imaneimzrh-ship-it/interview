@@ -89,7 +89,7 @@
 
 /* Interview session chat */
 .msg-ai   { background: #FFFFFF; border: 1px solid #E5E7EB; border-top-left-radius: 4px; }
-.msg-user { background: #2563EB; color: white; border-top-right-radius: 4px; }
+.msg-user { background: #1E2A44; color: white; border-top-right-radius: 4px; }
 
 /* Typing dots */
 .dot { width: 7px; height: 7px; border-radius: 50%; background: #9CA3AF; display: inline-block; }

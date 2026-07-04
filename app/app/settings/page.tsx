@@ -82,7 +82,7 @@ export default function SettingsPage() {
   if (loading) return (
     <AppLayout>
       <div className="flex items-center justify-center py-24">
-        <div style={{ width:24, height:24, border:'2.5px solid #BFDBFE', borderTopColor:'#2563EB', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
+        <div style={{ width:24, height:24, border:'2.5px solid rgba(245,165,36,.3)', borderTopColor:'#F5A524', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </AppLayout>
@@ -121,7 +121,7 @@ export default function SettingsPage() {
                     onChange={e => setFullName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && saveName()}
                     placeholder="Your name"
-                    className="flex-1 text-sm text-[#111827] bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
+                    className="flex-1 text-sm text-[#111827] bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/20 focus:border-[#F5A524] transition-all"
                   />
                   <button onClick={saveName} disabled={saving || !fullName.trim()}
                     className="text-sm font-medium px-4 py-2.5 rounded-lg border border-[#E5E7EB] hover:bg-[#F3F4F6] disabled:opacity-50 transition-all"

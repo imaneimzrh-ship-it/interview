@@ -73,7 +73,7 @@ export default function ResetPassword() {
           <p className="text-sm text-dim mb-6">
             This reset link has expired or already been used. Request a new one.
           </p>
-          <Link href="/login" className="btn-blue w-full justify-center py-3 block">
+          <Link href="/login" className="btn btn-md btn-primary w-full justify-center py-3 block">
             Back to sign in →
           </Link>
         </div>
@@ -98,7 +98,7 @@ export default function ResetPassword() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-xl bg-blue flex items-center justify-center text-white text-sm font-bold">S</div>
+            <div className="w-8 h-8 rounded-xl bg-[#1E2A44] flex items-center justify-center text-white text-sm font-bold">S</div>
             <span className="font-semibold text-bright">Sonne AI</span>
           </Link>
           <h1 className="text-2xl font-semibold text-bright mb-1">Set new password</h1>
@@ -165,7 +165,7 @@ export default function ResetPassword() {
             )}
 
             <button type="submit" disabled={loading || !isStrong || !pwMatch}
-              className="btn-blue w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed">
+              className="btn btn-md btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading
                 ? <span className="flex items-center gap-2 justify-center">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
