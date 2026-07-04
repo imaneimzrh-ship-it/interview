@@ -68,6 +68,25 @@ async function tokenFromCookie(): Promise<string | null> {
   return null
 }
 
+// Verify a JWT with a hard 5-second timeout.
+// Root cause of post-login hangs: admin.auth.getUser() uses fetch with no timeout.
+// On a slow/cold Supabase free-tier, the /auth/v1/user call can hang 30s+,
+// blocking every authenticated API route.
+async function verifyToken(admin: ReturnType<typeof adminClient>, token: string) {
+  const controller = new AbortController()
+  const tid = setTimeout(() => controller.abort(), 5000)
+  try {
+    const result = await admin.auth.getUser(token)
+    clearTimeout(tid)
+    return result
+  } catch (err) {
+    clearTimeout(tid)
+    const isTimeout = err instanceof Error && err.name === 'AbortError'
+    console.error('[getServerUser] auth.getUser failed:', isTimeout ? 'TIMEOUT (5s)' : err)
+    return { data: { user: null }, error: err }
+  }
+}
+
 export async function getServerUser(req?: NextRequest) {
   const admin = adminClient()
 
@@ -75,20 +94,22 @@ export async function getServerUser(req?: NextRequest) {
   const authHeader = req?.headers.get('authorization')
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
-    const { data: { user }, error } = await admin.auth.getUser(token)
+    const { data: { user }, error } = await verifyToken(admin, token)
     if (user && !error) {
       return { sb: authedClient(token), user }
     }
+    if (error) console.error('[getServerUser] Bearer token verify failed:', error)
   }
 
   // 2. Direct cookie parsing — bypasses @supabase/ssr v0.3 getSession() bug
   //    (cookie exists but getSession() returns null due to library parsing failure)
   const token = await tokenFromCookie()
   if (token) {
-    const { data: { user }, error } = await admin.auth.getUser(token)
+    const { data: { user }, error } = await verifyToken(admin, token)
     if (user && !error) {
       return { sb: authedClient(token), user }
     }
+    if (error) console.error('[getServerUser] cookie token verify failed:', error)
   }
 
   return { sb: await createClient(), user: null }
