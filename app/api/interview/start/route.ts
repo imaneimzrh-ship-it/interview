@@ -22,19 +22,25 @@ export async function POST(req: NextRequest) {
     const sessionId = crypto.randomUUID()
     const adminSb = adminClient()
 
-    // ── Credit check + deduction (atomic, server-side, inside DB transaction) ──
-    try {
-      await CreditService.chargeCredits(adminSb, user.id, cost, sessionId)
-    } catch (e) {
-      if (e instanceof InsufficientCreditsError) {
-        return NextResponse.json({
-          error:   'insufficient_credits',
-          balance: e.balance,
-          needed:  e.needed,
-          upgrade: true,
-        }, { status: 402 })
+    // ── Plan check — Pro users bypass the credits system entirely ──
+    const { data: profile } = await sb.from('profiles').select('plan').eq('id', user.id).single()
+    const isPro = profile?.plan === 'pro'
+
+    if (!isPro) {
+      // ── Credit check + deduction for free users ──
+      try {
+        await CreditService.chargeCredits(adminSb, user.id, cost, sessionId)
+      } catch (e) {
+        if (e instanceof InsufficientCreditsError) {
+          return NextResponse.json({
+            error:   'insufficient_credits',
+            balance: e.balance,
+            needed:  e.needed,
+            upgrade: true,
+          }, { status: 402 })
+        }
+        throw new Error(`Credit charge failed: ${JSON.stringify(e)}`)
       }
-      throw e
     }
 
     // Load module + role track
@@ -46,13 +52,14 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (!module_) {
-      // Refund — charge succeeded but we can't proceed
-      try {
-        await adminSb.from('credits_ledger').insert({
-          user_id: user.id, delta: cost, reason: 'purchase',
-          reference_id: `refund_${sessionId}`,
-        })
-      } catch { /* best-effort refund */ }
+      if (!isPro) {
+        try {
+          await adminSb.from('credits_ledger').insert({
+            user_id: user.id, delta: cost, reason: 'purchase',
+            reference_id: `refund_${sessionId}`,
+          })
+        } catch { /* best-effort refund */ }
+      }
       return NextResponse.json({ error: `Module "${module_slug}" not found.` }, { status: 404 })
     }
 
@@ -89,13 +96,15 @@ export async function POST(req: NextRequest) {
 
     if (sErr || !session) {
       console.error('Session create error:', sErr)
-      try {
-        await adminSb.from('credits_ledger').insert({
-          user_id: user.id, delta: cost, reason: 'purchase',
-          reference_id: `refund_${sessionId}`,
-        })
-      } catch { /* best-effort refund */ }
-      return NextResponse.json({ error: 'Failed to create session.' }, { status: 500 })
+      if (!isPro) {
+        try {
+          await adminSb.from('credits_ledger').insert({
+            user_id: user.id, delta: cost, reason: 'purchase',
+            reference_id: `refund_${sessionId}`,
+          })
+        } catch { /* best-effort refund */ }
+      }
+      return NextResponse.json({ error: `Failed to create session: ${sErr?.message ?? 'unknown'}` }, { status: 500 })
     }
 
     const openingMessage = await openQuestion({
@@ -135,7 +144,8 @@ export async function POST(req: NextRequest) {
       sessionType:        type,
     })
   } catch (err) {
+    const msg = err instanceof Error ? err.message : JSON.stringify(err)
     console.error('Start error:', err)
-    return NextResponse.json({ error: `Server error: ${err instanceof Error ? err.message : 'unknown'}` }, { status: 500 })
+    return NextResponse.json({ error: `Server error: ${msg}` }, { status: 500 })
   }
 }
