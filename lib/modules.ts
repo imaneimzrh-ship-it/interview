@@ -1,0 +1,163 @@
+export interface SubSkill { key: string; en: string; fr: string; question_en: string; question_fr: string }
+export interface Module   { id: string; name_en: string; name_fr: string; free: boolean; emoji: string; desc_en: string; desc_fr: string; sub_skills: SubSkill[] }
+
+export const MODULES: Module[] = [
+  {
+    id: 'rag_system_design',
+    name_en: 'RAG System Design',
+    name_fr: 'Conception de systèmes RAG',
+    free: true,
+    emoji: '🔍',
+    desc_en: 'Chunking · Hybrid retrieval · Reranking · Retrieval diagnosis',
+    desc_fr: 'Chunking · Recherche hybride · Reranking · Diagnostic de récupération',
+    sub_skills: [
+      {
+        key: 'chunking',
+        en: 'Chunking Strategy',
+        fr: 'Stratégie de chunking',
+        question_en: "Walk me through how you'd choose a chunking strategy for a RAG system ingesting long, unstructured technical documentation. What tradeoffs are you weighing?",
+        question_fr: "Expliquez-moi comment vous choisiriez une stratégie de chunking pour un système RAG qui ingère de la documentation technique longue et non structurée. Quels compromis pesez-vous ?",
+      },
+      {
+        key: 'hybrid_retrieval',
+        en: 'Hybrid Retrieval',
+        fr: 'Recherche hybride',
+        question_en: "When would you combine dense vector search with BM25, and how do you tune the balance? What breaks if you rely on dense-only?",
+        question_fr: "Dans quel cas combineriez-vous la recherche vectorielle dense avec BM25, et comment ajustez-vous l'équilibre ? Qu'est-ce qui ne fonctionne pas si vous utilisez uniquement la recherche dense ?",
+      },
+      {
+        key: 'reranking',
+        en: 'Reranking',
+        fr: 'Reranking',
+        question_en: "When would you add a reranking step to a RAG pipeline, and what would you use? What does it cost you in practice?",
+        question_fr: "Quand ajouteriez-vous une étape de reranking à un pipeline RAG, et que utiliseriez-vous ? Quel est le coût en pratique ?",
+      },
+      {
+        key: 'retrieval_diagnosis',
+        en: 'Retrieval Diagnosis',
+        fr: 'Diagnostic de récupération',
+        question_en: "Your RAG system retrieves technically relevant chunks, but users say the answers miss the point. How do you diagnose and fix it — turn it from a search engine into an answer engine?",
+        question_fr: "Votre système RAG récupère des chunks techniquement pertinents, mais les utilisateurs disent que les réponses ratent l'essentiel. Comment diagnostiquez-vous et corrigez-vous cela — pour en faire un moteur de réponse plutôt qu'un moteur de recherche ?",
+      },
+    ],
+  },
+  {
+    id: 'agentic_systems',
+    name_en: 'Agentic Systems',
+    name_fr: 'Systèmes agentiques',
+    free: false,
+    emoji: '🕵️',
+    desc_en: 'Planner & tool design · Memory & state · Multi-agent failure modes · Agent evaluation',
+    desc_fr: "Conception de planificateurs · Mémoire et état · Modes d'échec multi-agents · Évaluation d'agents",
+    sub_skills: [
+      {
+        key: 'planner_tool_design',
+        en: 'Planner & Tool Design',
+        fr: 'Conception de planificateurs',
+        question_en: "Design a planner for an agent that needs to research a topic, write a report, and send it by email. What tools does it need, how does it decide what to do next, and where does the plan break down in practice?",
+        question_fr: "Concevez un planificateur pour un agent qui doit rechercher un sujet, rédiger un rapport et l'envoyer par e-mail. De quels outils a-t-il besoin, comment décide-t-il de la prochaine étape, et où le plan s'effondre-t-il en pratique ?",
+      },
+      {
+        key: 'memory_state',
+        en: 'Memory & State',
+        fr: 'Mémoire et état',
+        question_en: "A long-running agent accumulates context that overflows the context window. Walk me through your strategy: what do you keep, what do you summarize, what do you discard, and how does that affect agent behavior?",
+        question_fr: "Un agent à longue durée d'exécution accumule un contexte qui dépasse la fenêtre de contexte. Expliquez-moi votre stratégie : que conservez-vous, que résumez-vous, que supprimez-vous, et comment cela affecte-t-il le comportement de l'agent ?",
+      },
+      {
+        key: 'multi_agent_failures',
+        en: 'Multi-Agent Failure Modes',
+        fr: "Modes d'échec multi-agents",
+        question_en: "You're building a system with three specialized agents coordinated by an orchestrator. Describe the top failure modes you'd design against — beyond the individual agent failing — and how you'd detect them.",
+        question_fr: "Vous construisez un système avec trois agents spécialisés coordonnés par un orchestrateur. Décrivez les principaux modes d'échec contre lesquels vous concevriez — au-delà de l'échec d'un agent individuel — et comment vous les détecteriez.",
+      },
+      {
+        key: 'agent_evaluation',
+        en: 'Agent Evaluation',
+        fr: "Évaluation d'agents",
+        question_en: "How do you evaluate an agent that completes multi-step tasks? Final output correctness is not enough — walk me through your trajectory-level evaluation approach and how you handle non-determinism.",
+        question_fr: "Comment évaluez-vous un agent qui accomplit des tâches en plusieurs étapes ? La correction du résultat final ne suffit pas — expliquez-moi votre approche d'évaluation au niveau de la trajectoire et comment vous gérez le non-déterminisme.",
+      },
+    ],
+  },
+  {
+    id: 'evaluation_observability',
+    name_en: 'Evaluation & Observability',
+    name_fr: 'Évaluation et observabilité',
+    free: false,
+    emoji: '🧪',
+    desc_en: 'Offline evals · LLM-as-judge · Online evals & regression gates · Hallucination metrics',
+    desc_fr: "Evals hors ligne · LLM-as-judge · Evals en ligne · Métriques d'hallucination",
+    sub_skills: [
+      {
+        key: 'offline_evals',
+        en: 'Offline Evals & Golden Sets',
+        fr: 'Evals hors ligne et ensembles de référence',
+        question_en: "Walk me through building an offline eval suite for a RAG Q&A system. How do you source the golden set, handle distribution shift over time, and decide when the eval suite is good enough to gate on?",
+        question_fr: "Expliquez-moi comment construire une suite d'évaluation hors ligne pour un système RAG Q&R. Comment constituez-vous l'ensemble de référence, gérez-vous le décalage de distribution dans le temps, et décidez-vous que la suite d'évaluation est suffisamment bonne pour servir de critère d'acceptation ?",
+      },
+      {
+        key: 'llm_as_judge',
+        en: 'LLM-as-Judge',
+        fr: 'LLM-as-judge',
+        question_en: "You want to use an LLM as a judge to score answer quality at scale. What are the three biggest failure modes of LLM-as-judge, and how do you validate that your judge actually agrees with human judgment?",
+        question_fr: "Vous souhaitez utiliser un LLM comme juge pour évaluer la qualité des réponses à grande échelle. Quels sont les trois principaux modes d'échec du LLM-as-judge, et comment validez-vous que votre juge est réellement en accord avec le jugement humain ?",
+      },
+      {
+        key: 'online_regression',
+        en: 'Online Evals & Regression Gates',
+        fr: 'Evals en ligne et barrières de régression',
+        question_en: "Describe your approach to online evaluation and regression gates for an LLM-powered feature. How do you catch a regression before it reaches all users, and what metrics trigger a rollback?",
+        question_fr: "Décrivez votre approche de l'évaluation en ligne et des barrières de régression pour une fonctionnalité alimentée par un LLM. Comment détectez-vous une régression avant qu'elle n'atteigne tous les utilisateurs, et quelles métriques déclenchent un rollback ?",
+      },
+      {
+        key: 'hallucination_metrics',
+        en: 'Faithfulness & Hallucination',
+        fr: "Fidélité et hallucination",
+        question_en: "Your RAG system is sometimes confident but wrong. Walk me through how you measure faithfulness and groundedness — what specific metrics, how you compute them, and what threshold triggers an alert.",
+        question_fr: "Votre système RAG est parfois confiant mais faux. Expliquez-moi comment vous mesurez la fidélité et l'ancrage dans les sources — quelles métriques spécifiques, comment vous les calculez, et quel seuil déclenche une alerte.",
+      },
+    ],
+  },
+  {
+    id: 'cost_latency_safety',
+    name_en: 'Cost, Latency & Safety',
+    name_fr: 'Coût, latence et sécurité',
+    free: false,
+    emoji: '⚙️',
+    desc_en: 'Token budgets · Model routing & caching · Streaming architecture · Guardrails & safety',
+    desc_fr: 'Budgets de tokens · Routage et cache · Architecture de streaming · Garde-fous et sécurité',
+    sub_skills: [
+      {
+        key: 'cost_modeling',
+        en: 'Cost Modeling & Token Budgets',
+        fr: 'Modélisation des coûts et budgets de tokens',
+        question_en: "You're launching a RAG feature expected to handle 50k queries/day. Walk me through how you'd model the cost, where the biggest levers are, and how you'd set a token budget without degrading quality.",
+        question_fr: "Vous lancez une fonctionnalité RAG qui devrait traiter 50 000 requêtes par jour. Expliquez-moi comment vous modéliseriez le coût, où se trouvent les principaux leviers, et comment vous fixeriez un budget de tokens sans dégrader la qualité.",
+      },
+      {
+        key: 'model_routing_caching',
+        en: 'Model Routing & Caching',
+        fr: 'Routage de modèles et mise en cache',
+        question_en: "Explain your strategy for routing between a large and a small model, and for applying prompt and semantic caching. What queries are good cache candidates, and how do you measure cache effectiveness?",
+        question_fr: "Expliquez votre stratégie de routage entre un grand et un petit modèle, et d'application du cache de prompt et sémantique. Quelles requêtes sont de bons candidats au cache, et comment mesurez-vous l'efficacité du cache ?",
+      },
+      {
+        key: 'latency_streaming',
+        en: 'Latency & Streaming',
+        fr: 'Latence et streaming',
+        question_en: "Your LLM-powered feature has P95 latency of 6 seconds and users are churning. Walk me through your optimization approach: where do you look first, what does streaming buy you, and what's the floor you can realistically hit?",
+        question_fr: "Votre fonctionnalité alimentée par LLM a une latence P95 de 6 secondes et les utilisateurs se désengagent. Expliquez-moi votre approche d'optimisation : où cherchez-vous en premier, que vous apporte le streaming, et quel est le plancher que vous pouvez réalistement atteindre ?",
+      },
+      {
+        key: 'guardrails_safety',
+        en: 'Guardrails & Safety',
+        fr: 'Garde-fous et sécurité',
+        question_en: "Walk me through your guardrail design for an agentic system that can read and write files on behalf of users. What are the prompt-injection vectors, how do you detect them, and where does human-in-the-loop kick in?",
+        question_fr: "Expliquez-moi votre conception de garde-fous pour un système agentique qui peut lire et écrire des fichiers pour le compte des utilisateurs. Quels sont les vecteurs d'injection de prompt, comment les détectez-vous, et quand l'intervention humaine intervient-elle ?",
+      },
+    ],
+  },
+]
+
+export const MODULE_MAP = Object.fromEntries(MODULES.map(m => [m.id, m]))

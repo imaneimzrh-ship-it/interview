@@ -1,18 +1,20 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter         = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const spaceGrotesk  = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' })
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
 export const metadata: Metadata = {
-  title: 'Sonne AI — AI Engineering Interview Prep',
-  description: 'Practice the exact Anthropic, OpenAI, and Google DeepMind interview loops. Technical correctness grading. Real sourced questions.',
+  title: 'Sonne AI — Applied AI Engineer Interview Prep',
+  description: 'Score your CV and practice the Applied AI Engineer interview. RAG, agents, evaluation, cost & safety. EN/FR. Free CV diagnostic — no card, no login.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-bg text-bright antialiased`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${inter.className} antialiased`}>
         {children}
       </body>
     </html>
