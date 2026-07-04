@@ -25,8 +25,6 @@ export interface TurnMessage {
 }
 
 // ─── Interviewer system prompt ───────────────────────────────────────────────
-// The interviewer knows the rubric but NEVER mentions it to the candidate.
-// It is a skilled technical interviewer, not a quiz host.
 
 function buildInterviewerPrompt(
   lang: 'en' | 'fr',
@@ -36,9 +34,15 @@ function buildInterviewerPrompt(
   subSkillsCompleted: string[],
   totalSubSkills: number,
   followUpProbes: string[],
+  cvExcerpt?: string,
 ): string {
-  const isLast = subSkillsCompleted.length === totalSubSkills - 1
+  const isLast      = subSkillsCompleted.length === totalSubSkills - 1
   const progressNote = `You are on sub-skill ${subSkillsCompleted.length + 1} of ${totalSubSkills} in this module.`
+  const cvNote       = cvExcerpt
+    ? lang === 'fr'
+      ? `\nCV DU CANDIDAT (extrait) : "${cvExcerpt.slice(0, 800)}"\nSi leur réponse contredit ou sous-délivre par rapport à une affirmation du CV, sondez cet écart spécifiquement — de manière encourageante.`
+      : `\nCANDIDATE CV (excerpt): "${cvExcerpt.slice(0, 800)}"\nIf their answer contradicts or under-delivers on a claim in the CV, probe that gap specifically — supportively.`
+    : ''
 
   if (lang === 'fr') {
     return `Vous êtes un ingénieur IA senior qui conduit un entretien technique pour un poste d'Ingénieur IA Appliqué, en vous concentrant sur le module : ${moduleName}.
@@ -55,7 +59,7 @@ Réponse faible : ${question.rubric_weak}
 
 SONDES DE SUIVI disponibles (utilisez-en UNE si la réponse est superficielle) :
 ${followUpProbes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-
+${cvNote}
 RÈGLES D'ENTRETIEN :
 1. Posez la question actuelle en premier. Ne commencez pas par vous présenter.
 2. Après leur réponse, évaluez sa profondeur :
@@ -84,7 +88,7 @@ Weak answer: ${question.rubric_weak}
 
 FOLLOW-UP PROBES available (use ONE if the answer is shallow):
 ${followUpProbes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-
+${cvNote}
 INTERVIEW RULES:
 1. Ask the current question first. Do not introduce yourself.
 2. After their answer, assess its depth:
@@ -111,12 +115,13 @@ export async function conductTurn(params: {
   userMessage: string
   subSkillsCompleted: string[]
   totalSubSkills: number
+  cvExcerpt?: string
 }): Promise<{ response: string; shouldAdvance: boolean; isComplete: boolean }> {
-  const { lang, moduleName, subSkill, question, history, userMessage, subSkillsCompleted, totalSubSkills } = params
+  const { lang, moduleName, subSkill, question, history, userMessage, subSkillsCompleted, totalSubSkills, cvExcerpt } = params
 
   const systemPrompt = buildInterviewerPrompt(
     lang, moduleName, subSkill, question,
-    subSkillsCompleted, totalSubSkills, question.follow_up_probes,
+    subSkillsCompleted, totalSubSkills, question.follow_up_probes, cvExcerpt,
   )
 
   const messages: Anthropic.MessageParam[] = [
@@ -135,7 +140,6 @@ export async function conductTurn(params: {
   const shouldAdvance = text.includes('[[NEXT]]')
   const isComplete    = text.includes('[[COMPLETE]]')
 
-  // Clean control tokens from user-visible response
   const cleaned = text
     .replace(/\[\[NEXT\]\]/g, '')
     .replace(/\[\[COMPLETE\]\]/g, '')
@@ -153,12 +157,13 @@ export async function openQuestion(params: {
   question: Question
   subSkillsCompleted: string[]
   totalSubSkills: number
+  cvExcerpt?: string
 }): Promise<string> {
-  const { lang, moduleName, subSkill, question, subSkillsCompleted, totalSubSkills } = params
+  const { lang, moduleName, subSkill, question, subSkillsCompleted, totalSubSkills, cvExcerpt } = params
 
   const systemPrompt = buildInterviewerPrompt(
     lang, moduleName, subSkill, question,
-    subSkillsCompleted, totalSubSkills, question.follow_up_probes,
+    subSkillsCompleted, totalSubSkills, question.follow_up_probes, cvExcerpt,
   )
 
   const res = await client.messages.create({
@@ -170,4 +175,29 @@ export async function openQuestion(params: {
 
   const text = res.content[0].type === 'text' ? res.content[0].text : ''
   return text.replace(/\[\[NEXT\]\]/g, '').replace(/\[\[COMPLETE\]\]/g, '').trim()
+}
+
+// ─── Ask-Interviewer reverse questions ────────────────────────────────────────
+
+export async function answerCandidateQuestion(params: {
+  lang: 'en' | 'fr'
+  moduleName: string
+  topStrength: string
+  topGap: string
+  question: string
+}): Promise<string> {
+  const { lang, moduleName, topStrength, topGap, question } = params
+
+  const system = lang === 'fr'
+    ? `Vous venez de terminer un entretien technique sur le module "${moduleName}". Le candidat a maintenant l'occasion de vous poser des questions. Répondez en tant qu'intervieweur senior — honnête, direct, encourageant. Point fort identifié : "${topStrength}". Lacune principale : "${topGap}". Limitez votre réponse à 3-4 phrases.`
+    : `You just finished conducting a technical interview on the module "${moduleName}". The candidate now has a chance to ask you questions. Answer as the senior interviewer — honest, direct, encouraging. Identified strength: "${topStrength}". Main gap: "${topGap}". Keep your answer to 3-4 sentences.`
+
+  const res = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 300,
+    system,
+    messages: [{ role: 'user', content: question }],
+  })
+
+  return res.content[0].type === 'text' ? res.content[0].text.trim() : ''
 }

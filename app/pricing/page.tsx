@@ -120,9 +120,17 @@ export default function Pricing() {
           </div>
         </div>
 
-        <p className="text-xs text-[#3D4260] mt-8">
-          You're interviewing for roles that pay $150K–$500K+. This costs $19/month.
-        </p>
+        <div className="mt-8 space-y-2 text-center">
+          <p className="text-xs text-[#3D4260]">
+            You're interviewing for roles that pay $150K–$500K+. This costs $19/month.
+          </p>
+          <p className="text-xs text-[#3D4260]">
+            Not satisfied? We offer a full refund within 7 days of purchase — no questions asked.
+          </p>
+          <p className="text-xs text-[#3D4260]">
+            Questions? <a href="mailto:support@sonneai.com" className="text-[#4776F7] hover:underline">support@sonneai.com</a>
+          </p>
+        </div>
       </div>
     </div>
   )

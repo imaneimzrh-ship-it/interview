@@ -3,8 +3,9 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import AttributionModal from '@/components/app/AttributionModal'
 
-interface UserData { email?: string; full_name?: string; plan?: string }
+interface UserData { email?: string; full_name?: string; plan?: string; source?: string | null }
 
 const NAV = [
   {
@@ -27,15 +28,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router   = useRouter()
   const sb       = createClient()
-  const [mobile, setMobile] = useState(false)
-  const [user,   setUser]   = useState<UserData | null>(null)
+  const [mobile,       setMobile]       = useState(false)
+  const [user,         setUser]         = useState<UserData | null>(null)
+  const [showAttrib,   setShowAttrib]   = useState(false)
 
   useEffect(() => {
     async function load() {
       const { data: { user: u } } = await sb.auth.getUser()
       if (!u) { router.push('/login'); return }
-      const { data: p } = await sb.from('profiles').select('email, full_name, plan').eq('id', u.id).single()
-      setUser({ email: u.email, full_name: p?.full_name, plan: p?.plan ?? 'free' })
+      const { data: p } = await sb.from('profiles').select('email, full_name, plan, source').eq('id', u.id).single()
+      setUser({ email: u.email, full_name: p?.full_name, plan: p?.plan ?? 'free', source: p?.source })
+      // Show attribution modal once for users who haven't answered yet
+      if (p && p.source === null) setShowAttrib(true)
     }
     load()
   }, [])
@@ -108,6 +112,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8F9FB]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      {showAttrib && <AttributionModal onDone={() => setShowAttrib(false)} />}
       <div className="hidden md:flex">
         <Sidebar />
       </div>

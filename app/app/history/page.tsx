@@ -113,10 +113,35 @@ export default function HistoryPage() {
     )
   }
 
+  // Build sparkline data: last 8 scored sessions, oldest-first
+  const sparkData = [...sessions]
+    .filter(s => s.overall_score !== null)
+    .slice(0, 8)
+    .reverse()
+    .map(s => s.overall_score as number)
+
+  function Sparkline({ data }: { data: number[] }) {
+    if (data.length < 2) return null
+    const W = 120; const H = 32; const PAD = 4
+    const min = Math.min(...data); const max = Math.max(...data)
+    const range = max - min || 1
+    const pts = data.map((v, i) => [
+      PAD + (i / (data.length-1)) * (W - PAD*2),
+      H - PAD - ((v - min) / range) * (H - PAD*2),
+    ])
+    const d = pts.map((p, i) => `${i===0?'M':'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')
+    return (
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="overflow-visible">
+        <path d={d} fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="2.5" fill="#2563EB" />)}
+      </svg>
+    )
+  }
+
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-[#111827] mb-1">Past Sessions</h1>
             <p className="text-[#6B7280] text-sm">Your interview history — view reports, resume sessions, or delete.</p>
@@ -125,6 +150,27 @@ export default function HistoryPage() {
             + New session
           </Link>
         </div>
+
+        {/* Progress trend chart */}
+        {sparkData.length >= 2 && (
+          <div className="bg-white rounded-xl border border-[#E5E7EB] p-4 mb-6 shadow-sm flex items-center gap-6">
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-widest mb-0.5">Score trend</p>
+              <p className="text-xs text-[#6B7280]">
+                {sparkData[0].toFixed(1)} → <span className="font-semibold text-[#2563EB]">{sparkData[sparkData.length-1].toFixed(1)}</span>
+                {sparkData[sparkData.length-1] > sparkData[0]
+                  ? <span className="text-[#059669] ml-1">↑{(sparkData[sparkData.length-1]-sparkData[0]).toFixed(1)}</span>
+                  : sparkData[sparkData.length-1] < sparkData[0]
+                    ? <span className="text-[#DC2626] ml-1">↓{(sparkData[0]-sparkData[sparkData.length-1]).toFixed(1)}</span>
+                    : <span className="text-[#9CA3AF] ml-1">—</span>
+                }
+                <span className="text-[#9CA3AF] ml-1">over last {sparkData.length} sessions</span>
+              </p>
+            </div>
+            <Sparkline data={sparkData} />
+          </div>
+        )}
+
 
         {loading ? (
           <div className="flex items-center justify-center py-20">

@@ -52,6 +52,10 @@ export async function POST(req: NextRequest) {
     const lang = session.language as 'en' | 'fr'
     const moduleName = lang === 'fr' ? session.skill_modules.name_fr : session.skill_modules.name_en
 
+    // Load saved CV for personalised probing (best-effort, non-blocking)
+    const { data: cvRow } = await sb.from('cvs').select('text').eq('user_id', user.id).maybeSingle()
+    const cvExcerpt = cvRow?.text?.slice(0, 800) ?? undefined
+
     // Run interviewer + grader in parallel
     const [turnResult, gradeResult] = await Promise.all([
       conductTurn({
@@ -71,6 +75,7 @@ export async function POST(req: NextRequest) {
         userMessage,
         subSkillsCompleted: session.sub_skills_covered ?? [],
         totalSubSkills: subSkills.length,
+        cvExcerpt,
       }),
       gradeAnswer({
         subSkill: { id: currentSubSkill.id, slug: currentSubSkill.slug, name_en: currentSubSkill.name_en, name_fr: currentSubSkill.name_fr },

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { BAND_COLORS, type Band } from '@/lib/signals'
@@ -30,35 +30,37 @@ interface CvResult {
 }
 
 export default function CvPage() {
-  const [lang,     setLang]    = useState<'en'|'fr'>('en')
-  const [cv,       setCv]      = useState('')
-  const [loading,  setLoading] = useState(false)
-  const [result,   setResult]  = useState<CvResult | null>(null)
-  const [error,    setError]   = useState('')
-  const [loggedIn, setLoggedIn] = useState(false)
-  const [saved,    setSaved]    = useState(false)
-  const [saving,   setSaving]   = useState(false)
+  const [lang,        setLang]       = useState<'en'|'fr'>('en')
+  const [cv,          setCv]         = useState('')
+  const [loading,     setLoading]    = useState(false)
+  const [parsing,     setParsing]    = useState(false)
+  const [result,      setResult]     = useState<CvResult | null>(null)
+  const [error,       setError]      = useState('')
+  const [loggedIn,    setLoggedIn]   = useState(false)
+  const [isPro,       setIsPro]      = useState(false)
+  const [saved,       setSaved]      = useState(false)
+  const [saving,      setSaving]     = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    createClient().auth.getUser().then(({ data: { user } }) => setLoggedIn(!!user))
+    createClient().auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      setLoggedIn(true)
+      const sb = createClient()
+      const { data: p } = await sb.from('profiles').select('plan').eq('id', user.id).single()
+      setIsPro(p?.plan === 'pro')
+    })
   }, [])
 
-  const t = {
-    title:        { en: 'CV Readiness Diagnostic', fr: 'Diagnostic de préparation CV' },
-    sub:          { en: 'Find out exactly how your CV scores against an Applied AI Engineer hiring screen — free, no login, no card.', fr: "Découvrez exactement comment votre CV se positionne par rapport à un écran d'embauche d'ingénieur IA appliqué — gratuit, sans connexion, sans carte." },
-    placeholder:  { en: "Paste your CV or resume here...\n\nWe don't use your CV to train models. Nothing is stored unless you sign in.", fr: "Collez votre CV ici...\n\nNous n'utilisons pas votre CV pour entraîner des modèles. Rien n'est stocké à moins que vous ne vous connectiez." },
-    btn:          { en: 'Score my CV →', fr: 'Évaluer mon CV →' },
-    scoring:      { en: 'Scoring your CV...', fr: 'Évaluation de votre CV...' },
-    overall:      { en: 'Overall readiness',  fr: 'Préparation globale' },
-    strengths:    { en: 'Strengths',          fr: 'Points forts' },
-    gap:          { en: 'Biggest gap',        fr: 'Lacune principale' },
-    flags:        { en: 'Red flags',          fr: 'Signaux d\'alarme' },
-    recommend:    { en: 'Recommended module', fr: 'Module recommandé' },
-    startInterview: { en: 'Start this interview →', fr: 'Démarrer cet entretien →' },
-    privacy:      { en: "We don't use your CV to train models. Delete it anytime.", fr: "Nous n'utilisons pas votre CV pour entraîner des modèles. Supprimez-le à tout moment." },
-    tryAgain:     { en: 'Try again', fr: 'Réessayer' },
+  async function handleFile(file: File) {
+    setParsing(true); setError('')
+    const form = new FormData(); form.append('file', file)
+    const res  = await fetch('/api/cv/parse', { method: 'POST', body: form })
+    const d    = await res.json()
+    if (res.ok) setCv(d.text)
+    else setError(d.error ?? 'Could not parse file.')
+    setParsing(false)
   }
-  const T = (k: keyof typeof t) => t[k][lang]
 
   async function saveToProfile() {
     if (!result) return
@@ -91,15 +93,17 @@ export default function CvPage() {
   const scoreColor = (s: number) => s >= 70 ? '#2E7D5B' : s >= 45 ? '#C77D2E' : '#B24C3F'
   const moduleSlug = result ? (MODULE_SLUGS[result.recommendModule] ?? 'rag_system_design') : ''
 
+  // Gating: free/anon see only overall + single weakest signal
+  const canSeeFullBreakdown = loggedIn && isPro
+  const weakestSignal = result?.signals?.reduce((a, b) => a.score < b.score ? a : b) ?? null
+
   return (
     <div className="min-h-screen" style={{ background: '#FBFAF7', fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Nav */}
       <nav className="border-b border-[#E7E2D8] bg-[#FBFAF7]/80 backdrop-blur-sm sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#1E2A44] flex items-center justify-center">
-              <SunMark />
-            </div>
+            <div className="w-7 h-7 rounded-lg bg-[#1E2A44] flex items-center justify-center"><SunMark /></div>
             <span className="font-bold text-[#17140F] text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Sonne AI</span>
           </Link>
           <div className="flex items-center gap-3">
@@ -112,8 +116,13 @@ export default function CvPage() {
                 </button>
               ))}
             </div>
-            <Link href="/login" className="text-xs text-[#7A7267] hover:text-[#17140F] transition-colors">Sign in</Link>
-            <Link href="/app/start" className="text-xs font-medium bg-[#1E2A44] text-white px-3 py-1.5 rounded-lg hover:bg-[#2d3f61] transition-colors shadow-sm">Practice →</Link>
+            {loggedIn
+              ? <Link href="/app/start" className="text-xs font-medium bg-[#1E2A44] text-white px-3 py-1.5 rounded-lg hover:bg-[#2d3f61] transition-colors shadow-sm">Practice →</Link>
+              : <>
+                  <Link href="/login"  className="text-xs text-[#7A7267] hover:text-[#17140F] transition-colors">Sign in</Link>
+                  <Link href="/app/start" className="text-xs font-medium bg-[#1E2A44] text-white px-3 py-1.5 rounded-lg hover:bg-[#2d3f61] transition-colors shadow-sm">Practice →</Link>
+                </>
+            }
           </div>
         </div>
       </nav>
@@ -123,47 +132,62 @@ export default function CvPage() {
         {!result ? (
           <>
             <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 bg-[#FFF8EE] border border-[#F5A524]/30 text-[#D98A0B] text-xs font-semibold px-3 py-1.5 rounded-full mb-5" style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '.05em' }}>
+              <div className="inline-flex items-center gap-2 bg-[#FFF8EE] border border-[#F5A524]/30 text-[#D98A0B] text-xs font-semibold px-3 py-1.5 rounded-full mb-5"
+                style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '.05em' }}>
                 FREE · NO LOGIN · NO CARD
               </div>
               <h1 className="text-3xl sm:text-4xl font-bold text-[#17140F] mb-3 leading-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                {T('title')}
+                {lang === 'en' ? 'CV Readiness Diagnostic' : 'Diagnostic de préparation CV'}
               </h1>
-              <p className="text-[#7A7267] text-base max-w-lg mx-auto leading-relaxed">{T('sub')}</p>
+              <p className="text-[#7A7267] text-base max-w-lg mx-auto leading-relaxed">
+                {lang === 'en'
+                  ? 'Find out exactly how your CV scores against an Applied AI Engineer hiring screen — free, no login, no card.'
+                  : "Découvrez exactement comment votre CV se positionne par rapport à un écran d'embauche — gratuit, sans connexion, sans carte."}
+              </p>
             </div>
 
             <div className="bg-white rounded-2xl border border-[#E7E2D8] shadow-sm overflow-hidden">
               <div className="p-5 border-b border-[#E7E2D8]">
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                    {lang === 'en' ? 'Paste your CV or resume' : 'Collez votre CV'}
+                    {lang === 'en' ? 'Paste your CV or upload a file' : 'Collez votre CV ou importez un fichier'}
                   </span>
-                  <span className="text-xs text-[#7A7267]">{cv.length > 0 ? `${Math.min(cv.length, 6000).toLocaleString()} / 6,000 chars` : ''}</span>
+                  <div className="flex items-center gap-2">
+                    {cv.length > 0 && <span className="text-xs text-[#7A7267]">{Math.min(cv.length, 6000).toLocaleString()} / 6,000</span>}
+                    <input ref={fileRef} type="file" accept=".pdf,.txt,.md" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }} />
+                    <button onClick={() => fileRef.current?.click()} disabled={parsing}
+                      className="text-xs font-medium border border-[#E7E2D8] text-[#7A7267] hover:text-[#17140F] hover:border-[#C7C2B8] px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50">
+                      {parsing ? '⏳ Parsing...' : '📎 Upload PDF / TXT'}
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   value={cv}
                   onChange={e => setCv(e.target.value)}
                   rows={12}
                   maxLength={9000}
-                  placeholder={T('placeholder')}
+                  placeholder={lang === 'en'
+                    ? "Paste your CV or resume here...\n\nWe don't use your CV to train models. Nothing is stored unless you sign in."
+                    : "Collez votre CV ici...\n\nNous n'utilisons pas votre CV pour entraîner des modèles."}
                   className="w-full resize-none bg-transparent text-sm text-[#17140F] placeholder:text-[#B8B2A8] focus:outline-none leading-relaxed"
                 />
               </div>
               <div className="px-5 py-4 bg-[#FAFAF8] flex items-center justify-between flex-wrap gap-3">
                 <p className="text-xs text-[#7A7267] flex items-center gap-1.5">
-                  <span>🔒</span> {T('privacy')}
+                  <span>🔒</span> {lang === 'en' ? "We don't use your CV to train models. Delete it anytime." : "Nous n'utilisons pas votre CV pour entraîner des modèles."}
                 </p>
                 <button
                   onClick={score}
-                  disabled={!cv.trim() || loading}
+                  disabled={!cv.trim() || loading || parsing}
                   className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ background: cv.trim() ? '#1E2A44' : '#E7E2D8', color: cv.trim() ? 'white' : '#7A7267', boxShadow: cv.trim() ? '0 2px 8px rgba(30,42,68,.2)' : 'none', fontFamily: "'Space Grotesk', sans-serif" }}>
                   {loading
                     ? <span className="flex items-center gap-2">
                         <span style={{ width:14,height:14,border:'2px solid rgba(255,255,255,.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 1s linear infinite',display:'inline-block' }} />
-                        {T('scoring')}
+                        {lang === 'en' ? 'Scoring your CV...' : 'Évaluation...'}
                       </span>
-                    : T('btn')
+                    : lang === 'en' ? 'Score my CV →' : 'Évaluer mon CV →'
                   }
                 </button>
               </div>
@@ -176,134 +200,194 @@ export default function CvPage() {
               </div>
             )}
 
-            {/* What we score */}
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {Object.entries(SIGNAL_LABELS).map(([key, { en, fr, icon }]) => (
                 <div key={key} className="flex items-start gap-3 bg-white rounded-xl border border-[#E7E2D8] p-3.5 shadow-sm">
                   <span className="text-lg flex-shrink-0 mt-0.5">{icon}</span>
-                  <div>
-                    <div className="text-sm font-semibold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{lang === 'en' ? en : fr}</div>
-                  </div>
+                  <div className="text-sm font-semibold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{lang === 'en' ? en : fr}</div>
                 </div>
               ))}
             </div>
           </>
         ) : (
           <>
-            {/* Result header */}
+            {/* Score header */}
             <div className="text-center mb-8">
               <div className="inline-flex flex-col items-center gap-1 mb-5">
                 <div className="text-6xl font-bold" style={{ fontFamily: "'JetBrains Mono', monospace", color: scoreColor(result.overall) }}>
                   {result.overall}
                 </div>
-                <div className="text-sm text-[#7A7267]">{T('overall')} <span className="font-mono text-xs">/100</span></div>
+                <div className="text-sm text-[#7A7267]">{lang === 'en' ? 'Overall readiness' : 'Préparation globale'} <span className="font-mono text-xs">/100</span></div>
               </div>
-
-              <div className="w-full max-w-xs mx-auto h-2.5 rounded-full bg-[#E7E2D8] mb-6 overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${result.overall}%`, background: `linear-gradient(90deg, ${scoreColor(result.overall)}, ${scoreColor(result.overall)}cc)` }} />
+              <div className="w-full max-w-xs mx-auto h-2.5 rounded-full bg-[#E7E2D8] mb-2 overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${result.overall}%`, background: scoreColor(result.overall) }} />
               </div>
             </div>
 
-            {/* Signals */}
+            {/* Signals — gated */}
             <div className="bg-white rounded-2xl border border-[#E7E2D8] shadow-sm mb-5 overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-[#E7E2D8]">
-                <span className="text-xs font-semibold text-[#7A7267] uppercase tracking-widest" style={{ fontFamily: "'JetBrains Mono', monospace" }}>5 SIGNALS</span>
+              <div className="px-5 py-3.5 border-b border-[#E7E2D8] flex items-center justify-between">
+                <span className="text-xs font-semibold text-[#7A7267] uppercase tracking-widest" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  {canSeeFullBreakdown ? '5 SIGNALS' : lang === 'en' ? 'WEAKEST SIGNAL' : 'SIGNAL LE PLUS FAIBLE'}
+                </span>
+                {!canSeeFullBreakdown && (
+                  <span className="text-xs text-[#7A7267]">
+                    {lang === 'en' ? '4 more with Pro' : '4 autres avec Pro'}
+                  </span>
+                )}
               </div>
-              <div className="divide-y divide-[#E7E2D8]">
-                {result.signals.map(sig => {
-                  const label = SIGNAL_LABELS[sig.key]
-                  const col   = BAND_COLORS[sig.band]
-                  return (
-                    <div key={sig.key} className="px-5 py-4 flex items-start gap-4">
-                      <span className="text-xl flex-shrink-0 mt-0.5">{label?.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-sm font-semibold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                            {lang === 'en' ? label?.en : label?.fr}
-                          </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: col.bg, color: col.text, border: `1px solid ${col.border}` }}>
-                            {sig.band}
-                          </span>
-                          <span className="text-xs font-mono ml-auto" style={{ color: scoreColor(sig.score) }}>{sig.score}</span>
+
+              {canSeeFullBreakdown ? (
+                <div className="divide-y divide-[#E7E2D8]">
+                  {result.signals.map(sig => {
+                    const label = SIGNAL_LABELS[sig.key]
+                    const col   = BAND_COLORS[sig.band]
+                    return (
+                      <div key={sig.key} className="px-5 py-4 flex items-start gap-4">
+                        <span className="text-xl flex-shrink-0 mt-0.5">{label?.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="text-sm font-semibold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                              {lang === 'en' ? label?.en : label?.fr}
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: col.bg, color: col.text, border: `1px solid ${col.border}` }}>{sig.band}</span>
+                            <span className="text-xs font-mono ml-auto" style={{ color: scoreColor(sig.score) }}>{sig.score}</span>
+                          </div>
+                          {sig.evidence && <p className="text-xs text-[#7A7267] leading-relaxed">{sig.evidence}</p>}
                         </div>
-                        {sig.evidence && <p className="text-xs text-[#7A7267] leading-relaxed">{sig.evidence}</p>}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <>
+                  {/* Show only weakest signal */}
+                  {weakestSignal && (() => {
+                    const label = SIGNAL_LABELS[weakestSignal.key]
+                    const col   = BAND_COLORS[weakestSignal.band]
+                    return (
+                      <div className="px-5 py-4 flex items-start gap-4">
+                        <span className="text-xl flex-shrink-0 mt-0.5">{label?.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="text-sm font-semibold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                              {lang === 'en' ? label?.en : label?.fr}
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: col.bg, color: col.text, border: `1px solid ${col.border}` }}>{weakestSignal.band}</span>
+                            <span className="text-xs font-mono ml-auto" style={{ color: scoreColor(weakestSignal.score) }}>{weakestSignal.score}</span>
+                          </div>
+                          {weakestSignal.evidence && <p className="text-xs text-[#7A7267] leading-relaxed">{weakestSignal.evidence}</p>}
+                        </div>
+                      </div>
+                    )
+                  })()}
+                  {/* Blur/upgrade row for remaining 4 */}
+                  <div className="px-5 py-4 border-t border-[#E7E2D8]">
+                    <div className="flex gap-2 mb-3">
+                      {result.signals.filter(s => s.key !== weakestSignal?.key).map(sig => {
+                        const label = SIGNAL_LABELS[sig.key]
+                        return (
+                          <div key={sig.key} className="flex-1 bg-[#F5F4F0] rounded-lg p-2 text-center" style={{ filter: 'blur(3px)', userSelect: 'none' }}>
+                            <div className="text-base">{label?.icon}</div>
+                            <div className="text-xs font-bold text-[#9CA3AF]">??</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-[#7A7267] mb-3">
+                        {lang === 'en'
+                          ? 'Sign in to see all 5 signals. Upgrade to Pro for full evidence breakdowns.'
+                          : 'Connectez-vous pour voir les 5 signaux. Passez à Pro pour les détails complets.'}
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <Link href="/login?redirect=/cv" className="text-xs font-semibold text-[#1E2A44] border border-[#E7E2D8] px-3 py-2 rounded-lg hover:bg-[#F5F4F0] transition-all"
+                          style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                          {lang === 'en' ? 'Sign in free →' : 'Se connecter →'}
+                        </Link>
+                        <Link href="/pricing" className="text-xs font-semibold bg-[#F5A524] text-[#17140F] px-3 py-2 rounded-lg hover:bg-[#D98A0B] transition-all"
+                          style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                          {lang === 'en' ? 'Upgrade to Pro' : 'Passer à Pro'}
+                        </Link>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Strengths */}
-            {result.strengths?.length > 0 && (
+            {/* Strengths — pro only */}
+            {canSeeFullBreakdown && result.strengths?.length > 0 && (
               <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl p-5 mb-4">
-                <div className="text-xs font-semibold text-[#2E7D5B] uppercase tracking-widest mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>✓ {T('strengths')}</div>
-                <ul className="space-y-1.5">
-                  {result.strengths.map((s, i) => <li key={i} className="text-sm text-[#1A4731] flex gap-2"><span className="flex-shrink-0">·</span>{s}</li>)}
-                </ul>
+                <div className="text-xs font-semibold text-[#2E7D5B] uppercase tracking-widest mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>✓ {lang === 'en' ? 'Strengths' : 'Points forts'}</div>
+                <ul className="space-y-1.5">{result.strengths.map((s, i) => <li key={i} className="text-sm text-[#1A4731] flex gap-2"><span>·</span>{s}</li>)}</ul>
               </div>
             )}
 
-            {/* Biggest gap */}
+            {/* Gap — always shown */}
             {result.gap && (
               <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl p-5 mb-4">
-                <div className="text-xs font-semibold text-[#C77D2E] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>⚠ {T('gap')}</div>
+                <div className="text-xs font-semibold text-[#C77D2E] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>⚠ {lang === 'en' ? 'Biggest gap' : 'Lacune principale'}</div>
                 <p className="text-sm text-[#78350F]">{result.gap}</p>
               </div>
             )}
 
-            {/* Red flags */}
-            {result.flags?.length > 0 && (
+            {/* Red flags — pro only */}
+            {canSeeFullBreakdown && result.flags?.length > 0 && (
               <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-2xl p-5 mb-4">
-                <div className="text-xs font-semibold text-[#B24C3F] uppercase tracking-widest mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>⛳ {T('flags')}</div>
-                <ul className="space-y-1.5">
-                  {result.flags.map((f, i) => <li key={i} className="text-sm text-[#7F1D1D] flex gap-2"><span className="flex-shrink-0">·</span>{f}</li>)}
-                </ul>
+                <div className="text-xs font-semibold text-[#B24C3F] uppercase tracking-widest mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>⛳ {lang === 'en' ? 'Red flags' : 'Signaux d\'alarme'}</div>
+                <ul className="space-y-1.5">{result.flags.map((f, i) => <li key={i} className="text-sm text-[#7F1D1D] flex gap-2"><span>·</span>{f}</li>)}</ul>
               </div>
             )}
 
-            {/* CTA: recommended module */}
+            {/* Recommended module CTA */}
             {result.recommendModule && (
               <div className="bg-[#EEF1F6] border border-[#C7D0E0] rounded-2xl p-5 mb-6">
-                <div className="text-xs font-semibold text-[#1E2A44] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>→ {T('recommend')}</div>
+                <div className="text-xs font-semibold text-[#1E2A44] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>→ {lang === 'en' ? 'Recommended module' : 'Module recommandé'}</div>
                 <div className="text-base font-bold text-[#17140F] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{result.recommendModule}</div>
                 <p className="text-sm text-[#7A7267] mb-4">{result.recommendWhy}</p>
-                <Link
-                  href={`/app/start?module=${moduleSlug}&lang=${lang}`}
+                <Link href={`/app/start?module=${moduleSlug}&lang=${lang}`}
                   className="inline-flex items-center gap-2 bg-[#1E2A44] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#2d3f61] transition-all shadow-sm"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                  {T('startInterview')}
+                  {lang === 'en' ? 'Start this interview →' : 'Démarrer cet entretien →'}
                 </Link>
               </div>
             )}
 
             {/* Save to profile */}
             {!loggedIn ? (
-              <div className="bg-[#FFF8EE] border border-[#F5A524]/30 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
+              <div className="bg-[#FFF8EE] border border-[#F5A524]/30 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap mb-4">
                 <p className="text-sm text-[#7A7267]">
-                  {lang === 'en' ? 'Sign in to save this report and track your progress.' : 'Connectez-vous pour sauvegarder ce rapport.'}
+                  {lang === 'en' ? 'Sign in to save this report and see all 5 signals.' : 'Connectez-vous pour sauvegarder ce rapport.'}
                 </p>
-                <Link href={`/login?redirect=/cv`} className="text-sm font-semibold text-[#D98A0B] hover:text-[#17140F] whitespace-nowrap"
+                <Link href="/login?redirect=/cv" className="text-sm font-semibold text-[#D98A0B] hover:text-[#17140F] whitespace-nowrap"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                   {lang === 'en' ? 'Sign in →' : 'Se connecter →'}
                 </Link>
               </div>
             ) : saved ? (
-              <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-4 text-sm text-[#2E7D5B] font-medium text-center">
+              <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-4 text-sm text-[#2E7D5B] font-medium text-center mb-4">
                 ✓ {lang === 'en' ? 'Saved to your profile' : 'Sauvegardé dans votre profil'}
               </div>
             ) : (
               <button onClick={saveToProfile} disabled={saving}
-                className="w-full py-3 rounded-xl border border-[#E7E2D8] bg-white text-sm font-medium text-[#17140F] hover:border-[#C7C2B8] transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-xl border border-[#E7E2D8] bg-white text-sm font-medium text-[#17140F] hover:border-[#C7C2B8] transition-all disabled:opacity-50 mb-4"
                 style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                 {saving ? (lang === 'en' ? 'Saving...' : 'Sauvegarde...') : (lang === 'en' ? '↑ Save to profile' : '↑ Sauvegarder dans le profil')}
               </button>
             )}
 
+            {error && (
+              <div className="mb-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-4 flex items-center justify-between">
+                <span className="text-sm text-[#B24C3F]">{error}</span>
+                <button onClick={() => setError('')} className="text-[#B24C3F]/50 hover:text-[#B24C3F] text-lg ml-3">×</button>
+              </div>
+            )}
+
             <div className="flex gap-3 justify-center">
               <button onClick={() => { setResult(null); setCv(''); setSaved(false) }}
                 className="text-sm text-[#7A7267] border border-[#E7E2D8] px-4 py-2 rounded-lg hover:bg-white transition-all">
-                {T('tryAgain')}
+                {lang === 'en' ? 'Try again' : 'Réessayer'}
               </button>
               <Link href="/app/start"
                 className="text-sm font-medium bg-[#1E2A44] text-white px-4 py-2 rounded-lg hover:bg-[#2d3f61] transition-all shadow-sm"
@@ -314,7 +398,6 @@ export default function CvPage() {
           </>
         )}
       </main>
-
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -326,9 +409,7 @@ function SunMark() {
       <circle cx="7" cy="7" r="3" fill="#F5A524"/>
       {[0,45,90,135,180,225,270,315].map((deg, i) => {
         const r = Math.PI * deg / 180
-        const x1 = 7 + 4 * Math.cos(r); const y1 = 7 + 4 * Math.sin(r)
-        const x2 = 7 + 5.5 * Math.cos(r); const y2 = 7 + 5.5 * Math.sin(r)
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#F5A524" strokeWidth="1.2" strokeLinecap="round"/>
+        return <line key={i} x1={7+4*Math.cos(r)} y1={7+4*Math.sin(r)} x2={7+5.5*Math.cos(r)} y2={7+5.5*Math.sin(r)} stroke="#F5A524" strokeWidth="1.2" strokeLinecap="round"/>
       })}
     </svg>
   )
