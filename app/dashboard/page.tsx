@@ -15,7 +15,7 @@ interface Session {
 }
 
 interface Report { session_id: string; overall_score: number }
-interface Profile { email: string; full_name: string; plan: string }
+interface Profile { email: string; full_name: string; plan: string; stripe_customer: string | null }
 
 const MODULE_ICONS: Record<string, string> = {
   rag_system_design: '🔍', agent_orchestration: '🕵️',
@@ -47,7 +47,7 @@ export default function Dashboard() {
     const { data: { user } } = await sb.auth.getUser()
     if (!user) { router.push('/login'); return }
     const [{ data: p }, { data: s }, { data: r }] = await Promise.all([
-      sb.from('profiles').select('email, full_name, plan').eq('id', user.id).single(),
+      sb.from('profiles').select('email, full_name, plan, stripe_customer').eq('id', user.id).single(),
       sb.from('interview_sessions')
         .select('id, status, started_at, completed_at, language, current_sub_skill_idx, skill_modules(name_en, slug)')
         .eq('user_id', user.id).order('started_at', { ascending: false }).limit(20),
@@ -122,10 +122,7 @@ export default function Dashboard() {
             <span className="font-semibold text-[15px]" style={{ color: '#17140F' }}>Sonne AI</span>
           </Link>
           <div className="flex items-center gap-3">
-            {portalError && (
-              <span className="text-xs text-[#B24C3F] bg-[#FEF2F2] border border-[#FECACA] px-2.5 py-1 rounded-full">{portalError}</span>
-            )}
-            {profile?.plan === 'pro' ? (
+            {profile?.plan === 'pro' && profile?.stripe_customer ? (
               <button
                 onClick={openPortal}
                 disabled={portalLoading}
@@ -134,6 +131,11 @@ export default function Dashboard() {
               >
                 {portalLoading ? 'Opening…' : 'Pro · Manage billing'}
               </button>
+            ) : profile?.plan === 'pro' ? (
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-full"
+                style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46' }}>
+                ✓ Pro
+              </span>
             ) : (
               <Link href="/pricing" className="text-xs font-semibold px-2.5 py-1 rounded-full"
                 style={{ background: '#FEF9EC', border: '1px solid #F5D78A', color: '#92400E' }}>
