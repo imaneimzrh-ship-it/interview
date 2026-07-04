@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     if (ext === 'pdf') {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require('pdf-parse/lib/pdf-parse.js')
+      const pdfParse = require('pdf-parse')
       const result   = await pdfParse(buf)
       text = result.text ?? ''
     } else if (ext === 'txt' || ext === 'md') {
