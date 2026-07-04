@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
     const ext = file.name.split('.').pop()?.toLowerCase()
     if (ext === 'pdf') {
-      return NextResponse.json({ error: 'PDF parsing is handled client-side.' }, { status: 400 })
+      return NextResponse.json({ error: 'Please hard-refresh the page (Cmd+Shift+R) and try uploading again.' }, { status: 400 })
     }
     if (ext !== 'txt' && ext !== 'md') {
       return NextResponse.json({ error: 'Unsupported file type. Use PDF, TXT, or MD.' }, { status: 400 })
