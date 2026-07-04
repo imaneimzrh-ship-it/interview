@@ -31,13 +31,15 @@ function timeAgo(iso: string) {
 }
 
 export default function Dashboard() {
-  const router = useRouter()
-  const sb     = createClient()
-  const [profile,  setProfile]  = useState<Profile | null>(null)
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [reports,  setReports]  = useState<Report[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [deleting, setDeleting] = useState<string | null>(null)
+  const router  = useRouter()
+  const sb      = createClient()
+  const [profile,        setProfile]        = useState<Profile | null>(null)
+  const [sessions,       setSessions]       = useState<Session[]>([])
+  const [reports,        setReports]        = useState<Report[]>([])
+  const [loading,        setLoading]        = useState(true)
+  const [deleting,       setDeleting]       = useState<string | null>(null)
+  const [portalLoading,  setPortalLoading]  = useState(false)
+  const [portalError,    setPortalError]    = useState('')
 
   useEffect(() => { loadData() }, [])
 
@@ -70,13 +72,25 @@ export default function Dashboard() {
   }
 
   async function openPortal() {
-    const { data: { session } } = await sb.auth.getSession()
-    const res = await fetch('/api/stripe/portal', {
-      method: 'POST',
-      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-    })
-    const data = await res.json()
-    if (data.url) window.location.href = data.url
+    setPortalLoading(true)
+    setPortalError('')
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setPortalError(data.error ?? 'Could not open billing portal.')
+        setPortalLoading(false)
+      }
+    } catch {
+      setPortalError('Network error. Please try again.')
+      setPortalLoading(false)
+    }
   }
 
   async function signOut() { await sb.auth.signOut(); router.push('/') }
@@ -88,34 +102,45 @@ export default function Dashboard() {
     ? (scored.reduce((a, s) => a + reportMap[s.id].overall_score, 0) / scored.length).toFixed(1)
     : null
 
+  const scoreColor = (s: number | null) => s === null ? '#9CA3AF' : s >= 3 ? '#2E7D5B' : s >= 2 ? '#C77D2E' : '#B24C3F'
+
   if (loading) return (
-    <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center">
-      <div style={{ width:32,height:32,border:'3px solid #BFDBFE',borderTopColor:'#2563EB',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#FBFAF7' }}>
+      <div style={{ width:32,height:32,border:'3px solid #E8E4DC',borderTopColor:'#1E2A44',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="min-h-screen" style={{ background: '#FBFAF7', fontFamily: "'Space Grotesk', Inter, system-ui, sans-serif" }}>
 
       {/* Nav */}
-      <nav className="bg-white border-b border-[#E5E7EB]" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
+      <nav style={{ background: '#fff', borderBottom: '1px solid #E8E4DC' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold text-sm shadow-sm">S</div>
-            <span className="font-semibold text-[#111827] text-[15px]">Sonne AI</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: '#1E2A44' }}>S</div>
+            <span className="font-semibold text-[15px]" style={{ color: '#17140F' }}>Sonne AI</span>
           </Link>
           <div className="flex items-center gap-3">
+            {portalError && (
+              <span className="text-xs text-[#B24C3F] bg-[#FEF2F2] border border-[#FECACA] px-2.5 py-1 rounded-full">{portalError}</span>
+            )}
             {profile?.plan === 'pro' ? (
-              <button onClick={openPortal} className="text-xs bg-[#EFF6FF] border border-[#BFDBFE] text-[#1D4ED8] font-semibold px-2.5 py-1 rounded-full hover:bg-[#DBEAFE] transition-colors">
-                Pro · Manage billing
+              <button
+                onClick={openPortal}
+                disabled={portalLoading}
+                className="text-xs font-semibold px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
+                style={{ background: '#F0F4FF', border: '1px solid #C7D2FE', color: '#1E2A44' }}
+              >
+                {portalLoading ? 'Opening…' : 'Pro · Manage billing'}
               </button>
             ) : (
-              <Link href="/pricing" className="text-xs bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-semibold px-2.5 py-1 rounded-full hover:bg-[#FDE68A] transition-colors">
+              <Link href="/pricing" className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: '#FEF9EC', border: '1px solid #F5D78A', color: '#92400E' }}>
                 ↑ Upgrade to Pro
               </Link>
             )}
-            <button onClick={signOut} className="text-sm text-[#6B7280] hover:text-[#111827] transition-colors">Sign out</button>
+            <button onClick={signOut} className="text-sm transition-colors" style={{ color: '#6B7280' }}>Sign out</button>
           </div>
         </div>
       </nav>
@@ -125,10 +150,10 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-[#111827]">
+            <h1 className="text-2xl font-bold" style={{ color: '#17140F' }}>
               Hi, {profile?.full_name?.split(' ')[0] || profile?.email?.split('@')[0] || 'there'} 👋
             </h1>
-            <p className="text-[#6B7280] text-sm mt-1">
+            <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
               {profile?.plan === 'pro'
                 ? 'Pro · unlimited sessions across all modules'
                 : sessions.filter(s => s.status !== 'abandoned').length < 1
@@ -136,7 +161,9 @@ export default function Dashboard() {
                   : 'Free · No sessions remaining — upgrade to continue'}
             </p>
           </div>
-          <Link href="/interview" className="inline-flex items-center gap-2 bg-[#2563EB] text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors shadow-sm self-start sm:self-auto">
+          <Link href="/interview"
+            className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-opacity hover:opacity-90 self-start sm:self-auto"
+            style={{ background: '#1E2A44', color: '#fff' }}>
             + New interview session
           </Link>
         </div>
@@ -148,36 +175,40 @@ export default function Dashboard() {
             { label: 'Completed',      value: completed.length },
             { label: 'Average score',  value: avg ? `${avg}/4` : '—' },
           ].map(stat => (
-            <div key={stat.label} className="bg-white rounded-xl border border-[#E5E7EB] p-5 text-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
-              <div className="text-2xl font-bold text-[#111827] mb-0.5">{stat.value}</div>
-              <div className="text-xs text-[#9CA3AF]">{stat.label}</div>
+            <div key={stat.label} className="rounded-xl p-5 text-center" style={{ background: '#fff', border: '1px solid #E8E4DC' }}>
+              <div className="text-2xl font-bold mb-0.5" style={{ color: '#17140F' }}>{stat.value}</div>
+              <div className="text-xs" style={{ color: '#9CA3AF' }}>{stat.label}</div>
             </div>
           ))}
         </div>
 
-        {/* CV Diagnostic CTA */}
-        <div className="mb-8 bg-white border border-[#E5E7EB] rounded-xl p-5 flex items-center gap-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+        {/* CV Diagnostic */}
+        <div className="rounded-xl p-5 flex items-center gap-5 mb-8" style={{ background: '#fff', border: '1px solid #E8E4DC' }}>
           <div className="text-3xl flex-shrink-0">📄</div>
           <div className="flex-1">
-            <h3 className="font-semibold text-[#111827] mb-0.5">CV Diagnostic</h3>
-            <p className="text-sm text-[#6B7280]">Score your CV against 5 Applied AI signals and find your weakest area before your interview.</p>
+            <h3 className="font-semibold mb-0.5" style={{ color: '#17140F' }}>CV Diagnostic</h3>
+            <p className="text-sm" style={{ color: '#6B7280' }}>Score your CV against 5 Applied AI signals and find your weakest area before your interview.</p>
           </div>
-          <Link href="/cv" className="flex-shrink-0 bg-[#F5A524] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+          <Link href="/cv"
+            className="flex-shrink-0 text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+            style={{ background: '#F5A524', color: '#fff' }}>
             Score my CV →
           </Link>
         </div>
 
         {/* Sessions */}
         <div className="mb-3">
-          <h2 className="text-sm font-semibold text-[#374151]">Recent sessions</h2>
+          <h2 className="text-sm font-semibold" style={{ color: '#374151' }}>Recent sessions</h2>
         </div>
 
         {sessions.length === 0 ? (
-          <div className="bg-white rounded-xl border border-[#E5E7EB] p-16 text-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+          <div className="rounded-xl p-16 text-center" style={{ background: '#fff', border: '1px solid #E8E4DC' }}>
             <div className="text-4xl mb-4">🎯</div>
-            <h3 className="font-semibold text-[#111827] mb-2">No sessions yet</h3>
-            <p className="text-[#6B7280] text-sm mb-6">Start your first interview to see your progress here.</p>
-            <Link href="/interview" className="inline-flex items-center bg-[#2563EB] text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-[#1D4ED8] transition-colors shadow-sm">
+            <h3 className="font-semibold mb-2" style={{ color: '#17140F' }}>No sessions yet</h3>
+            <p className="text-sm mb-6" style={{ color: '#6B7280' }}>Start your first interview to see your progress here.</p>
+            <Link href="/interview"
+              className="inline-flex items-center text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+              style={{ background: '#1E2A44', color: '#fff' }}>
               Start first session →
             </Link>
           </div>
@@ -190,19 +221,19 @@ export default function Dashboard() {
               const isCompleted  = s.status === 'completed'
               const isInProgress = s.status === 'active'
               const score  = report?.overall_score ?? null
-              const scoreColor = score === null ? '' : score >= 3 ? '#059669' : score >= 2 ? '#D97706' : '#DC2626'
 
               return (
-                <div key={s.id} className="bg-white rounded-xl border border-[#E5E7EB] p-4 flex items-center gap-4 hover:border-[#D1D5DB] transition-all group" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
-                  <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center text-xl flex-shrink-0">{icon}</div>
+                <div key={s.id} className="rounded-xl p-4 flex items-center gap-4 group transition-all"
+                  style={{ background: '#fff', border: '1px solid #E8E4DC' }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#F5F3EE' }}>{icon}</div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-[#111827] text-sm">{mod?.name_en ?? 'Interview'}</span>
-                      <span className="text-[#D1D5DB]">·</span>
-                      <span className="text-xs text-[#9CA3AF]">{s.language === 'fr' ? '🇫🇷 French' : '🇬🇧 English'}</span>
+                      <span className="font-medium text-sm" style={{ color: '#17140F' }}>{mod?.name_en ?? 'Interview'}</span>
+                      <span style={{ color: '#D1D5DB' }}>·</span>
+                      <span className="text-xs" style={{ color: '#9CA3AF' }}>{s.language === 'fr' ? '🇫🇷 French' : '🇬🇧 English'}</span>
                     </div>
-                    <div className="text-xs text-[#9CA3AF] mt-0.5">
+                    <div className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
                       {timeAgo(s.started_at)}
                       {isInProgress && ` · Sub-skill ${(s.current_sub_skill_idx ?? 0) + 1}/4`}
                       {s.completed_at && ` · ${Math.round((new Date(s.completed_at).getTime() - new Date(s.started_at).getTime()) / 60000)}m`}
@@ -210,30 +241,37 @@ export default function Dashboard() {
                   </div>
 
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    {isCompleted && score !== null ? (
+                    {isCompleted && score !== null && (
                       <div className="text-right">
-                        <div className="text-lg font-bold" style={{ color: scoreColor }}>{score.toFixed(1)}<span className="text-xs text-[#9CA3AF] font-normal">/4</span></div>
-                        <div className="text-xs text-[#9CA3AF]">Score</div>
+                        <div className="text-lg font-bold" style={{ color: scoreColor(score) }}>
+                          {score.toFixed(1)}<span className="text-xs font-normal" style={{ color: '#9CA3AF' }}>/4</span>
+                        </div>
+                        <div className="text-xs" style={{ color: '#9CA3AF' }}>Score</div>
                       </div>
-                    ) : isInProgress ? (
-                      <span className="text-xs bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A] px-2.5 py-1 rounded-full font-medium">In progress</span>
-                    ) : null}
-
+                    )}
+                    {isInProgress && (
+                      <span className="text-xs font-medium px-2.5 py-1 rounded-full"
+                        style={{ background: '#FEF9EC', color: '#92400E', border: '1px solid #F5D78A' }}>In progress</span>
+                    )}
                     {isCompleted && (
                       <Link href={`/interview/report?id=${s.id}&lang=${s.language}`}
-                        className="text-xs bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] px-3 py-1.5 rounded-lg hover:bg-[#DBEAFE] transition-colors font-medium">
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                        style={{ background: '#F0F4FF', color: '#1E2A44', border: '1px solid #C7D2FE' }}>
                         {report ? 'View report →' : 'No report'}
                       </Link>
                     )}
                     {isInProgress && (
                       <Link href={`/interview/session?id=${s.id}&lang=${s.language}`}
-                        className="text-xs bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] px-3 py-1.5 rounded-lg hover:bg-[#FDE68A] transition-colors font-medium">
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                        style={{ background: '#FEF9EC', color: '#92400E', border: '1px solid #F5D78A' }}>
                         Resume →
                       </Link>
                     )}
-
                     <button onClick={() => deleteSession(s.id)} disabled={deleting === s.id}
-                      className="text-xs text-[#D1D5DB] hover:text-[#DC2626] transition-colors p-1.5 rounded-lg hover:bg-[#FEF2F2] opacity-0 group-hover:opacity-100"
+                      className="text-xs p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      style={{ color: '#D1D5DB' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = '#B24C3F')}
+                      onMouseLeave={e => (e.currentTarget.style.color = '#D1D5DB')}
                       title="Delete session">
                       {deleting === s.id ? '...' : '🗑'}
                     </button>
@@ -246,13 +284,16 @@ export default function Dashboard() {
 
         {/* Upgrade banner */}
         {profile?.plan !== 'pro' && (
-          <div className="mt-8 bg-gradient-to-r from-[#EFF6FF] to-[#F0FDF4] border border-[#BFDBFE] rounded-xl p-6 flex flex-col sm:flex-row items-center gap-5">
+          <div className="mt-8 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-5"
+            style={{ background: 'linear-gradient(135deg, #F0F4FF 0%, #FEF9EC 100%)', border: '1px solid #E8E4DC' }}>
             <div className="text-3xl">🚀</div>
             <div className="flex-1">
-              <h3 className="font-semibold text-[#111827] mb-1">Unlock all 4 modules + unlimited sessions</h3>
-              <p className="text-sm text-[#6B7280]">RAG · Agents · Evaluation · MLOps — adaptive follow-ups and full diagnostic reports. $19/month.</p>
+              <h3 className="font-semibold mb-1" style={{ color: '#17140F' }}>Unlock all 4 modules + unlimited sessions</h3>
+              <p className="text-sm" style={{ color: '#6B7280' }}>RAG · Agents · Evaluation · MLOps — adaptive follow-ups and full diagnostic reports. $19/month.</p>
             </div>
-            <Link href="/pricing" className="flex-shrink-0 bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors shadow-sm whitespace-nowrap">
+            <Link href="/pricing"
+              className="flex-shrink-0 text-sm font-semibold px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap"
+              style={{ background: '#1E2A44', color: '#fff' }}>
               Upgrade to Pro →
             </Link>
           </div>
