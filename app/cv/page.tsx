@@ -59,12 +59,32 @@ export default function CvPage() {
       return
     }
     setParsing(true); setError('')
-    const form = new FormData(); form.append('file', file)
-    const res  = await fetch('/api/cv/parse', { method: 'POST', body: form })
-    const d    = await res.json()
-    if (res.ok) { setCv(d.text); setError('') }
-    else setError(d.error ?? 'Could not parse file.')
-    setParsing(false)
+    try {
+      let text = ''
+      if (ext === 'pdf') {
+        const pdfjsLib = await import('pdfjs-dist')
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+        const arrayBuffer = await file.arrayBuffer()
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+        const parts: string[] = []
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const content = await page.getTextContent()
+          parts.push(content.items.map((item: any) => ('str' in item ? item.str : '')).join(' '))
+        }
+        text = parts.join('\n')
+      } else {
+        text = await file.text()
+      }
+      text = text.replace(/\s+/g, ' ').trim().slice(0, 9000)
+      if (text.length < 50) { setError('Could not extract text from file. Try pasting your CV directly.'); return }
+      setCv(text); setError('')
+    } catch (e: any) {
+      console.error('[cv/handleFile]', e)
+      setError('Could not parse file. Try pasting your CV directly.')
+    } finally {
+      setParsing(false)
+    }
   }
 
   async function saveToProfile() {
