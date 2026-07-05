@@ -146,7 +146,7 @@ export default function HistoryPage() {
             <h1 className="text-2xl font-bold text-[#111827] mb-1">Past Sessions</h1>
             <p className="text-[#6B7280] text-sm">Your interview history — view reports, resume sessions, or delete.</p>
           </div>
-          <Link href="/app/start" className="text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm" style={{ background: '#F5A524', color: '#17140F' }}">
+          <Link href="/app/start" className="text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm" style={{ background: '#F5A524', color: '#17140F' }}>
             + New session
           </Link>
         </div>
