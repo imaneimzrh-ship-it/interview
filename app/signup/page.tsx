@@ -163,7 +163,7 @@ function SignupForm() {
             {step === 'details' ? 'Create your account' : 'Choose your plan'}
           </h1>
           <p className="text-sm text-dim">
-            {step === 'details' ? 'Free to start · No card required' : 'You can upgrade or cancel anytime'}
+            {step === 'details' ? 'Free plan available · No card required' : 'You can upgrade or cancel anytime'}
           </p>
         </div>
 

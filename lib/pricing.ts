@@ -7,7 +7,7 @@ export const FREE_TIER = {
   name: 'Free',
   price: 0,
   period: null as null,
-  description: 'No card required',
+  description: 'Sign up free · No card required',
   features: [
     '1 free session — any of the 4 modules',
     'Adaptive Claude follow-up questions',

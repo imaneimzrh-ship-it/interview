@@ -160,15 +160,15 @@ export default function CvPage() {
             <div className="text-center mb-10">
               <div className="inline-flex items-center gap-2 bg-[#FFF8EE] border border-[#F5A524]/30 text-[#D98A0B] text-xs font-semibold px-3 py-1.5 rounded-full mb-5"
                 style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '.05em' }}>
-                FREE · NO LOGIN · NO CARD
+                FREE WITH ACCOUNT · NO CARD
               </div>
               <h1 className="text-3xl sm:text-4xl font-bold text-[#17140F] mb-3 leading-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                 {lang === 'en' ? 'CV Readiness Diagnostic' : 'Diagnostic de préparation CV'}
               </h1>
               <p className="text-[#7A7267] text-base max-w-lg mx-auto leading-relaxed">
                 {lang === 'en'
-                  ? 'Find out exactly how your CV scores against an Applied AI Engineer hiring screen — free, no login, no card.'
-                  : "Découvrez exactement comment votre CV se positionne par rapport à un écran d'embauche — gratuit, sans connexion, sans carte."}
+                  ? 'Find out exactly how your CV scores against an Applied AI Engineer hiring screen — free on any plan, no card required.'
+                  : "Découvrez exactement comment votre CV se positionne par rapport à un écran d'embauche — gratuit sur tout plan, sans carte bancaire."}
               </p>
             </div>
 

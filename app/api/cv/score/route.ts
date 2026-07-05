@@ -7,13 +7,13 @@ import { CreditService } from '@/lib/credits'
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 const AI_MODEL = 'claude-sonnet-4-6'
 
-// Rate-limit anonymous calls: 10 per IP per hour (in-memory, fine for single Vercel instance)
+// Per-user rate limit: 3 CV scores per hour (signed-in users only)
 const rateMap = new Map<string, { count: number; reset: number }>()
-function isRateLimited(ip: string): boolean {
+function isRateLimited(key: string): boolean {
   const now = Date.now()
-  const entry = rateMap.get(ip)
-  if (!entry || now > entry.reset) { rateMap.set(ip, { count: 1, reset: now + 3_600_000 }); return false }
-  if (entry.count >= 10) return true
+  const entry = rateMap.get(key)
+  if (!entry || now > entry.reset) { rateMap.set(key, { count: 1, reset: now + 3_600_000 }); return false }
+  if (entry.count >= 3) return true
   entry.count++; return false
 }
 
@@ -24,24 +24,11 @@ function extractJson(raw: string): unknown {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'anon'
-
-  // ── Per-user gate (server-side, DB-enforced) ─────────────────────────────
-  // Authenticated users: 1 free CV score ever (by user_id AND email).
-  // Anonymous users:     IP rate limit as fallback.
+  // Sign-in required — middleware enforces this for the page, but API must also guard
   const { user } = await getServerUser(req)
-  if (user) {
-    const adminSb = adminClient()
-    const alreadyUsed = await CreditService.hasUsedFreeCvScore(adminSb, user.id, user.email ?? '')
-    if (alreadyUsed) {
-      return NextResponse.json({
-        error: 'cv_already_used',
-        message: 'You have already used your free CV score. Sign in to a different account or contact support.',
-      }, { status: 403 })
-    }
-  } else {
-    if (isRateLimited(ip)) return NextResponse.json({ error: 'Too many requests — try again later.' }, { status: 429 })
-  }
+  if (!user) return NextResponse.json({ error: 'Sign in required.' }, { status: 401 })
+
+  if (isRateLimited(user.id)) return NextResponse.json({ error: 'Too many requests — try again later.' }, { status: 429 })
 
   let body: { cv: string; lang?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 }) }

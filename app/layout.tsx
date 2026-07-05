@@ -8,7 +8,7 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mon
 
 export const metadata: Metadata = {
   title: 'Sonne AI — Applied AI Engineer Interview Prep',
-  description: 'Score your CV and practice the Applied AI Engineer interview. RAG, agents, evaluation, cost & safety. EN/FR. Free CV diagnostic — no card, no login.',
+  description: 'Score your CV and practice the Applied AI Engineer interview. RAG, agents, evaluation, cost & safety. EN/FR. Free CV diagnostic included — sign up to get started.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

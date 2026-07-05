@@ -46,7 +46,7 @@ export default function Home() {
           Score your CV against the 5 signals hiring managers actually care about. Then practice the exact interview loop — adaptive, bilingual, sub-skill diagnostic.
         </p>
 
-        <p className="text-sm text-[#7A7267] mb-10">Free CV diagnostic — no card, no login. Takes 30 seconds.</p>
+        <p className="text-sm text-[#7A7267] mb-10">Free CV diagnostic included with every account. Takes 30 seconds.</p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
           <Link href="/cv"
@@ -62,8 +62,8 @@ export default function Home() {
         </div>
 
         <div className="flex items-center justify-center gap-5 text-sm text-[#7A7267]">
-          <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> No card required</span>
-          <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> No login for CV score</span>
+          <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> Free plan — no card</span>
+          <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> Sign up in 30 seconds</span>
           <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> EN & FR</span>
         </div>
       </section>
@@ -144,7 +144,7 @@ export default function Home() {
         </div>
         <div className="space-y-4">
           {[
-            { step:'01', title:'Score your CV',       desc:'Paste your CV — get a score on 5 signals in 30 seconds. No login required.', href:'/cv', cta:'Score my CV →', sun:true },
+            { step:'01', title:'Score your CV',       desc:'Paste your CV — get a score on 5 signals in 30 seconds. Included on the free plan.', href:'/cv', cta:'Score my CV →', sun:true },
             { step:'02', title:'Practice the module', desc:'Start with the recommended module. 4 sub-skills, adaptive probing, adaptive follow-ups.', href:'/app/start', cta:'Start session →', sun:false },
             { step:'03', title:'Get your diagnostic', desc:'Per-sub-skill scores, evidence quotes, and one concrete fix for each gap.', href:'/app/history', cta:'View example →', sun:false },
           ].map(s => (
