@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import AppLayout from '@/components/app/AppLayout'
 import { createClient } from '@/lib/supabase/client'
@@ -27,16 +27,20 @@ const MODULE_TO_CLUSTER: Record<string, string> = {
 
 type PreviewQuestion = { id: string; question_text: string; interview_round: string; difficulty_rating: number | null }
 
-export default function StartPage() {
-  const router    = useRouter()
-  const [jd,      setJd]      = useState('')
-  const [resume,  setResume]  = useState('')
-  const [module_, setModule]  = useState('')
-  const [lang,    setLang]    = useState<'en'|'fr'>('en')
-  const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState('')
-  const [isPro,   setIsPro]   = useState<boolean | null>(null)
-  const [preview, setPreview] = useState<PreviewQuestion[]>([])
+function StartPageInner() {
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+  const moduleRef    = useRef<HTMLDivElement>(null)
+
+  const [jd,        setJd]      = useState('')
+  const [resume,    setResume]  = useState('')
+  const [module_,   setModule]  = useState('')
+  const [lang,      setLang]    = useState<'en'|'fr'>('en')
+  const [loading,   setLoading] = useState(false)
+  const [error,     setError]   = useState('')
+  const [isPro,     setIsPro]   = useState<boolean | null>(null)
+  const [preview,   setPreview] = useState<PreviewQuestion[]>([])
+  const [highlight, setHighlight] = useState(false)
 
   useEffect(() => {
     createClient().auth.getUser().then(async ({ data: { user } }) => {
@@ -45,6 +49,22 @@ export default function StartPage() {
       setIsPro(p?.plan === 'pro')
     })
   }, [])
+
+  // Pre-select module from URL param (e.g. coming from CV diagnostic gap CTA)
+  useEffect(() => {
+    const moduleParam = searchParams.get('module')
+    const langParam   = searchParams.get('lang') as 'en' | 'fr' | null
+    if (moduleParam) {
+      setModule(moduleParam)
+      if (langParam === 'fr') setLang('fr')
+      // Scroll module grid into view and briefly highlight
+      setHighlight(true)
+      setTimeout(() => {
+        moduleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 200)
+      setTimeout(() => setHighlight(false), 2000)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (!module_) { setPreview([]); return }
@@ -129,7 +149,8 @@ export default function StartPage() {
           </div>
 
           {/* Module + Language */}
-          <div className="bg-white rounded-xl border border-[#E5E7EB] p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+          <div ref={moduleRef} className="bg-white rounded-xl border p-5 transition-all duration-500"
+            style={{ boxShadow: highlight ? '0 0 0 3px rgba(245,165,36,.35)' : '0 1px 3px rgba(0,0,0,.05)', borderColor: highlight ? '#F5A524' : '#E5E7EB' }}>
             <div className="flex items-center justify-between mb-4">
               <label className="font-semibold text-[#111827] text-sm">Interview Module</label>
               <div className="flex gap-1 bg-[#F3F4F6] rounded-lg p-0.5">
@@ -251,4 +272,8 @@ export default function StartPage() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </AppLayout>
   )
+}
+
+export default function StartPage() {
+  return <Suspense fallback={null}><StartPageInner /></Suspense>
 }

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { BAND_COLORS, type Band } from '@/lib/signals'
+import { GAP_TO_MODULE, MODULE_NAME_TO_SLUG } from '@/lib/gap-module-map'
 
 const SIGNAL_LABELS: Record<string, { en: string; fr: string; icon: string }> = {
   production: { en: 'Production Evidence', fr: 'Expérience en production',   icon: '🚀' },
@@ -10,13 +11,6 @@ const SIGNAL_LABELS: Record<string, { en: string; fr: string; icon: string }> = 
   agentic:    { en: 'Agentic Experience',  fr: 'Expérience agentique',        icon: '🕵️' },
   eval:       { en: 'Evaluation Literacy', fr: "Maîtrise de l'évaluation",    icon: '🧪' },
   cost:       { en: 'Cost & Safety',       fr: 'Coût et sécurité',            icon: '⚙️' },
-}
-
-const MODULE_SLUGS: Record<string, string> = {
-  'RAG System Design':          'rag_system_design',
-  'Agentic Systems':            'agentic_systems',
-  'Evaluation & Observability': 'evaluation_observability',
-  'Cost, Latency & Safety':     'cost_latency_safety',
 }
 
 interface CvResult {
@@ -116,12 +110,14 @@ export default function CvPage() {
   }
 
   const scoreColor = (s: number) => s >= 70 ? '#2E7D5B' : s >= 45 ? '#C77D2E' : '#B24C3F'
-  const moduleSlug = result ? (MODULE_SLUGS[result.recommendModule] ?? 'rag_system_design') : ''
+  const moduleSlug = result ? (MODULE_NAME_TO_SLUG[result.recommendModule] ?? 'rag_system_design') : ''
 
   // Free signed-in users get full CV breakdown — it's the free-tier feature
   // Anon users (should not reach here due to middleware) see only overall
   const canSeeFullBreakdown = loggedIn
   const weakestSignal = result?.signals?.reduce((a, b) => a.score < b.score ? a : b) ?? null
+  // Config-driven gap → module lookup (uses weakest signal key, not AI free text)
+  const gapModule = weakestSignal ? (GAP_TO_MODULE[weakestSignal.key] ?? null) : null
 
   return (
     <div className="min-h-screen" style={{ background: '#FBFAF7', fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -358,6 +354,43 @@ export default function CvPage() {
               <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl p-5 mb-4">
                 <div className="text-xs font-semibold text-[#C77D2E] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>⚠ {lang === 'en' ? 'Biggest gap' : 'Lacune principale'}</div>
                 <p className="text-sm text-[#78350F]">{result.gap}</p>
+              </div>
+            )}
+
+            {/* Gap handoff CTA — config-driven, always shown when we have a gap + mapping */}
+            {result.gap && gapModule && (
+              <div className="rounded-2xl border-2 p-5 mb-4"
+                style={{ background: 'linear-gradient(135deg, #1E2A44 0%, #2D3E60 100%)', borderColor: '#F5A524' }}>
+                <div className="text-xs font-semibold uppercase tracking-widest mb-3"
+                  style={{ fontFamily: "'JetBrains Mono', monospace", color: '#F5A524' }}>
+                  → {lang === 'en' ? 'Practice this gap now' : 'Pratiquez cette lacune maintenant'}
+                </div>
+                <p className="text-sm text-[#CBD5E1] mb-4 leading-relaxed">
+                  <span className="font-semibold text-white">{lang === 'en' ? 'Your biggest gap: ' : 'Votre lacune principale : '}</span>
+                  {result.gap}
+                </p>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{gapModule.emoji}</span>
+                    <div>
+                      <div className="text-sm font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                        {gapModule.name}
+                      </div>
+                      {!gapModule.free && (
+                        <div className="text-[10px] font-bold text-[#F5A524]">
+                          {lang === 'en' ? 'Pro module' : 'Module Pro'}
+                          {!isPro && (lang === 'en' ? ' — upgrade to unlock' : ' — passez à Pro')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Link
+                    href={`/app/start?module=${gapModule.slug}&lang=${lang}`}
+                    className="inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl transition-all whitespace-nowrap"
+                    style={{ background: '#F5A524', color: '#17140F', fontFamily: "'Space Grotesk', sans-serif", boxShadow: '0 2px 8px rgba(245,165,36,.4)' }}>
+                    {lang === 'en' ? 'Practice this now →' : 'Pratiquer maintenant →'}
+                  </Link>
+                </div>
               </div>
             )}
 
