@@ -122,7 +122,7 @@ export default function Pricing() {
 
         <div className="mt-8 space-y-2 text-center">
           <p className="text-xs text-[#7A7267]">{PRICING_NOTE}</p>
-          <p className="text-xs text-[#7A7267]">{REFUND_NOTE}</p>
+          {REFUND_NOTE && <p className="text-xs text-[#7A7267]">{REFUND_NOTE}</p>}
           <p className="text-xs text-[#7A7267]">
             Questions?{' '}
             <a href={`mailto:${SUPPORT_EMAIL}`} className="text-[#F5A524] hover:underline">{SUPPORT_EMAIL}</a>

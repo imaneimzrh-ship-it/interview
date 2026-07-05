@@ -46,5 +46,5 @@ export const FREE_SHORT = '1 free session · any module · headline diagnostic'
 export const PRO_SHORT  = 'All 4 modules · unlimited sessions · full diagnostic breakdowns'
 
 export const PRICING_NOTE  = `You're interviewing for roles that pay ${CURRENCY}100K–${CURRENCY}500K+. This costs ${CURRENCY}${PRO_TIER.price}/month.`
-export const REFUND_NOTE   = 'Not satisfied? Email support@sonneai.com and we\'ll work it out.'
+export const REFUND_NOTE   = ''
 export const SUPPORT_EMAIL = 'support@sonneai.com'
