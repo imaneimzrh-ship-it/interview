@@ -118,8 +118,9 @@ export default function CvPage() {
   const scoreColor = (s: number) => s >= 70 ? '#2E7D5B' : s >= 45 ? '#C77D2E' : '#B24C3F'
   const moduleSlug = result ? (MODULE_SLUGS[result.recommendModule] ?? 'rag_system_design') : ''
 
-  // Gating: free/anon see only overall + single weakest signal
-  const canSeeFullBreakdown = loggedIn && isPro
+  // Free signed-in users get full CV breakdown — it's the free-tier feature
+  // Anon users (should not reach here due to middleware) see only overall
+  const canSeeFullBreakdown = loggedIn
   const weakestSignal = result?.signals?.reduce((a, b) => a.score < b.score ? a : b) ?? null
 
   return (

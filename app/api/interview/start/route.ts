@@ -26,6 +26,12 @@ export async function POST(req: NextRequest) {
     const { data: profile } = await sb.from('profiles').select('plan').eq('id', user.id).single()
     const isPro = profile?.plan === 'pro'
 
+    // Free users may only access the RAG module
+    const FREE_MODULES = ['rag_system_design']
+    if (!isPro && !FREE_MODULES.includes(module_slug)) {
+      return NextResponse.json({ error: 'Pro plan required for this module.', upgrade: true }, { status: 403 })
+    }
+
     if (!isPro) {
       // ── Credit check + deduction for free users ──
       try {

@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import AppLayout from '@/components/app/AppLayout'
 import { createClient } from '@/lib/supabase/client'
 
@@ -25,6 +26,25 @@ export default function StartPage() {
   const [lang,    setLang]    = useState<'en'|'fr'>('en')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
+  const [isPro,   setIsPro]   = useState<boolean | null>(null)
+
+  useEffect(() => {
+    createClient().auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data: p } = await createClient().from('profiles').select('plan').eq('id', user.id).single()
+      setIsPro(p?.plan === 'pro')
+    })
+  }, [])
+
+  function handleModuleClick(id: string, isFreeModule: boolean) {
+    if (!isFreeModule && isPro === false) {
+      // Free user trying to access a Pro module — send to pricing
+      router.push('/pricing')
+      return
+    }
+    setModule(id)
+    setError('')
+  }
 
   async function start() {
     if (!module_) { setError('Please select a module.'); return }
@@ -46,6 +66,8 @@ export default function StartPage() {
       router.push(`/app/interview/session?id=${data.sessionId}&lang=${lang}&module=${module_}`)
     } catch { setError('Network error.'); setLoading(false) }
   }
+
+  const planLoaded = isPro !== null
 
   return (
     <AppLayout>
@@ -97,31 +119,55 @@ export default function StartPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {MODULES.map(m => {
-                const selected = module_ === m.id
+                const selected  = module_ === m.id
+                const locked    = planLoaded && !isPro && !m.free
+
                 return (
-                  <button key={m.id} onClick={() => setModule(m.id)}
-                    className="text-left p-4 rounded-xl border-2 transition-all"
+                  <button key={m.id} onClick={() => handleModuleClick(m.id, m.free)}
+                    className="text-left p-4 rounded-xl border-2 transition-all relative"
                     style={{
-                      borderColor: selected ? '#F5A524' : '#E5E7EB',
-                      background: selected ? '#FFF8EE' : 'white',
-                      boxShadow: selected ? '0 0 0 3px rgba(245,165,36,.12)' : '0 1px 2px rgba(0,0,0,.04)',
+                      borderColor: selected ? '#F5A524' : locked ? '#E5E7EB' : '#E5E7EB',
+                      background:  selected ? '#FFF8EE' : locked ? '#F9FAFB' : 'white',
+                      boxShadow:   selected ? '0 0 0 3px rgba(245,165,36,.12)' : '0 1px 2px rgba(0,0,0,.04)',
+                      opacity:     locked ? 0.65 : 1,
                     }}>
                     <div className="flex items-start justify-between mb-2">
-                      <span className="text-xl">{m.emoji}</span>
+                      <span className="text-xl">{locked ? '🔒' : m.emoji}</span>
                       <div className="flex items-center gap-1">
                         {selected && <span className="text-[#F5A524] text-sm">✓</span>}
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                          style={{ background: m.free ? '#ECFDF5' : '#EEF1F6', color: m.free ? '#065F46' : '#1E2A44', border: m.free ? '1px solid #A7F3D0' : '1px solid #C7D0E0' }}>
+                          style={{
+                            background: m.free ? '#ECFDF5' : '#EEF1F6',
+                            color:      m.free ? '#065F46' : '#1E2A44',
+                            border:     m.free ? '1px solid #A7F3D0' : '1px solid #C7D0E0',
+                          }}>
                           {m.free ? 'FREE' : 'PRO'}
                         </span>
                       </div>
                     </div>
                     <div className="text-sm font-semibold text-[#111827] mb-0.5">{m.name}</div>
                     <div className="text-xs text-[#6B7280]">{m.desc}</div>
+                    {locked && (
+                      <div className="mt-2 text-[10px] font-semibold text-[#F5A524]">Upgrade to Pro to unlock →</div>
+                    )}
                   </button>
                 )
               })}
             </div>
+
+            {/* Upgrade banner for free users */}
+            {planLoaded && !isPro && (
+              <div className="mt-4 flex items-center justify-between gap-3 bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-4 py-3">
+                <p className="text-xs text-[#6B7280]">
+                  <span className="font-semibold text-[#111827]">Free plan:</span> RAG module only · 1 session
+                </p>
+                <Link href="/pricing"
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors"
+                  style={{ background: '#F5A524', color: '#17140F' }}>
+                  Upgrade to Pro →
+                </Link>
+              </div>
+            )}
           </div>
 
           {error && (
