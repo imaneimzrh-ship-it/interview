@@ -20,9 +20,9 @@ const VALID_OUTCOMES: Outcome[] = ['offer', 'rejected', 'no_response', 'still_in
 const VALID_VISIBILITY: CompanyVisibility[] = ['named', 'generic', 'undisclosed']
 const VALID_SIZES = ['startup', 'mid_size', 'large', 'enterprise']
 
-function generateDisplayName(email: string): string {
+function generateUsername(email: string): string {
   const base = email.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 12)
-  const suffix = Math.floor(Math.random() * 90) + 10
+  const suffix = Math.floor(Math.random() * 9000) + 1000
   return `${base}_${suffix}`
 }
 
@@ -77,7 +77,6 @@ export async function POST(req: NextRequest) {
     source_url,
     source_note,
     year,
-    display_name: rawDisplayName,
   } = body
 
   // ── Validation ──
@@ -128,11 +127,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid content detected.' }, { status: 400 })
   }
 
-  const displayName = rawDisplayName?.trim() || generateDisplayName(user.email ?? 'anon')
+  // Resolve stable public username from profile — generate + persist if first submission
+  const sb = adminClient()
+  const { data: prof } = await sb.from('profiles').select('question_username').eq('id', user.id).single()
+  let username = prof?.question_username as string | null | undefined
+  if (!username) {
+    username = generateUsername(user.email ?? 'anon')
+    // Avoid collision: retry up to 3 times
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { error: uErr } = await sb.from('profiles').update({ question_username: username }).eq('id', user.id)
+      if (!uErr) break
+      username = generateUsername(user.email ?? 'anon')
+    }
+  }
 
-  const { error } = await adminClient().from('question_reports').insert({
+  const { error } = await sb.from('question_reports').insert({
     submitted_by:       user.id,
-    display_name:       displayName.slice(0, 40),
+    display_name:       (username ?? 'anon').slice(0, 40),
     role_title:         role_title?.trim() || 'AI/ML Engineer',
     role_cluster,
     company_visibility,

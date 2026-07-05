@@ -5,7 +5,7 @@ import Link from 'next/link'
 import AppLayout from '@/components/app/AppLayout'
 import { createClient } from '@/lib/supabase/client'
 
-interface Profile { email: string; full_name: string; plan: string; created_at: string }
+interface Profile { email: string; full_name: string; plan: string; created_at: string; question_username?: string | null }
 interface Cv      { text: string; updated_at: string }
 
 async function authHeader(): Promise<Record<string, string>> {
@@ -21,9 +21,13 @@ export default function SettingsPage() {
   const [profile,      setProfile]      = useState<Profile | null>(null)
   const [cv,           setCv]           = useState<Cv | null>(null)
   const [loading,      setLoading]      = useState(true)
-  const [saving,       setSaving]       = useState(false)
-  const [fullName,     setFullName]     = useState('')
-  const [nameSaved,    setNameSaved]    = useState(false)
+  const [saving,         setSaving]         = useState(false)
+  const [fullName,       setFullName]       = useState('')
+  const [nameSaved,      setNameSaved]      = useState(false)
+  const [username,       setUsername]       = useState('')
+  const [usernameSaving, setUsernameSaving] = useState(false)
+  const [usernameSaved,  setUsernameSaved]  = useState(false)
+  const [usernameError,  setUsernameError]  = useState('')
   const [deletingCv,   setDeletingCv]   = useState(false)
   const [portalLoading,setPortalLoading]= useState(false)
   const [deleteConfirm,setDeleteConfirm]= useState(false)
@@ -36,11 +40,11 @@ export default function SettingsPage() {
     if (!u) { router.push('/login'); return }
 
     const [{ data: p }, { data: c }] = await Promise.all([
-      sb.from('profiles').select('email, full_name, plan, created_at').eq('id', u.id).single(),
+      sb.from('profiles').select('email, full_name, plan, created_at, question_username').eq('id', u.id).single(),
       sb.from('cvs').select('text, updated_at').eq('user_id', u.id).maybeSingle(),
     ])
 
-    if (p) { setProfile(p); setFullName(p.full_name ?? '') }
+    if (p) { setProfile(p); setFullName(p.full_name ?? ''); setUsername(p.question_username ?? '') }
     setCv(c ?? null)
     setLoading(false)
   }
@@ -55,6 +59,26 @@ export default function SettingsPage() {
     else setNameSaved(true)
     setSaving(false)
     setTimeout(() => setNameSaved(false), 3000)
+  }
+
+  async function saveUsername() {
+    const trimmed = username.trim().toLowerCase()
+    if (!trimmed) return
+    if (!/^[a-z0-9_]{3,30}$/.test(trimmed)) {
+      setUsernameError('3–30 characters, letters, numbers, and underscores only.')
+      return
+    }
+    setUsernameSaving(true); setUsernameError('')
+    const { data: { user: u } } = await sb.auth.getUser()
+    if (!u) return
+    const { error } = await sb.from('profiles').update({ question_username: trimmed }).eq('id', u.id)
+    if (error) {
+      setUsernameError(error.message.includes('unique') ? 'That username is already taken.' : error.message)
+    } else {
+      setUsernameSaved(true)
+      setTimeout(() => setUsernameSaved(false), 3000)
+    }
+    setUsernameSaving(false)
   }
 
   async function deleteCv() {
@@ -129,6 +153,28 @@ export default function SettingsPage() {
                     {nameSaved ? '✓ Saved' : saving ? '...' : 'Save'}
                   </button>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs text-[#6B7280] mb-1.5">
+                  Public username <span className="text-[#9CA3AF]">— shown on AI Reports</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={username}
+                    onChange={e => { setUsername(e.target.value); setUsernameError('') }}
+                    onKeyDown={e => e.key === 'Enter' && saveUsername()}
+                    placeholder="e.g. alex_ml"
+                    maxLength={30}
+                    className="flex-1 text-sm text-[#111827] bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/20 focus:border-[#F5A524] transition-all font-mono"
+                  />
+                  <button onClick={saveUsername} disabled={usernameSaving || !username.trim()}
+                    className="text-sm font-medium px-4 py-2.5 rounded-lg border border-[#E5E7EB] hover:bg-[#F3F4F6] disabled:opacity-50 transition-all"
+                    style={{ color: usernameSaved ? '#059669' : '#374151' }}>
+                    {usernameSaved ? '✓ Saved' : usernameSaving ? '...' : 'Save'}
+                  </button>
+                </div>
+                {usernameError && <p className="text-xs text-[#DC2626] mt-1">{usernameError}</p>}
+                {!usernameError && <p className="text-xs text-[#9CA3AF] mt-1">Letters, numbers, underscores · 3–30 characters</p>}
               </div>
               <div className="text-xs text-[#9CA3AF]">Joined {joinDate}</div>
             </div>
