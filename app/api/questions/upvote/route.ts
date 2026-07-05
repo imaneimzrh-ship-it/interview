@@ -10,10 +10,21 @@ export async function POST(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id required.' }, { status: 400 })
 
   const { error } = await adminClient()
-    .from('question_reports')
-    .update({ status: 'flagged' })
-    .eq('id', id)
+    .rpc('increment_upvotes', { row_id: id })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Fallback if RPC not available: manual increment
+  if (error) {
+    const { data: current } = await adminClient()
+      .from('question_reports')
+      .select('upvotes')
+      .eq('id', id)
+      .single()
+    const { error: updateErr } = await adminClient()
+      .from('question_reports')
+      .update({ upvotes: (current?.upvotes ?? 0) + 1 })
+      .eq('id', id)
+    if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
+  }
+
   return NextResponse.json({ ok: true })
 }

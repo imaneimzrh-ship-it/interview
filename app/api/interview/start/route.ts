@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerUser } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { openQuestion } from '@/lib/claude/interviewer'
 import { SESSION_SUB_SKILLS, type SessionType } from '@/lib/credits'
 
@@ -19,9 +20,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please provide a job description or resume (at least 50 characters) to personalise the interview.' }, { status: 400 })
     }
 
-    // Basic prompt-injection guard: reject content that looks like instructions rather than a JD/resume
-    const INJECT_PATTERNS = [/ignore (previous|above|all) instructions/i, /you are now/i, /system prompt/i, /disregard your/i]
+    // Semantic check: reject obvious placeholder text and low-diversity content
+    const PLACEHOLDER_PATTERNS = [/\blorem\s+ipsum\b/i, /^(.{1,15})\1{4,}/m, /^[a-z\s]{0,5}$/i]
     const combined = jd + ' ' + resume
+    const uniqueWords = new Set((combined.toLowerCase().match(/\b[a-z]{3,}\b/g) ?? []))
+    if (PLACEHOLDER_PATTERNS.some(p => p.test(combined)) || uniqueWords.size < 8) {
+      return NextResponse.json({ error: 'Please paste a real job description or resume — the text you entered doesn\'t look like professional content.' }, { status: 400 })
+    }
+
+    // Injection guard
+    const INJECT_PATTERNS = [/ignore (previous|above|all) instructions/i, /you are now/i, /system prompt/i, /disregard your/i]
     if (INJECT_PATTERNS.some(p => p.test(combined))) {
       return NextResponse.json({ error: 'Invalid content detected in job description or resume.' }, { status: 400 })
     }
@@ -31,12 +39,26 @@ export async function POST(req: NextRequest) {
     const sessionId = crypto.randomUUID()
 
     // ── Plan-based access gate ──
-    const { data: profile } = await sb.from('profiles').select('plan').eq('id', user.id).single()
+    const { data: profile } = await sb.from('profiles').select('plan, has_used_free_session').eq('id', user.id).single()
     const isPro = profile?.plan === 'pro'
 
     const FREE_MODULES = ['rag_system_design']
     if (!isPro && !FREE_MODULES.includes(module_slug)) {
       return NextResponse.json({ error: 'Pro plan required for this module.', upgrade: true }, { status: 403 })
+    }
+
+    // ── Free session cap: 1 session per account ──
+    if (!isPro) {
+      const { count } = await sb
+        .from('interview_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+      if ((count ?? 0) >= 1) {
+        return NextResponse.json({
+          error: 'You\'ve used your free session. Upgrade to Pro for unlimited sessions across all modules.',
+          upgrade: true,
+        }, { status: 403 })
+      }
     }
 
     // Load module + role track
@@ -113,6 +135,17 @@ export async function POST(req: NextRequest) {
       question_text: lang === 'fr' ? firstQuestion.body_fr : firstQuestion.body_en,
       answer_text:   '',
     })
+
+    // Mark free session used on profile + device_signals
+    if (!isPro) {
+      await sb.from('profiles').update({ has_used_free_session: true }).eq('id', user.id)
+      const deviceId: string | undefined = body.device_id
+      if (deviceId) {
+        await adminClient()
+          .from('device_signals')
+          .upsert({ device_id: deviceId, used_free_session: true, last_seen_at: new Date().toISOString() }, { onConflict: 'device_id' })
+      }
+    }
 
     return NextResponse.json({
       sessionId:          session.id,

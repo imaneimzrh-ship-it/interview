@@ -124,6 +124,131 @@ function AskInterviewer({ sessionId, lang }: { sessionId: string; lang: string }
   )
 }
 
+function ShareQuestionPrompt({ lang, moduleName }: { lang: string; moduleName: string }) {
+  const [text,       setText]       = useState('')
+  const [round,      setRound]      = useState('technical')
+  const [cluster,    setCluster]    = useState('ai_llm_engineer')
+  const [visibility, setVisibility] = useState<'named'|'undisclosed'>('undisclosed')
+  const [company,    setCompany]    = useState('')
+  const [source,     setSource]     = useState('')
+  const [difficulty, setDifficulty] = useState(0)
+  const [submitting, setSubmitting] = useState(false)
+  const [done,       setDone]       = useState(false)
+  const [open,       setOpen]       = useState(false)
+  const [err,        setErr]        = useState('')
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (text.trim().length < 20) { setErr(lang === 'fr' ? 'Au moins 20 caractères.' : 'At least 20 characters.'); return }
+    if (visibility === 'named' && !company.trim()) { setErr('Company name is required when naming a company.'); return }
+    if (visibility === 'named' && !source.trim()) { setErr('A source note is required when naming a company.'); return }
+    setSubmitting(true); setErr('')
+    const hdrs = await authHeader()
+    const res = await fetch('/api/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...hdrs },
+      body: JSON.stringify({
+        question_text:      text,
+        role_cluster:       cluster,
+        role_title:         moduleName,
+        interview_round:    round,
+        difficulty_rating:  difficulty || null,
+        company_visibility: visibility,
+        company_name:       visibility === 'named' ? company : null,
+        source_note:        visibility === 'named' ? source : null,
+        outcome:            'prefer_not_to_say',
+      }),
+    })
+    if (res.ok) { setDone(true) } else { const d = await res.json(); setErr(d.error ?? 'Failed.') }
+    setSubmitting(false)
+  }
+
+  if (done) return (
+    <div className="bg-[#ECFDF5] border border-[#A7F3D0] rounded-2xl px-5 py-4 text-sm text-[#065F46] flex items-center gap-3">
+      <span className="text-lg">✓</span>
+      <div>
+        <p className="font-semibold">{lang === 'fr' ? 'Merci pour votre contribution !' : 'Report submitted — thank you.'}</p>
+        <p className="text-xs text-[#047857] mt-0.5">{lang === 'fr' ? 'Votre question aide la communauté.' : 'Your question is now in the AI role interview database.'}</p>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#E7E2D8] shadow-sm overflow-hidden">
+      <button onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-[#FAFAF8] transition-colors">
+        <div>
+          <p className="text-sm font-semibold text-[#374151]">
+            {lang === 'fr' ? 'Ajouter une question au répertoire AI' : 'Add a question to the AI role interview database'}
+          </p>
+          <p className="text-xs text-[#9CA3AF] mt-0.5">
+            {lang === 'fr' ? 'Aidez d\'autres ingénieurs en partageant ce que vous avez rencontré' : 'Help other engineers see what real AI-role interviews look like'}
+          </p>
+        </div>
+        <span className="text-[#C77D2E] text-xs font-bold flex-shrink-0 ml-4"
+          style={{ display:'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0)', transition:'transform .2s' }}>↓</span>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 border-t border-[#F3F0EB]">
+          <form onSubmit={submit} className="space-y-3 pt-4">
+            <textarea value={text} onChange={e => setText(e.target.value)} rows={3} required
+              placeholder={lang === 'fr' ? 'Décrivez la question — paraphrase acceptée…' : 'Describe the question — paraphrasing is fine…'}
+              className="w-full text-sm border border-[#E7E2D8] rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/25 focus:border-[#F5A524] resize-none" />
+            <div className="grid grid-cols-2 gap-3">
+              <select value={cluster} onChange={e => setCluster(e.target.value)}
+                className="text-sm border border-[#E7E2D8] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/20 focus:border-[#F5A524]">
+                <option value="ai_llm_engineer">AI / LLM Engineer</option>
+                <option value="applied_ai_mlops">Applied AI / MLOps</option>
+                <option value="ai_automation_engineer">AI Automation</option>
+                <option value="fde">Forward Deployed</option>
+              </select>
+              <select value={round} onChange={e => setRound(e.target.value)}
+                className="text-sm border border-[#E7E2D8] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/20 focus:border-[#F5A524]">
+                <option value="screen">Screen</option>
+                <option value="technical">Technical</option>
+                <option value="system_design">System Design</option>
+                <option value="behavioral">Behavioral</option>
+                <option value="final">Final / Onsite</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => setVisibility('undisclosed')}
+                className="p-2.5 rounded-lg border-2 text-xs text-left transition-all"
+                style={{ borderColor: visibility === 'undisclosed' ? '#F5A524' : '#E7E2D8', background: visibility === 'undisclosed' ? '#FFF8EE' : 'white' }}>
+                <span className="font-semibold block">{lang === 'fr' ? 'Entreprise non divulguée' : 'Company undisclosed'}</span>
+                <span className="text-[#9CA3AF]">{lang === 'fr' ? 'Rester privé' : 'Stay private'}</span>
+              </button>
+              <button type="button" onClick={() => setVisibility('named')}
+                className="p-2.5 rounded-lg border-2 text-xs text-left transition-all"
+                style={{ borderColor: visibility === 'named' ? '#F5A524' : '#E7E2D8', background: visibility === 'named' ? '#FFF8EE' : 'white' }}>
+                <span className="font-semibold block">{lang === 'fr' ? 'Nommer l\'entreprise' : 'Name the company'}</span>
+                <span className="text-[#9CA3AF]">{lang === 'fr' ? 'Source requise' : 'Requires a source'}</span>
+              </button>
+            </div>
+            {visibility === 'named' && (
+              <div className="space-y-2">
+                <input value={company} onChange={e => setCompany(e.target.value)}
+                  placeholder={lang === 'fr' ? 'Nom de l\'entreprise *' : 'Company name *'}
+                  className="w-full text-sm border border-[#E7E2D8] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/20 focus:border-[#F5A524]" />
+                <input value={source} onChange={e => setSource(e.target.value)}
+                  placeholder={lang === 'fr' ? 'Source : forum, blog, appel recruteur… *' : 'Source: public forum, blog, recruiter call… *'}
+                  className="w-full text-sm border border-[#E7E2D8] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/20 focus:border-[#F5A524]" />
+              </div>
+            )}
+            {err && <p className="text-xs text-[#DC2626]">{err}</p>}
+            <button type="submit" disabled={submitting || text.trim().length < 20}
+              className="w-full text-sm font-bold py-2.5 rounded-xl disabled:opacity-40 transition-all"
+              style={{ background: '#F5A524', color: '#17140F' }}>
+              {submitting ? '…' : (lang === 'fr' ? 'Ajouter au répertoire →' : 'Add to the database →')}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ReportInner() {
   const params    = useSearchParams()
   const router    = useRouter()
@@ -321,6 +446,9 @@ function ReportInner() {
             {deleting?'…':(lang==='fr'?'Supprimer':'Delete')}
           </button>
         </div>
+
+        {/* Community share nudge */}
+        <ShareQuestionPrompt lang={lang} moduleName={moduleName ?? 'AI Interview'} />
 
         <p className="text-xs text-[#B8B2A8] text-center">
           {lang==='fr'?'La suppression efface la transcription et le diagnostic. Irréversible.':'Deleting removes the transcript and diagnostic permanently.'}

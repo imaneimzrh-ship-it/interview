@@ -110,6 +110,37 @@ export default function Home() {
         </div>
       </section>
 
+      {/* What real candidates were asked */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-14 border-t border-[#E7E2D8]">
+        <div className="text-center mb-8">
+          <p className="text-xs font-semibold text-[#7A7267] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>REAL INTERVIEW QUESTIONS</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>What AI engineers are asked in 2026</h2>
+          <p className="text-[#7A7267] text-sm mt-2">Reported by candidates. Practice them in your interview session.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {[
+            { q: "Walk me through how you'd debug retrieval quality in a RAG pipeline where recall is dropping on out-of-domain queries.", round: 'Technical', cluster: 'RAG System Design' },
+            { q: "Your agent is stuck in a tool-call loop — how do you detect it, break out of it, and prevent it in future runs?", round: 'System Design', cluster: 'Agent Orchestration' },
+            { q: "You're seeing 15% hallucination rate in prod. How do you build an eval harness to triage root cause?", round: 'Technical', cluster: 'Evaluation & Testing' },
+            { q: "How would you reduce inference cost by 40% on a latency-sensitive RAG endpoint without degrading quality?", round: 'System Design', cluster: 'Production / MLOps' },
+          ].map((item, i) => (
+            <div key={i} className="bg-white rounded-xl border border-[#E7E2D8] p-4 shadow-sm flex flex-col gap-2">
+              <p className="text-sm text-[#17140F] leading-relaxed">&ldquo;{item.q}&rdquo;</p>
+              <div className="flex items-center gap-2 mt-auto pt-1">
+                <span className="text-[10px] font-semibold text-[#7A7267] px-2 py-0.5 rounded-full border border-[#E7E2D8]">{item.round}</span>
+                <span className="text-[10px] text-[#7A7267]">{item.cluster}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="text-center">
+          <Link href="/signup"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1E2A44] hover:text-[#F5A524] transition-colors">
+            Practice these questions with Sonne AI →
+          </Link>
+        </div>
+      </section>
+
       {/* Modules */}
       <section id="modules" className="max-w-5xl mx-auto px-4 sm:px-6 py-16 border-t border-[#E7E2D8]">
         <div className="text-center mb-10">

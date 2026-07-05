@@ -18,6 +18,15 @@ async function authHeader(): Promise<Record<string, string>> {
   return {}
 }
 
+const MODULE_TO_CLUSTER: Record<string, string> = {
+  rag_system_design:   'ai_llm_engineer',
+  agent_orchestration: 'ai_automation_engineer',
+  evaluation_testing:  'applied_ai_mlops',
+  production_mlops:    'applied_ai_mlops',
+}
+
+type PreviewQuestion = { id: string; question_text: string; interview_round: string; difficulty_rating: number | null }
+
 export default function StartPage() {
   const router    = useRouter()
   const [jd,      setJd]      = useState('')
@@ -27,6 +36,7 @@ export default function StartPage() {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
   const [isPro,   setIsPro]   = useState<boolean | null>(null)
+  const [preview, setPreview] = useState<PreviewQuestion[]>([])
 
   useEffect(() => {
     createClient().auth.getUser().then(async ({ data: { user } }) => {
@@ -35,6 +45,16 @@ export default function StartPage() {
       setIsPro(p?.plan === 'pro')
     })
   }, [])
+
+  useEffect(() => {
+    if (!module_) { setPreview([]); return }
+    const cluster = MODULE_TO_CLUSTER[module_]
+    if (!cluster) return
+    fetch(`/api/questions?cluster=${cluster}&limit=2`)
+      .then(r => r.json())
+      .then(d => setPreview(d.reports ?? []))
+      .catch(() => {})
+  }, [module_])
 
   function handleModuleClick(id: string, isFreeModule: boolean) {
     if (!isFreeModule && isPro === false) {
@@ -54,10 +74,11 @@ export default function StartPage() {
     setLoading(true); setError('')
     try {
       const hdrs = await authHeader()
+      const deviceId = (() => { try { return localStorage.getItem('sonne_device_id') ?? undefined } catch { return undefined } })()
       const res  = await fetch('/api/interview/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...hdrs },
-        body: JSON.stringify({ module_slug: module_, lang, job_description: jd, resume }),
+        body: JSON.stringify({ module_slug: module_, lang, job_description: jd, resume, device_id: deviceId }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -164,6 +185,21 @@ export default function StartPage() {
               })}
             </div>
 
+            {/* Module preview: sample questions from question_reports */}
+            {preview.length > 0 && (
+              <div className="mt-4 rounded-lg border border-[#E5E7EB] bg-[#F8F9FB] px-4 py-3">
+                <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-widest mb-2">What others were asked</p>
+                <div className="space-y-2">
+                  {preview.map(q => (
+                    <div key={q.id} className="flex items-start gap-2">
+                      <span className="text-[#F5A524] mt-0.5 text-xs flex-shrink-0">→</span>
+                      <p className="text-xs text-[#374151] leading-snug line-clamp-2">{q.question_text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Upgrade banner for free users */}
             {planLoaded && !isPro && (
               <div className="mt-4 flex items-center justify-between gap-3 bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-4 py-3">
@@ -202,6 +238,14 @@ export default function StartPage() {
               'Start interview →'
             )}
           </button>
+
+          <div className="pt-2 text-center">
+            <Link href="/app/questions"
+              className="inline-flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-[#374151] transition-colors">
+              <span>🗂️</span>
+              <span>See what others were asked in AI role interviews →</span>
+            </Link>
+          </div>
         </div>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>

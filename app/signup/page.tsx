@@ -1,9 +1,20 @@
 'use client'
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import SunMark from '@/components/SunMark'
+
+function getOrCreateDeviceId(): string {
+  try {
+    let id = localStorage.getItem('sonne_device_id')
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem('sonne_device_id', id)
+    }
+    return id
+  } catch { return '' }
+}
 
 const RULES = [
   { id: 'length',  label: 'At least 8 characters',          test: (p: string) => p.length >= 8 },
@@ -51,6 +62,20 @@ function SignupForm() {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
   const [success, setSuccess] = useState(false)
+  const [deviceUsed, setDeviceUsed] = useState(false)
+
+  useEffect(() => {
+    const id = getOrCreateDeviceId()
+    if (!id) return
+    fetch('/api/auth/device-checkin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_id: id }),
+    })
+      .then(r => r.json())
+      .then(d => { if (d.used_free_session) setDeviceUsed(true) })
+      .catch(() => {})
+  }, [])
 
   const str      = strength(pw)
   const isStrong = str.score >= 4
@@ -79,6 +104,7 @@ function SignupForm() {
 
     try {
       const sb = createClient()
+      const deviceId = getOrCreateDeviceId()
       const { data, error: signUpErr } = await sb.auth.signUp({
         email: email.trim().toLowerCase(),
         password: pw,
@@ -97,6 +123,15 @@ function SignupForm() {
           setError(signUpErr.message)
         }
         setLoading(false); return
+      }
+
+      // Link device_id to the new account
+      if (deviceId && data?.user?.id) {
+        fetch('/api/auth/device-checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_id: deviceId, user_id: data.user.id }),
+        }).catch(() => {})
       }
 
       if (data?.user && !data.session) {
@@ -251,6 +286,12 @@ function SignupForm() {
         {/* ── Step 2: Plan selection ── */}
         {step === 'plan' && (
           <div className="space-y-3">
+
+            {deviceUsed && (
+              <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-4 py-3 text-xs text-[#92400E]">
+                <span className="font-semibold">Heads up:</span> A free session was already used on this device. You&apos;ll need Pro for additional interview practice.
+              </div>
+            )}
 
             {/* Free card */}
             <div className="bg-white rounded-xl border-2 border-[#E5E7EB] p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
