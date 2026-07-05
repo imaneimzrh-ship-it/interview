@@ -1,14 +1,20 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { CURRENCY, FREE_TIER, PRO_TIER, PRICING_NOTE, REFUND_NOTE, SUPPORT_EMAIL } from '@/lib/pricing'
 
-export default function Pricing() {
-  const router = useRouter()
+function PricingInner() {
+  const router  = useRouter()
+  const params  = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
+
+  // Auto-trigger checkout when arriving from signup with ?checkout=1
+  useEffect(() => {
+    if (params.get('checkout') === '1') startCheckout()
+  }, [])
 
   async function startCheckout() {
     setLoading(true); setError('')
@@ -147,6 +153,10 @@ export default function Pricing() {
       </footer>
     </div>
   )
+}
+
+export default function Pricing() {
+  return <Suspense fallback={null}><PricingInner /></Suspense>
 }
 
 function SunMark() {

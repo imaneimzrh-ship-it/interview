@@ -100,8 +100,22 @@ function SignupForm() {
       }
 
       if (data?.user && !data.session) {
+        // Email verification required — after verifying they'll land on the right page
         setSuccess(true)
         setLoading(false); return
+      }
+
+      if (selectedPlan === 'pro' && data?.session?.access_token) {
+        // Session available immediately — call Stripe checkout directly
+        const res = await fetch('/api/stripe/checkout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${data.session.access_token}` },
+        })
+        const checkout = await res.json()
+        if (res.ok && checkout.url) {
+          window.location.href = checkout.url
+          return
+        }
       }
 
       router.push(selectedPlan === 'pro' ? '/pricing?checkout=1' : '/app/start')
