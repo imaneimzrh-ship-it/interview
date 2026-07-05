@@ -49,8 +49,7 @@ export default function Terms() {
             <ul className="space-y-2 list-disc pl-5">
               <li><strong>Free tier</strong> — available to all registered users at no cost, subject to the feature limits described on the pricing page.</li>
               <li><strong>Pro tier</strong> — billed monthly at the price shown on <Link href="/pricing" className="text-[#F5A524] hover:underline">/pricing</Link>. Prices may change with 30 days&apos; notice.</li>
-              <li><strong>Cancellation</strong> — you may cancel your Pro subscription at any time from your account settings. You retain Pro access until the end of the current billing period.</li>
-              <li><strong>Cancellation</strong> — all sales are final. When you cancel, your Pro access continues until the end of the current billing period. No partial refunds.</li>
+              <li><strong>Cancellation</strong> — you may cancel at any time from your account settings. Your Pro access continues until the end of the current billing period. All sales are final — no partial refunds.</li>
               <li>All payments are processed by Stripe and subject to their terms.</li>
             </ul>
           </section>
@@ -94,7 +93,7 @@ export default function Terms() {
 
           <section>
             <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>11. Governing law</h2>
-            <p>These Terms are governed by applicable law. We aim to resolve any dispute promptly and in good faith. If you have a concern, please contact us at <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a> before pursuing formal proceedings. Nothing in these Terms limits mandatory consumer protection rights you may have under the laws of your country.</p>
+            <p>These Terms are governed by the laws of Morocco. Any dispute that cannot be resolved informally shall be subject to the jurisdiction of the competent courts of Morocco. Nothing in these Terms limits mandatory consumer protection rights you may have under the laws of your country of residence. For questions, contact <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a>.</p>
           </section>
 
           <section>

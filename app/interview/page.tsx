@@ -193,7 +193,7 @@ export default function InterviewHub() {
         {/* Free tier info */}
         <div className="mt-6 bg-white border border-[#E5E7EB] rounded-xl p-4 text-center">
           <p className="text-sm text-[#6B7280]">
-            <span className="font-medium text-[#111827]">Free tier:</span> includes 1 free session · any module · headline diagnostic.{' '}
+            <span className="font-medium text-[#111827]">Free tier:</span> CV diagnostic + 1 RAG session · headline score.{' '}
             <Link href="/pricing" className="text-[#F5A524] hover:underline font-medium">Upgrade for unlimited access →</Link>
           </p>
         </div>

@@ -51,8 +51,9 @@ function SessionInner() {
   const [voiceOn,     setVoiceOn]     = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [isSpeaking,  setIsSpeaking]  = useState(false)
-  const [voiceOk,     setVoiceOk]     = useState(false)
-  const [skipLoad,    setSkipLoad]    = useState(false)
+  const [voiceOk,      setVoiceOk]      = useState(false)
+  const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const [skipLoad,     setSkipLoad]     = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
@@ -64,6 +65,10 @@ function SessionInner() {
 
   useEffect(() => {
     setVoiceOk(!!(((window as any).SpeechRecognition) || (window as any).webkitSpeechRecognition) && !!window.speechSynthesis)
+    if (sessionId) {
+      const flag = sessionStorage.getItem(`session_${sessionId}_voiceEnabled`)
+      if (flag === 'false') setVoiceEnabled(false)
+    }
   }, [])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isTyping])
   useEffect(() => {
@@ -116,7 +121,7 @@ function SessionInner() {
       const res  = await fetch('/api/interview/turn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...hdrs },
-        body: JSON.stringify({ sessionId, userMessage: content, currentSubSkillIdx: subIdx }),
+        body: JSON.stringify({ sessionId, userMessage: content, currentSubSkillIdx: subIdx, inputType: voiceOn ? 'voice' : 'text' }),
       })
       const data = await res.json()
       setIsTyping(false)
@@ -195,7 +200,7 @@ function SessionInner() {
         </div>
         <div className="flex items-center gap-2">
           <span className="font-mono text-sm text-[#6B7280]">{mm}:{ss_}</span>
-          {voiceOk && (
+          {voiceOk && voiceEnabled && (
             <button onClick={() => { setVoiceOn(v => !v); if (isRecording) stopRec() }}
               className="text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-all"
               style={{ background: voiceOn ? '#FFF8EE' : '#F9FAFB', borderColor: voiceOn ? '#F5A524' : '#E5E7EB', color: voiceOn ? '#D98A0B' : '#6B7280' }}>

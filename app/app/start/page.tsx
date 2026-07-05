@@ -6,10 +6,10 @@ import AppLayout from '@/components/app/AppLayout'
 import { createClient } from '@/lib/supabase/client'
 
 const MODULES = [
-  { id: 'rag_system_design',   emoji: '🔍', name: 'RAG System Design',       desc: 'Chunking · Retrieval quality · Reranking · Freshness',           free: true },
-  { id: 'agent_orchestration', emoji: '🕵️', name: 'Agent Orchestration',      desc: 'Tool use · Planning · Failure handling · Multi-agent',            free: false },
-  { id: 'evaluation_testing',  emoji: '🧪', name: 'Evaluation & Testing',     desc: 'Eval design · Hallucination · Offline/online · Regression',       free: false },
-  { id: 'production_mlops',    emoji: '⚙️', name: 'Production / MLOps',       desc: 'Monitoring · Cost/latency · Versioning · Deployment',             free: false },
+  { id: 'rag_system_design',   emoji: '🔍', name: 'RAG System Design',       desc: 'Chunking · Retrieval quality · Reranking · Freshness',           free: true,  voice: true },
+  { id: 'agent_orchestration', emoji: '🕵️', name: 'Agent Orchestration',      desc: 'Tool use · Planning · Failure handling · Multi-agent',            free: false, voice: true },
+  { id: 'evaluation_testing',  emoji: '🧪', name: 'Evaluation & Testing',     desc: 'Eval design · Hallucination · Offline/online · Regression',       free: false, voice: true },
+  { id: 'production_mlops',    emoji: '⚙️', name: 'Production / MLOps',       desc: 'Monitoring · Cost/latency · Versioning · Deployment',             free: false, voice: true },
 ]
 
 async function authHeader(): Promise<Record<string, string>> {
@@ -46,8 +46,11 @@ export default function StartPage() {
     setError('')
   }
 
+  const contextOk = jd.trim().length >= 50 || resume.trim().length >= 50
+
   async function start() {
     if (!module_) { setError('Please select a module.'); return }
+    if (!contextOk) { setError('Please paste at least 50 characters of a job description or your resume so the AI can personalize the interview.'); return }
     setLoading(true); setError('')
     try {
       const hdrs = await authHeader()
@@ -63,6 +66,7 @@ export default function StartPage() {
       }
       sessionStorage.setItem(`session_${data.sessionId}_opening`, data.openingMessage ?? '')
       sessionStorage.setItem(`session_${data.sessionId}_totalSS`, String(data.totalSubSkills ?? 4))
+      sessionStorage.setItem(`session_${data.sessionId}_voiceEnabled`, String(data.voiceEnabled !== false))
       router.push(`/app/interview/session?id=${data.sessionId}&lang=${lang}&module=${module_}`)
     } catch { setError('Network error.'); setLoading(false) }
   }
@@ -147,9 +151,14 @@ export default function StartPage() {
                     </div>
                     <div className="text-sm font-semibold text-[#111827] mb-0.5">{m.name}</div>
                     <div className="text-xs text-[#6B7280]">{m.desc}</div>
-                    {locked && (
-                      <div className="mt-2 text-[10px] font-semibold text-[#F5A524]">Upgrade to Pro to unlock →</div>
-                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      {m.voice && !locked && (
+                        <span className="text-[10px] text-[#6B7280] flex items-center gap-0.5">🎙️ Voice</span>
+                      )}
+                      {locked && (
+                        <span className="text-[10px] font-semibold text-[#F5A524]">Upgrade to Pro to unlock →</span>
+                      )}
+                    </div>
                   </button>
                 )
               })}
@@ -177,18 +186,20 @@ export default function StartPage() {
             </div>
           )}
 
-          <button onClick={start} disabled={!module_ || loading}
+          <button onClick={start} disabled={!module_ || !contextOk || loading}
             className="w-full py-3.5 rounded-xl text-base font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: module_ ? '#F5A524' : '#E5E7EB', color: module_ ? '#17140F' : '#9CA3AF', boxShadow: module_ ? '0 4px 12px rgba(245,165,36,.3)' : 'none' }}>
+            style={{ background: module_ && contextOk ? '#F5A524' : '#E5E7EB', color: module_ && contextOk ? '#17140F' : '#9CA3AF', boxShadow: module_ && contextOk ? '0 4px 12px rgba(245,165,36,.3)' : 'none' }}>
             {loading ? (
               <span className="flex items-center justify-center gap-3">
                 <span style={{ width:18,height:18,border:'2.5px solid rgba(255,255,255,.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 1s linear infinite',display:'inline-block' }} />
                 Starting your interview...
               </span>
-            ) : module_ ? (
-              `Start interview${jd ? ' (personalized)' : ''} →`
-            ) : (
+            ) : !module_ ? (
               'Select a module above'
+            ) : !contextOk ? (
+              'Add a job description or resume to continue'
+            ) : (
+              'Start interview →'
             )}
           </button>
         </div>

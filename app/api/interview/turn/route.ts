@@ -8,17 +8,20 @@ export async function POST(req: NextRequest) {
     const { sb, user } = await getServerUser(req)
     if (!user) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
-    const { sessionId, userMessage, currentSubSkillIdx } = await req.json()
+    const { sessionId, userMessage, currentSubSkillIdx, inputType } = await req.json()
     if (!sessionId || !userMessage) return NextResponse.json({ error: 'Missing fields.' }, { status: 400 })
 
     // Load session
     const { data: session } = await sb
       .from('interview_sessions')
-      .select(`*, skill_modules(name_en, name_fr), max_sub_skills`)
+      .select(`*, skill_modules(name_en, name_fr, voice_enabled), max_sub_skills`)
       .eq('id', sessionId).eq('user_id', user.id).single()
 
     if (!session) return NextResponse.json({ error: 'Session not found.' }, { status: 404 })
     if (session.status !== 'active') return NextResponse.json({ error: 'Session is not active.' }, { status: 400 })
+    if (inputType === 'voice' && session.skill_modules?.voice_enabled === false) {
+      return NextResponse.json({ error: 'Voice input is not available for this module.' }, { status: 400 })
+    }
 
     // Load sub-skills + questions
     const { data: subSkills } = await sb

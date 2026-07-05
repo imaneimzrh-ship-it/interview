@@ -9,8 +9,22 @@ export async function POST(req: NextRequest) {
     const { sb, user } = await getServerUser(req)
     if (!user) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
-    const { module_slug, lang = 'en', session_type = 'full' } = body
+    const { module_slug, lang = 'en', session_type = 'full', job_description = '', resume: resumeRaw = '' } = body
     if (!module_slug) return NextResponse.json({ error: 'module_slug required.' }, { status: 400 })
+
+    // Require at least one of JD or resume (≥50 chars)
+    const jd     = String(job_description).trim()
+    const resume = String(resumeRaw).trim()
+    if (jd.length < 50 && resume.length < 50) {
+      return NextResponse.json({ error: 'Please provide a job description or resume (at least 50 characters) to personalise the interview.' }, { status: 400 })
+    }
+
+    // Basic prompt-injection guard: reject content that looks like instructions rather than a JD/resume
+    const INJECT_PATTERNS = [/ignore (previous|above|all) instructions/i, /you are now/i, /system prompt/i, /disregard your/i]
+    const combined = jd + ' ' + resume
+    if (INJECT_PATTERNS.some(p => p.test(combined))) {
+      return NextResponse.json({ error: 'Invalid content detected in job description or resume.' }, { status: 400 })
+    }
 
     const type = (session_type === 'short' ? 'short' : 'full') as SessionType
     const maxSubSkills = SESSION_SUB_SKILLS[type]
@@ -28,7 +42,7 @@ export async function POST(req: NextRequest) {
     // Load module + role track
     const { data: module_ } = await sb
       .from('skill_modules')
-      .select(`*, role_tracks(id, slug)`)
+      .select(`*, role_tracks(id, slug), voice_enabled`)
       .eq('slug', module_slug)
       .eq('is_active', true)
       .single()
@@ -108,6 +122,7 @@ export async function POST(req: NextRequest) {
       moduleNameEn:       module_.name_en,
       moduleNameFr:       module_.name_fr,
       sessionType:        type,
+      voiceEnabled:       module_.voice_enabled ?? true,
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : JSON.stringify(err)

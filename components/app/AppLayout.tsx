@@ -14,7 +14,8 @@ const NAV = [
     items: [
       { href: '/app/start',   label: 'New Interview', icon: '🚀' },
       { href: '/cv',          label: 'CV Diagnostic', icon: '📄' },
-      { href: '/app/history', label: 'Past Sessions', icon: '🕐' },
+      { href: '/app/history',   label: 'Past Sessions',  icon: '🕐' },
+      { href: '/app/questions', label: 'Question Bank',  icon: '📚' },
     ],
   },
   {

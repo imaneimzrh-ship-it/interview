@@ -9,7 +9,7 @@ export const FREE_TIER = {
   period: null as null,
   description: 'Sign up free · No card required',
   features: [
-    '1 free session — any of the 4 modules',
+    '1 free interview session — RAG System Design module',
     'Adaptive Claude follow-up questions',
     'Headline diagnostic (overall score + top strength/gap)',
     'EN / FR bilingual',
@@ -42,7 +42,7 @@ export const PRO_TIER = {
 }
 
 // Short human-readable summaries used in non-pricing surfaces (settings, banners, etc.)
-export const FREE_SHORT = '1 free session · any module · headline diagnostic'
+export const FREE_SHORT = 'CV diagnostic + 1 RAG session · headline score'
 export const PRO_SHORT  = 'All 4 modules · unlimited sessions · full diagnostic breakdowns'
 
 export const PRICING_NOTE  = `You're interviewing for roles that pay ${CURRENCY}100K–${CURRENCY}500K+. This costs ${CURRENCY}${PRO_TIER.price}/month.`

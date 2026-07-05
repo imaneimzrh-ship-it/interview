@@ -93,7 +93,7 @@ export default function Privacy() {
 
           <section>
             <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>9. Governing law</h2>
-            <p>This policy is governed by applicable law where you reside. Where you are protected by data protection legislation (such as GDPR, CCPA, or equivalent laws), those protections apply to you. For privacy complaints, you may also contact your local data protection authority. For all privacy inquiries, email <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a>.</p>
+            <p>This policy is governed by the laws of Morocco. Where you are protected by data protection legislation (such as GDPR, CCPA, or equivalent laws), those protections apply to you. For privacy complaints, you may also contact your local data protection authority. For all privacy inquiries, email <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a>.</p>
           </section>
 
           <section>
