@@ -19,12 +19,6 @@ export default function Terms() {
 
       <main className="max-w-2xl mx-auto px-4 py-14">
 
-        {/* Draft banner */}
-        <div className="bg-[#FFF8EE] border border-[#F5A524]/40 rounded-xl p-4 mb-10 text-sm text-[#C77D2E]"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-          ⚠ DRAFT — NEEDS LEGAL REVIEW before publishing to users.
-        </div>
-
         <h1 className="text-3xl font-bold text-[#17140F] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Terms of Service</h1>
         <p className="text-sm text-[#7A7267] mb-10">Last updated: July 2026</p>
 
@@ -56,7 +50,7 @@ export default function Terms() {
               <li><strong>Free tier</strong> — available to all registered users at no cost, subject to the feature limits described on the pricing page.</li>
               <li><strong>Pro tier</strong> — billed monthly at the price shown on <Link href="/pricing" className="text-[#F5A524] hover:underline">/pricing</Link>. Prices may change with 30 days&apos; notice.</li>
               <li><strong>Cancellation</strong> — you may cancel your Pro subscription at any time from your account settings. You retain Pro access until the end of the current billing period.</li>
-              <li><strong>Refunds</strong> — we offer a full refund within 7 days of initial purchase. No refunds after 7 days or for partial billing periods. Contact <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a>.</li>
+              <li><strong>Refunds</strong> — if you are not satisfied, contact <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a> and we will work it out on a case-by-case basis. No automatic refunds for partial billing periods.</li>
               <li>All payments are processed by Stripe and subject to their terms.</li>
             </ul>
           </section>
@@ -100,7 +94,7 @@ export default function Terms() {
 
           <section>
             <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>11. Governing law</h2>
-            <p>These Terms are governed by French law. Any dispute arising from or related to these Terms or use of the Service shall be subject to the exclusive jurisdiction of the competent courts of France. If you are a consumer resident in the European Union, you also benefit from the mandatory consumer protection provisions of your country of residence.</p>
+            <p>These Terms are governed by applicable law. We aim to resolve any dispute promptly and in good faith. If you have a concern, please contact us at <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a> before pursuing formal proceedings. Nothing in these Terms limits mandatory consumer protection rights you may have under the laws of your country.</p>
           </section>
 
           <section>

@@ -135,7 +135,7 @@ function SignupForm() {
           </Link>
           <h1 className="text-2xl font-semibold text-bright mb-1">Create your account</h1>
           <p className="text-sm text-dim">
-            {isPro ? 'Start Pro — €19/month, cancel anytime' : '1 free session included · No card required'}
+            {isPro ? 'Start Pro — $39.99/month, cancel anytime' : '1 free session included · No card required'}
           </p>
         </div>
 

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import AttributionModal from '@/components/app/AttributionModal'
+import SunMark from '@/components/SunMark'
 
 interface UserData { email?: string; full_name?: string; plan?: string; source?: string | null }
 
@@ -53,7 +54,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <aside className="w-52 flex-shrink-0 bg-white border-r border-[#E5E7EB] flex flex-col h-screen overflow-y-auto" style={{ minWidth: 208 }}>
       <div className="h-16 flex items-center px-4 border-b border-[#E5E7EB]">
         <Link href="/app/start" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#1E2A44] flex items-center justify-center text-white font-bold text-sm shadow-sm">S</div>
+          <div className="w-8 h-8 rounded-lg bg-[#1E2A44] flex items-center justify-center shadow-sm"><SunMark size={14} /></div>
           <div>
             <div className="font-bold text-[#111827] text-sm leading-tight">Sonne AI</div>
             <div className="text-[10px] text-[#9CA3AF] leading-tight">Interview Prep</div>
@@ -131,7 +132,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-[#1E2A44] flex items-center justify-center text-white font-bold text-xs">S</div>
+            <div className="w-7 h-7 rounded-md bg-[#1E2A44] flex items-center justify-center"><SunMark size={12} /></div>
             <span className="font-semibold text-[#111827] text-sm">Sonne AI</span>
           </div>
           <div className="w-8" />

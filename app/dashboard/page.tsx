@@ -291,7 +291,7 @@ export default function Dashboard() {
             <div className="text-3xl">🚀</div>
             <div className="flex-1">
               <h3 className="font-semibold mb-1" style={{ color: '#17140F' }}>Unlock all 4 modules + unlimited sessions</h3>
-              <p className="text-sm" style={{ color: '#6B7280' }}>RAG · Agents · Evaluation · MLOps — adaptive follow-ups and full diagnostic reports. $19/month.</p>
+              <p className="text-sm" style={{ color: '#6B7280' }}>RAG · Agents · Evaluation · MLOps — adaptive follow-ups and full diagnostic reports. $39.99/month.</p>
             </div>
             <Link href="/pricing"
               className="flex-shrink-0 text-sm font-semibold px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap"

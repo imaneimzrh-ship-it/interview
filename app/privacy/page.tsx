@@ -19,12 +19,6 @@ export default function Privacy() {
 
       <main className="max-w-2xl mx-auto px-4 py-14">
 
-        {/* Draft banner */}
-        <div className="bg-[#FFF8EE] border border-[#F5A524]/40 rounded-xl p-4 mb-10 text-sm text-[#C77D2E]"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-          ⚠ DRAFT — NEEDS LEGAL REVIEW before publishing to users.
-        </div>
-
         <h1 className="text-3xl font-bold text-[#17140F] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Privacy Policy</h1>
         <p className="text-sm text-[#7A7267] mb-10">Last updated: July 2026</p>
 
@@ -99,7 +93,7 @@ export default function Privacy() {
 
           <section>
             <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>9. Governing law</h2>
-            <p>This policy is governed by French law. As a service operated from France and offered to users in the European Economic Area, it is subject to the General Data Protection Regulation (GDPR — Regulation (EU) 2016/679). Any disputes shall be subject to the exclusive jurisdiction of the competent courts of France. EU users may also contact their national data protection authority (in France: <a href="https://www.cnil.fr" className="text-[#F5A524] hover:underline" target="_blank" rel="noopener noreferrer">CNIL</a>).</p>
+            <p>This policy is governed by applicable law where you reside. Where you are protected by data protection legislation (such as GDPR, CCPA, or equivalent laws), those protections apply to you. For privacy complaints, you may also contact your local data protection authority. For all privacy inquiries, email <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a>.</p>
           </section>
 
           <section>

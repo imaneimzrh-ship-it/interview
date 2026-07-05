@@ -1,7 +1,7 @@
 // Single source of truth for all pricing tiers.
 // Import this in every component that shows pricing or plan copy.
 
-export const CURRENCY = '€'
+export const CURRENCY = '$'
 
 export const FREE_TIER = {
   name: 'Free',
@@ -25,9 +25,9 @@ export const FREE_TIER = {
 
 export const PRO_TIER = {
   name: 'Pro',
-  price: 19,
+  price: 39.99,
   period: 'month' as const,
-  description: 'Cancel anytime · 7-day money-back guarantee',
+  description: 'Cancel anytime · no further charges',
   features: [
     'Everything in Free',
     'Unlimited sessions — any module, any time',
@@ -46,5 +46,5 @@ export const FREE_SHORT = '1 free session · any module · headline diagnostic'
 export const PRO_SHORT  = 'All 4 modules · unlimited sessions · full diagnostic breakdowns'
 
 export const PRICING_NOTE  = `You're interviewing for roles that pay ${CURRENCY}100K–${CURRENCY}500K+. This costs ${CURRENCY}${PRO_TIER.price}/month.`
-export const REFUND_NOTE   = 'Not satisfied? Full refund within 7 days — no questions asked.'
+export const REFUND_NOTE   = 'Not satisfied? Email support@sonneai.com and we\'ll work it out.'
 export const SUPPORT_EMAIL = 'support@sonneai.com'
