@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerUser } from '@/lib/supabase/server'
-import { adminClient } from '@/lib/supabase/admin'
 import { openQuestion } from '@/lib/claude/interviewer'
-import { CreditService, InsufficientCreditsError, CREDIT_COSTS, SESSION_SUB_SKILLS, type SessionType } from '@/lib/credits'
+import { SESSION_SUB_SKILLS, type SessionType } from '@/lib/credits'
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,39 +13,16 @@ export async function POST(req: NextRequest) {
     if (!module_slug) return NextResponse.json({ error: 'module_slug required.' }, { status: 400 })
 
     const type = (session_type === 'short' ? 'short' : 'full') as SessionType
-    const cost = CREDIT_COSTS[type]
     const maxSubSkills = SESSION_SUB_SKILLS[type]
-
-    // Pre-generate the session UUID so it doubles as the idempotency key for the
-    // credit deduction. If the session insert later fails we refund.
     const sessionId = crypto.randomUUID()
-    const adminSb = adminClient()
 
-    // ── Plan check — Pro users bypass the credits system entirely ──
+    // ── Plan-based access gate ──
     const { data: profile } = await sb.from('profiles').select('plan').eq('id', user.id).single()
     const isPro = profile?.plan === 'pro'
 
-    // Free users may only access the RAG module
     const FREE_MODULES = ['rag_system_design']
     if (!isPro && !FREE_MODULES.includes(module_slug)) {
       return NextResponse.json({ error: 'Pro plan required for this module.', upgrade: true }, { status: 403 })
-    }
-
-    if (!isPro) {
-      // ── Credit check + deduction for free users ──
-      try {
-        await CreditService.chargeCredits(adminSb, user.id, cost, sessionId)
-      } catch (e) {
-        if (e instanceof InsufficientCreditsError) {
-          return NextResponse.json({
-            error:   'insufficient_credits',
-            balance: e.balance,
-            needed:  e.needed,
-            upgrade: true,
-          }, { status: 402 })
-        }
-        throw new Error(`Credit charge failed: ${JSON.stringify(e)}`)
-      }
     }
 
     // Load module + role track
@@ -58,14 +34,6 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (!module_) {
-      if (!isPro) {
-        try {
-          await adminSb.from('credits_ledger').insert({
-            user_id: user.id, delta: cost, reason: 'purchase',
-            reference_id: `refund_${sessionId}`,
-          })
-        } catch { /* best-effort refund */ }
-      }
       return NextResponse.json({ error: `Module "${module_slug}" not found.` }, { status: 404 })
     }
 
@@ -102,14 +70,6 @@ export async function POST(req: NextRequest) {
 
     if (sErr || !session) {
       console.error('Session create error:', sErr)
-      if (!isPro) {
-        try {
-          await adminSb.from('credits_ledger').insert({
-            user_id: user.id, delta: cost, reason: 'purchase',
-            reference_id: `refund_${sessionId}`,
-          })
-        } catch { /* best-effort refund */ }
-      }
       return NextResponse.json({ error: `Failed to create session: ${sErr?.message ?? 'unknown'}` }, { status: 500 })
     }
 
