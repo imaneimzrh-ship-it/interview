@@ -23,12 +23,13 @@ function strength(pw: string) {
 
 export default function ResetPassword() {
   const router = useRouter()
-  const [pw,       setPw]       = useState('')
-  const [confirm,  setConfirm]  = useState('')
-  const [showPw,   setShowPw]   = useState(false)
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState('')
-  const [done,     setDone]     = useState(false)
+  const [pw,         setPw]         = useState('')
+  const [confirm,    setConfirm]    = useState('')
+  const [showPw,     setShowPw]     = useState(false)
+  const [loading,    setLoading]    = useState(false)
+  const [error,      setError]      = useState('')
+  const [done,       setDone]       = useState(false)
+  // null = still checking, true = recovery session active, false = no session
   const [hasSession, setHasSession] = useState<boolean | null>(null)
 
   const str      = strength(pw)
@@ -37,9 +38,33 @@ export default function ResetPassword() {
 
   useEffect(() => {
     const sb = createClient()
-    sb.auth.getSession().then(({ data }) => {
-      setHasSession(!!data.session)
+
+    // Listen for PASSWORD_RECOVERY — Supabase fires this when it processes the
+    // recovery tokens from the URL hash after the user clicks the reset link.
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setHasSession(true)
+      } else if (event === 'SIGNED_IN' && session) {
+        // Supabase may fire SIGNED_IN with a recovery session in some SDK versions
+        setHasSession(true)
+      }
     })
+
+    // Also check if there's already an active session (e.g. navigated here after
+    // the token was already processed)
+    sb.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setHasSession(true)
+      } else {
+        // Give the onAuthStateChange listener 2 seconds to fire before showing
+        // the "link expired" state — the hash processing is async
+        setTimeout(() => {
+          setHasSession(prev => prev === null ? false : prev)
+        }, 2000)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -56,22 +81,24 @@ export default function ResetPassword() {
       return
     }
     setDone(true)
-    setTimeout(() => router.push('/dashboard'), 2000)
+    setTimeout(() => router.push('/app/start'), 2000)
   }
 
+  // Still waiting to know if there's a recovery session
   if (hasSession === null) return (
     <div className="min-h-screen bg-bg flex items-center justify-center">
       <div className="w-6 h-6 border-2 border-blue/30 border-t-blue rounded-full animate-spin" />
     </div>
   )
 
+  // No recovery session — link was expired, already used, or user navigated here directly
   if (hasSession === false) return (
     <div className="min-h-screen bg-bg flex items-center justify-center px-4">
       <div className="w-full max-w-sm text-center">
         <div className="card p-8">
-          <p className="text-bright font-medium mb-2">Link expired</p>
+          <p className="text-bright font-medium mb-2">Link expired or already used</p>
           <p className="text-sm text-dim mb-6">
-            This reset link has expired or already been used. Request a new one.
+            Reset links are single-use and expire after 1 hour. Request a new one from the sign-in page.
           </p>
           <Link href="/login" className="btn btn-md btn-primary w-full justify-center py-3 block">
             Back to sign in →
