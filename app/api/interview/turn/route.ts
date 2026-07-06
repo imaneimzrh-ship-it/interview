@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerUser } from '@/lib/supabase/server'
-import { conductTurn } from '@/lib/claude/interviewer'
+import { conductTurn, type CandidateContext } from '@/lib/claude/interviewer'
 import { gradeAnswer } from '@/lib/claude/grader'
 
 export async function POST(req: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // Load session
     const { data: session } = await sb
       .from('interview_sessions')
-      .select(`*, skill_modules(name_en, name_fr, voice_enabled), max_sub_skills`)
+      .select(`*, skill_modules(name_en, name_fr, voice_enabled), max_sub_skills, job_description, resume_text`)
       .eq('id', sessionId).eq('user_id', user.id).single()
 
     if (!session) return NextResponse.json({ error: 'Session not found.' }, { status: 404 })
@@ -58,9 +58,11 @@ export async function POST(req: NextRequest) {
     const lang = session.language as 'en' | 'fr'
     const moduleName = lang === 'fr' ? session.skill_modules.name_fr : session.skill_modules.name_en
 
-    // Load saved CV for personalised probing (best-effort, non-blocking)
-    const { data: cvRow } = await sb.from('cvs').select('text').eq('user_id', user.id).maybeSingle()
-    const cvExcerpt = cvRow?.text?.slice(0, 800) ?? undefined
+    // Build candidate context from JD/resume stored at session creation
+    const candidateCtx: CandidateContext | undefined =
+      session.job_description || session.resume_text
+        ? { jobDescription: session.job_description ?? undefined, resume: session.resume_text ?? undefined }
+        : undefined
 
     // Run interviewer + grader in parallel
     const [turnResult, gradeResult] = await Promise.all([
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
         userMessage,
         subSkillsCompleted: session.sub_skills_covered ?? [],
         totalSubSkills: subSkills.length,
-        cvExcerpt,
+        candidateCtx,
       }),
       gradeAnswer({
         subSkill: { id: currentSubSkill.id, slug: currentSubSkill.slug, name_en: currentSubSkill.name_en, name_fr: currentSubSkill.name_fr },
@@ -144,6 +146,7 @@ export async function POST(req: NextRequest) {
             },
             subSkillsCompleted: covered,
             totalSubSkills: effectiveTotal,
+            candidateCtx,
           })
         }
       }

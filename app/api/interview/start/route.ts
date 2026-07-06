@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     const firstQuestion = firstSubSkill.questions?.[0]
     if (!firstQuestion) return NextResponse.json({ error: 'No question found.' }, { status: 500 })
 
-    // Create session with pre-generated ID
+    // Create session — store JD/resume so every subsequent turn can access them
     const { data: session, error: sErr } = await sb
       .from('interview_sessions')
       .insert({
@@ -101,6 +101,8 @@ export async function POST(req: NextRequest) {
         max_sub_skills:        maxSubSkills,
         status:                'active',
         current_sub_skill_idx: 0,
+        job_description:       jd     || null,
+        resume_text:           resume || null,
       })
       .select().single()
 
@@ -108,6 +110,8 @@ export async function POST(req: NextRequest) {
       console.error('Session create error:', sErr)
       return NextResponse.json({ error: `Failed to create session: ${sErr?.message ?? 'unknown'}` }, { status: 500 })
     }
+
+    const candidateCtx = { jobDescription: jd || undefined, resume: resume || undefined }
 
     const openingMessage = await openQuestion({
       lang: lang as 'en' | 'fr',
@@ -124,6 +128,7 @@ export async function POST(req: NextRequest) {
       },
       subSkillsCompleted: [],
       totalSubSkills: subSkills.length,
+      candidateCtx,
     })
 
     await sb.from('session_turns').insert({

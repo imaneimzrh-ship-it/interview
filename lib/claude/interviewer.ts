@@ -26,6 +26,41 @@ export interface TurnMessage {
 
 // ─── Interviewer system prompt ───────────────────────────────────────────────
 
+export interface CandidateContext {
+  jobDescription?: string
+  resume?: string
+}
+
+function buildCandidateContextNote(lang: 'en' | 'fr', ctx: CandidateContext): string {
+  const jd  = ctx.jobDescription?.trim().slice(0, 600) ?? ''
+  const res = ctx.resume?.trim().slice(0, 600) ?? ''
+  if (!jd && !res) return ''
+
+  if (lang === 'fr') {
+    const parts: string[] = []
+    if (jd)  parts.push(`Fiche de poste ciblée : "${jd}"`)
+    if (res) parts.push(`Expérience du candidat : "${res}"`)
+    return `\nCONTEXTE DU CANDIDAT :
+${parts.join('\n')}
+INSTRUCTIONS DE PERSONNALISATION :
+- Posez la question telle quelle, mais si elle mentionne des outils génériques (ex. "un système RAG", "un outil d'orchestration"), remplacez-les par les technologies concrètes mentionnées dans le contexte ci-dessus (ex. Weaviate, LangGraph, vLLM) si elles sont pertinentes.
+- Lors des sondes de suivi, référencez les outils, systèmes ou expériences spécifiques du candidat — ne posez pas de questions génériques si vous pouvez les rendre concrètes.
+- Si leur réponse sous-délivre par rapport à une affirmation de leur parcours, sondez cet écart directement.
+`
+  }
+
+  const parts: string[] = []
+  if (jd)  parts.push(`Target job description: "${jd}"`)
+  if (res) parts.push(`Candidate background: "${res}"`)
+  return `\nCANDIDATE CONTEXT:
+${parts.join('\n')}
+PERSONALISATION INSTRUCTIONS:
+- Ask the current question as written, but if it refers to generic tools (e.g. "a RAG system", "an orchestration tool"), substitute the specific technologies named in the candidate context above (e.g. Weaviate, LangGraph, vLLM) where relevant.
+- In follow-up probes, reference the candidate's specific tools, systems, or claimed experience — don't ask generic questions when you can make them concrete.
+- If their answer under-delivers on a claim in their background, probe that gap directly.
+`
+}
+
 function buildInterviewerPrompt(
   lang: 'en' | 'fr',
   moduleName: string,
@@ -34,15 +69,11 @@ function buildInterviewerPrompt(
   subSkillsCompleted: string[],
   totalSubSkills: number,
   followUpProbes: string[],
-  cvExcerpt?: string,
+  candidateCtx?: CandidateContext,
 ): string {
   const isLast      = subSkillsCompleted.length === totalSubSkills - 1
   const progressNote = `You are on sub-skill ${subSkillsCompleted.length + 1} of ${totalSubSkills} in this module.`
-  const cvNote       = cvExcerpt
-    ? lang === 'fr'
-      ? `\nCV DU CANDIDAT (extrait) : "${cvExcerpt.slice(0, 800)}"\nSi leur réponse contredit ou sous-délivre par rapport à une affirmation du CV, sondez cet écart spécifiquement — de manière encourageante.`
-      : `\nCANDIDATE CV (excerpt): "${cvExcerpt.slice(0, 800)}"\nIf their answer contradicts or under-delivers on a claim in the CV, probe that gap specifically — supportively.`
-    : ''
+  const ctxNote      = candidateCtx ? buildCandidateContextNote(lang, candidateCtx) : ''
 
   if (lang === 'fr') {
     return `Vous êtes un ingénieur IA senior qui conduit un entretien technique pour un poste d'Ingénieur IA Appliqué, en vous concentrant sur le module : ${moduleName}.
@@ -59,7 +90,7 @@ Réponse faible : ${question.rubric_weak}
 
 SONDES DE SUIVI disponibles (utilisez-en UNE si la réponse est superficielle) :
 ${followUpProbes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-${cvNote}
+${ctxNote}
 RÈGLES D'ENTRETIEN :
 1. Posez la question actuelle en premier. Ne commencez pas par vous présenter.
 2. Après leur réponse, évaluez sa profondeur :
@@ -88,9 +119,9 @@ Weak answer: ${question.rubric_weak}
 
 FOLLOW-UP PROBES available (use ONE if the answer is shallow):
 ${followUpProbes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-${cvNote}
+${ctxNote}
 INTERVIEW RULES:
-1. Ask the current question first. Do not introduce yourself.
+1. Ask the current question as written, but personalise it with the candidate's specific tools/stack from the context above — make it concrete, not generic.
 2. After their answer, assess its depth:
    - If strong/complete: say "Got it." then end with exactly: "[[NEXT]]"
    - If shallow/incomplete: ask ONE follow-up probe (your choice)
@@ -115,13 +146,13 @@ export async function conductTurn(params: {
   userMessage: string
   subSkillsCompleted: string[]
   totalSubSkills: number
-  cvExcerpt?: string
+  candidateCtx?: CandidateContext
 }): Promise<{ response: string; shouldAdvance: boolean; isComplete: boolean }> {
-  const { lang, moduleName, subSkill, question, history, userMessage, subSkillsCompleted, totalSubSkills, cvExcerpt } = params
+  const { lang, moduleName, subSkill, question, history, userMessage, subSkillsCompleted, totalSubSkills, candidateCtx } = params
 
   const systemPrompt = buildInterviewerPrompt(
     lang, moduleName, subSkill, question,
-    subSkillsCompleted, totalSubSkills, question.follow_up_probes, cvExcerpt,
+    subSkillsCompleted, totalSubSkills, question.follow_up_probes, candidateCtx,
   )
 
   const messages: Anthropic.MessageParam[] = [
@@ -157,13 +188,13 @@ export async function openQuestion(params: {
   question: Question
   subSkillsCompleted: string[]
   totalSubSkills: number
-  cvExcerpt?: string
+  candidateCtx?: CandidateContext
 }): Promise<string> {
-  const { lang, moduleName, subSkill, question, subSkillsCompleted, totalSubSkills, cvExcerpt } = params
+  const { lang, moduleName, subSkill, question, subSkillsCompleted, totalSubSkills, candidateCtx } = params
 
   const systemPrompt = buildInterviewerPrompt(
     lang, moduleName, subSkill, question,
-    subSkillsCompleted, totalSubSkills, question.follow_up_probes, cvExcerpt,
+    subSkillsCompleted, totalSubSkills, question.follow_up_probes, candidateCtx,
   )
 
   const res = await client.messages.create({
