@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Routes that don't require authentication
-const PUBLIC_PREFIXES = ['/_next', '/favicon.ico', '/api', '/login', '/signup', '/pricing', '/privacy', '/terms']
-const PUBLIC_EXACT = new Set(['/', '/login', '/signup', '/pricing', '/privacy', '/terms'])
+const PUBLIC_PREFIXES = ['/_next', '/favicon.ico', '/api', '/login', '/signup', '/pricing', '/privacy', '/terms', '/cv', '/reset-password']
+const PUBLIC_EXACT = new Set(['/', '/login', '/signup', '/pricing', '/privacy', '/terms', '/cv', '/reset-password'])
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_EXACT.has(pathname)) return true
