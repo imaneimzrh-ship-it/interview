@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { BAND_COLORS, type Band } from '@/lib/signals'
-import { GAP_TO_MODULE, MODULE_NAME_TO_SLUG } from '@/lib/gap-module-map'
+import { GAP_TO_MODULE, MODULE_NAME_TO_SLUG, SUB_SKILL_TO_MODULE } from '@/lib/gap-module-map'
 
 const SIGNAL_LABELS: Record<string, { en: string; fr: string; icon: string }> = {
   production: { en: 'Production Evidence', fr: 'Expérience en production',   icon: '🚀' },
@@ -20,6 +20,7 @@ interface CvResult {
   gap: string
   flags: string[]
   recommendModule: string
+  recommendSubSkill?: string
   recommendWhy: string
 }
 
@@ -110,7 +111,12 @@ export default function CvPage() {
   }
 
   const scoreColor = (s: number) => s >= 70 ? '#2E7D5B' : s >= 45 ? '#C77D2E' : '#B24C3F'
-  const moduleSlug = result ? (MODULE_NAME_TO_SLUG[result.recommendModule] ?? 'rag_system_design') : ''
+  const moduleSlug = result
+    ? (result.recommendSubSkill && SUB_SKILL_TO_MODULE[result.recommendSubSkill])
+      ?? MODULE_NAME_TO_SLUG[result.recommendModule]
+      ?? 'rag_system_design'
+    : ''
+  const subSkillParam = result?.recommendSubSkill ? `&sub_skill=${result.recommendSubSkill}` : ''
 
   // Free signed-in users get full CV breakdown — it's the free-tier feature
   // Anon users (should not reach here due to middleware) see only overall
@@ -385,7 +391,7 @@ export default function CvPage() {
                     </div>
                   </div>
                   <Link
-                    href={`/app/start?module=${gapModule.slug}&lang=${lang}`}
+                    href={`/app/start?module=${gapModule.slug}&lang=${lang}${result?.recommendSubSkill ? `&sub_skill=${result.recommendSubSkill}` : (gapModule.subSkillSlug ? `&sub_skill=${gapModule.subSkillSlug}` : '')}`}
                     className="inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl transition-all whitespace-nowrap"
                     style={{ background: '#F5A524', color: '#17140F', fontFamily: "'Space Grotesk', sans-serif", boxShadow: '0 2px 8px rgba(245,165,36,.4)' }}>
                     {lang === 'en' ? 'Practice this now →' : 'Pratiquer maintenant →'}
@@ -408,7 +414,7 @@ export default function CvPage() {
                 <div className="text-xs font-semibold text-[#1E2A44] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>→ {lang === 'en' ? 'Recommended module' : 'Module recommandé'}</div>
                 <div className="text-base font-bold text-[#17140F] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{result.recommendModule}</div>
                 <p className="text-sm text-[#7A7267] mb-4">{result.recommendWhy}</p>
-                <Link href={`/app/start?module=${moduleSlug}&lang=${lang}`}
+                <Link href={`/app/start?module=${moduleSlug}&lang=${lang}${subSkillParam}`}
                   className="inline-flex items-center gap-2 bg-[#1E2A44] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#2d3f61] transition-all shadow-sm"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                   {lang === 'en' ? 'Start this interview →' : 'Démarrer cet entretien →'}

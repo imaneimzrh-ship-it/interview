@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     // Load sub-skills + questions
     const { data: subSkills } = await sb
       .from('sub_skills')
-      .select(`*, questions(*)`)
+      .select(`*, questions(id, body_en, body_fr, slug, rubric_strong, rubric_medium, rubric_weak, follow_up_probes, question_type, starter_code, code_language)`)
       .eq('skill_module_id', session.skill_module_id)
       .order('display_order')
 
@@ -167,6 +167,9 @@ export async function POST(req: NextRequest) {
       isComplete: turnResult.isComplete,
       nextSubSkillIdx,
       nextOpeningMessage,
+      questionType: currentQuestion.question_type ?? 'text',
+      starterCode: currentQuestion.starter_code ?? null,
+      codeLanguage: currentQuestion.code_language ?? null,
       grade: {
         score: gradeResult.score,
         // Only return grade details to the client after the session ends

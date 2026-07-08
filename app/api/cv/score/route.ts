@@ -38,12 +38,26 @@ export async function POST(req: NextRequest) {
   const cvCapped = cv.slice(0, 6000)
   const lang = body.lang === 'fr' ? 'French' : 'English'
 
-  const prompt = `You are a hiring lead screening a CV for an Applied AI Engineer role in 2026. Score STRICTLY against: production evidence (shipped systems serving real users, with metrics — not demos, notebooks, or courses), RAG depth (hybrid retrieval, reranking, retrieval evaluation), agentic experience (planners, tool use, memory, multi-agent failure modes), evaluation literacy (golden sets, LLM-as-judge validated against human labels, regression gates — the strongest hiring signal), and cost & safety (token budgets, model routing, caching, guardrails / prompt-injection). Penalise recruiter red flags: "100% accuracy" claims, no inference-cost awareness, a 2024-mindset stack of only LangChain + Pinecone + a ChatGPT wrapper with no eval or production evidence, and demos presented as production.
+  const prompt = `You are a hiring lead screening a CV for an AI Engineer role in 2026 (Applied AI, LLM, MLOps, or Automation Engineer). Score STRICTLY against these 5 signals:
+
+1. PRODUCTION EVIDENCE (key: "production"): Shipped systems serving real users with metrics — not demos, notebooks, or courses. Look for: scale numbers, latency/cost metrics, on-call experience, incident response. Penalise: "100% accuracy" claims, demos presented as production, no inference-cost awareness.
+
+2. RAG DEPTH (key: "rag"): Chunking strategy beyond naive fixed-size, hybrid retrieval (dense + sparse), reranking (cross-encoder or ColBERT), retrieval quality evaluation. Sub-skills to detect: FAISS vs HNSW trade-off awareness, embedding model selection, freshness strategies. Penalise: only LangChain + Pinecone with no eval.
+
+3. AGENTIC EXPERIENCE (key: "agentic"): Agent frameworks (LangGraph, CrewAI, AutoGen), tool creation and schema design, memory management (working/episodic/semantic), multi-agent coordination, failure handling and recovery, MCP integration. Penalise: only "built a chatbot" with no tool use or failure handling.
+
+4. EVALUATION LITERACY (key: "eval"): Golden sets, LLM-as-judge validated against human labels, regression gates, offline vs online eval split, observability and tracing (LangSmith, Arize, Ragas). This is the strongest hiring signal for 2026. Penalise: no eval work whatsoever, or only BLEU/ROUGE.
+
+5. COST & SAFETY (key: "cost"): Token budgets, model routing, KV cache, streaming, guardrails, prompt-injection defence, safe failure patterns, MCP security. Penalise: no cost awareness on any LLM project.
+
+Also look for 2026 red flags: a 2024-mindset stack of only LangChain + Pinecone + a ChatGPT wrapper; no mention of eval or production evidence; demos presented as production; "100% accuracy" claims.
 
 CV: """${cvCapped}"""
 
+For recommendSubSkill, pick the single most specific sub-skill gap from this list: chunking_strategy, retrieval_quality, reranking, rag_freshness, tool_use_design, memory_management, tool_creation_validation, multi_agent_coordination, failure_handling_recovery, mcp_integration, eval_design, hallucination_detection, offline_online_eval, regression_gates, observability_tracing, guardrails_safe_failure, cost_latency_optimisation, deployment_versioning.
+
 Return ONLY this JSON, no markdown, human text in ${lang}:
-{"overall":0,"signals":[{"key":"production","score":0,"band":"Strong|Developing|Gap","evidence":"specific line or absence"},{"key":"rag","score":0,"band":"Strong|Developing|Gap","evidence":""},{"key":"agentic","score":0,"band":"Strong|Developing|Gap","evidence":""},{"key":"eval","score":0,"band":"Strong|Developing|Gap","evidence":""},{"key":"cost","score":0,"band":"Strong|Developing|Gap","evidence":""}],"strengths":["max 2 short bullets"],"gap":"the single most important fix, one sentence","flags":["red flags, or empty"],"recommendModule":"RAG System Design|Agentic Systems|Evaluation & Observability|Cost, Latency & Safety","recommendWhy":"one sentence linking the gap to the module"}`
+{"overall":0,"signals":[{"key":"production","score":0,"band":"Strong|Developing|Gap","evidence":"specific line or absence"},{"key":"rag","score":0,"band":"Strong|Developing|Gap","evidence":""},{"key":"agentic","score":0,"band":"Strong|Developing|Gap","evidence":""},{"key":"eval","score":0,"band":"Strong|Developing|Gap","evidence":""},{"key":"cost","score":0,"band":"Strong|Developing|Gap","evidence":""}],"strengths":["max 2 short bullets"],"gap":"the single most important fix, one sentence, name the specific missing sub-skill","flags":["red flags, or empty"],"recommendModule":"RAG System Design|Agent Orchestration|Evaluation & Testing|Production / MLOps","recommendSubSkill":"one slug from the list above","recommendWhy":"one sentence linking the gap to the specific sub-skill and module"}`
 
   try {
     const msg = await client.messages.create({

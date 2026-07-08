@@ -1,15 +1,71 @@
 'use client'
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 interface Msg { role: 'user' | 'assistant'; content: string }
 
+type ContentPart = { type: 'text'; text: string } | { type: 'code'; lang: string; code: string }
+
+function parseContent(raw: string): ContentPart[] {
+  const parts: ContentPart[] = []
+  const re = /```(\w*)\n?([\s\S]*?)```/g
+  let last = 0; let m: RegExpExecArray | null
+  while ((m = re.exec(raw)) !== null) {
+    if (m.index > last) parts.push({ type: 'text', text: raw.slice(last, m.index) })
+    parts.push({ type: 'code', lang: m[1] || 'text', code: m[2].trimEnd() })
+    last = re.lastIndex
+  }
+  if (last < raw.length) parts.push({ type: 'text', text: raw.slice(last) })
+  return parts
+}
+
+function CodeBlock({ lang, code }: { lang: string; code: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = useCallback(() => {
+    navigator.clipboard.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800) })
+  }, [code])
+  return (
+    <div className="mt-3 rounded-xl overflow-hidden border border-[#2D3748]" style={{ background: '#1A202C' }}>
+      <div className="flex items-center justify-between px-3 py-1.5" style={{ background: '#2D3748' }}>
+        <span className="text-[10px] font-mono text-[#718096] uppercase tracking-wide">{lang || 'code'}</span>
+        <button onClick={copy} className="text-[10px] font-medium text-[#A0AEC0] hover:text-white transition-colors px-2 py-0.5 rounded"
+          style={{ background: 'rgba(255,255,255,.08)' }}>
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
+      <pre className="px-4 py-3 overflow-x-auto text-xs leading-relaxed"
+        style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace", color: '#E2E8F0', margin: 0 }}>
+        <code>{code}</code>
+      </pre>
+    </div>
+  )
+}
+
+function MessageContent({ content, role }: { content: string; role: 'user' | 'assistant' }) {
+  const parts = parseContent(content)
+  const hasCode = parts.some(p => p.type === 'code')
+  return (
+    <div>
+      {parts.map((part, i) =>
+        part.type === 'code'
+          ? <CodeBlock key={i} lang={part.lang} code={part.code} />
+          : <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part.text}</span>
+      )}
+      {hasCode && role === 'assistant' && (
+        <p className="mt-3 text-xs text-[#9CA3AF] border-t border-[#E5E7EB] pt-2">
+          Type your analysis in the text box below — identify the bugs, explain what each one causes, and show the fix.
+        </p>
+      )}
+    </div>
+  )
+}
+
 const SS_LABELS: Record<string, string[]> = {
   rag_system_design:   ['Chunking Strategy','Retrieval Quality','Reranking','Freshness'],
-  agent_orchestration: ['Tool Use','Planning','Failure Handling','Multi-Agent'],
-  evaluation_testing:  ['Eval Design','Hallucination','Offline/Online','Regression'],
-  production_mlops:    ['Monitoring','Cost/Latency','Versioning','Deployment Safety'],
+  agent_orchestration: ['Tool Use & Design','Planning','Failure Handling','Multi-Agent','Tool Creation','Memory Mgmt'],
+  evaluation_testing:  ['Eval Design','Hallucination','Offline/Online','Regression Gates'],
+  production_mlops:    ['Observability','Guardrails','Cost/Latency','MCP Integration','Deployment'],
 }
 
 async function authHeader(): Promise<Record<string, string>> {
@@ -48,12 +104,14 @@ function SessionInner() {
   const [scoring,     setScoring]     = useState(false)
   const [error,       setError]       = useState('')
   const [elapsed,     setElapsed]     = useState(0)
-  const [voiceOn,     setVoiceOn]     = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
-  const [isSpeaking,  setIsSpeaking]  = useState(false)
+  const [voiceOn,      setVoiceOn]      = useState(false)
+  const [isRecording,  setIsRecording]  = useState(false)
+  const [isSpeaking,   setIsSpeaking]   = useState(false)
   const [voiceOk,      setVoiceOk]      = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(true)
   const [skipLoad,     setSkipLoad]     = useState(false)
+  const [starterCode,  setStarterCode]  = useState<string | null>(null)
+  const [codeLanguage, setCodeLanguage] = useState<string>('python')
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
@@ -80,16 +138,23 @@ function SessionInner() {
     if (!sessionId) { router.push('/app/start'); return }
     const cached = sessionStorage.getItem(`session_${sessionId}_opening`)
     const cachedTotal = sessionStorage.getItem(`session_${sessionId}_totalSS`)
+    const cachedCode  = sessionStorage.getItem(`session_${sessionId}_starterCode`)
+    const cachedLang  = sessionStorage.getItem(`session_${sessionId}_codeLanguage`)
     if (cached) {
       setMessages([{ role: 'assistant', content: cached }])
       if (cachedTotal) setTotal(Number(cachedTotal))
+      if (cachedCode)  { setStarterCode(cachedCode); setCodeLanguage(cachedLang ?? 'python') }
       return
     }
     authHeader().then(hdrs =>
       fetch(`/api/interview/session?id=${sessionId}`, { headers: hdrs })
         .then(r => r.json())
         .then(d => {
-          if (d.openingMessage) { setMessages([{ role: 'assistant', content: d.openingMessage }]); setTotal(d.totalSubSkills ?? 4) }
+          if (d.openingMessage) {
+            setMessages([{ role: 'assistant', content: d.openingMessage }])
+            setTotal(d.totalSubSkills ?? 4)
+            if (d.starterCode) { setStarterCode(d.starterCode); setCodeLanguage(d.codeLanguage ?? 'python') }
+          }
           if (d.error) setError(d.error)
         })
         .catch(() => setError('Failed to load session.'))
@@ -128,7 +193,11 @@ function SessionInner() {
       if (!res.ok) { setError(data.error ?? 'Error'); setMessages(prev => prev.slice(0,-1)); setSending(false); return }
       setMessages(prev => [...prev, { role: 'assistant', content: data.aiResponse }])
       if (voiceOn) { setIsSpeaking(true); speak(data.aiResponse, lang, () => { setIsSpeaking(false); if (voiceOn && !data.isComplete) setTimeout(startRec, 400) }) }
-      if (data.shouldAdvance) setSubIdx(data.nextSubSkillIdx)
+      if (data.shouldAdvance) {
+        setSubIdx(data.nextSubSkillIdx)
+        if (data.starterCode) { setStarterCode(data.starterCode); setCodeLanguage(data.codeLanguage ?? 'python') }
+        else setStarterCode(null)
+      }
       if (data.nextOpeningMessage) setTimeout(() => {
         setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }])
         if (voiceOn) { setIsSpeaking(true); speak(data.nextOpeningMessage, lang, () => { setIsSpeaking(false); if (voiceOn) setTimeout(startRec, 400) }) }
@@ -304,7 +373,7 @@ function SessionInner() {
                     )}
                     <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.role === 'assistant' ? 'bg-white border border-[#E5E7EB] rounded-tl-sm text-[#111827]' : 'bg-[#1E2A44] text-white rounded-tr-sm'}`}
                       style={{ boxShadow: msg.role === 'assistant' ? '0 1px 3px rgba(0,0,0,.06)' : '0 2px 6px rgba(37,99,235,.25)', opacity: (msg.content.includes('Skipped') || msg.content.includes('Passée')) ? 0.5 : 1 }}>
-                      {msg.content}
+                      <MessageContent content={msg.content} role={msg.role} />
                     </div>
                   </div>
                 </div>
@@ -337,6 +406,26 @@ function SessionInner() {
               <div ref={bottomRef} />
             </div>
           </div>
+
+          {/* Practical question code panel */}
+          {starterCode && (
+            <div className="border-t border-[#E5E7EB] flex-shrink-0" style={{ background: '#1A202C', maxHeight: '38vh', overflowY: 'auto' }}>
+              <div className="flex items-center justify-between px-4 py-2" style={{ background: '#2D3748' }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-[#A0AEC0] uppercase tracking-wide">{codeLanguage}</span>
+                  <span className="text-[10px] text-[#718096]">·</span>
+                  <span className="text-[10px] text-[#68D391] font-semibold">Practical question — read the code, type your analysis below</span>
+                </div>
+                <button onClick={() => { navigator.clipboard.writeText(starterCode) }} className="text-[10px] text-[#A0AEC0] hover:text-white px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,.08)' }}>
+                  Copy
+                </button>
+              </div>
+              <pre className="px-4 py-3 text-xs leading-relaxed overflow-x-auto"
+                style={{ fontFamily: "'JetBrains Mono','Fira Code',monospace", color: '#E2E8F0', margin: 0 }}>
+                <code>{starterCode}</code>
+              </pre>
+            </div>
+          )}
 
           {/* Input */}
           <div className="bg-white border-t border-[#E5E7EB] px-4 sm:px-6 py-4 flex-shrink-0" style={{ boxShadow:'0 -1px 6px rgba(0,0,0,.05)' }}>

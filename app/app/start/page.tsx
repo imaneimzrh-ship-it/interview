@@ -32,15 +32,16 @@ function StartPageInner() {
   const searchParams = useSearchParams()
   const moduleRef    = useRef<HTMLDivElement>(null)
 
-  const [jd,        setJd]      = useState('')
-  const [resume,    setResume]  = useState('')
-  const [module_,   setModule]  = useState('')
-  const [lang,      setLang]    = useState<'en'|'fr'>('en')
-  const [loading,   setLoading] = useState(false)
-  const [error,     setError]   = useState('')
-  const [isPro,     setIsPro]   = useState<boolean | null>(null)
-  const [preview,   setPreview] = useState<PreviewQuestion[]>([])
-  const [highlight, setHighlight] = useState(false)
+  const [jd,           setJd]         = useState('')
+  const [resume,       setResume]     = useState('')
+  const [module_,      setModule]     = useState('')
+  const [lang,         setLang]       = useState<'en'|'fr'>('en')
+  const [loading,      setLoading]    = useState(false)
+  const [error,        setError]      = useState('')
+  const [isPro,        setIsPro]      = useState<boolean | null>(null)
+  const [preview,      setPreview]    = useState<PreviewQuestion[]>([])
+  const [highlight,    setHighlight]  = useState(false)
+  const [focusSubSkill, setFocusSubSkill] = useState('')
 
   useEffect(() => {
     createClient().auth.getUser().then(async ({ data: { user } }) => {
@@ -52,12 +53,13 @@ function StartPageInner() {
 
   // Pre-select module from URL param (e.g. coming from CV diagnostic gap CTA)
   useEffect(() => {
-    const moduleParam = searchParams.get('module')
-    const langParam   = searchParams.get('lang') as 'en' | 'fr' | null
+    const moduleParam   = searchParams.get('module')
+    const langParam     = searchParams.get('lang') as 'en' | 'fr' | null
+    const subSkillParam = searchParams.get('sub_skill')
     if (moduleParam) {
       setModule(moduleParam)
       if (langParam === 'fr') setLang('fr')
-      // Scroll module grid into view and briefly highlight
+      if (subSkillParam) setFocusSubSkill(subSkillParam)
       setHighlight(true)
       setTimeout(() => {
         moduleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -108,6 +110,10 @@ function StartPageInner() {
       sessionStorage.setItem(`session_${data.sessionId}_opening`, data.openingMessage ?? '')
       sessionStorage.setItem(`session_${data.sessionId}_totalSS`, String(data.totalSubSkills ?? 4))
       sessionStorage.setItem(`session_${data.sessionId}_voiceEnabled`, String(data.voiceEnabled !== false))
+      if (data.starterCode) {
+        sessionStorage.setItem(`session_${data.sessionId}_starterCode`, data.starterCode)
+        sessionStorage.setItem(`session_${data.sessionId}_codeLanguage`, data.codeLanguage ?? 'python')
+      }
       router.push(`/app/interview/session?id=${data.sessionId}&lang=${lang}&module=${module_}`)
     } catch { setError('Network error.'); setLoading(false) }
   }
@@ -235,6 +241,22 @@ function StartPageInner() {
               </div>
             )}
           </div>
+
+          {/* Focus sub-skill hint from CV diagnostic */}
+          {focusSubSkill && module_ && (
+            <div className="bg-[#FFF8EE] border border-[#F5A524]/40 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-[#F5A524]">🎯</span>
+                <div>
+                  <p className="text-sm font-semibold text-[#111827]">Focus area from your CV diagnostic</p>
+                  <p className="text-xs text-[#6B7280] mt-0.5">
+                    Your CV showed a gap in <span className="font-medium text-[#C77D2E]">{focusSubSkill.replace(/_/g, ' ')}</span> — the interviewer will weight questions toward this area.
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setFocusSubSkill('')} className="text-[#9CA3AF] hover:text-[#374151] text-lg flex-shrink-0">×</button>
+            </div>
+          )}
 
           {error && (
             <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-4 text-sm text-[#DC2626] flex justify-between items-center">

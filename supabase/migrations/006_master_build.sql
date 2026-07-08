@@ -447,3 +447,31 @@ insert into public.question_reports (
    2025)
 
 on conflict do nothing;
+
+-- ─── Practical question support on existing questions table ──────────────────
+alter table public.questions
+  add column if not exists question_type text default 'text' check (question_type in ('text','practical')),
+  add column if not exists starter_code  text,
+  add column if not exists code_language text default 'python';
+
+-- Back-fill the seeded practical questions as proper `questions` rows
+-- so they are surfaced by the interview flow (sub_skill_id required)
+insert into public.questions (
+  sub_skill_id, slug, body_en, body_fr,
+  question_type, starter_code, code_language,
+  rubric_strong, rubric_medium, rubric_weak, follow_up_probes
+)
+select
+  pq.sub_skill_id,
+  pq.slug,
+  pq.instructions_en,
+  pq.instructions_fr,
+  'practical',
+  pq.starter_code,
+  pq.language,
+  pq.rubric_strong,
+  pq.rubric_medium,
+  pq.rubric_weak,
+  pq.correct_issues::text[]
+from public.practical_questions pq
+on conflict (sub_skill_id, slug) do nothing;

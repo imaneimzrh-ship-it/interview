@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     // Load sub-skills capped by max_sub_skills
     const { data: allSubSkills } = await sb
       .from('sub_skills')
-      .select(`*, questions(*)`)
+      .select(`*, questions(id, body_en, body_fr, slug, rubric_strong, rubric_medium, rubric_weak, follow_up_probes, question_type, starter_code, code_language)`)
       .eq('skill_module_id', module_.id)
       .order('display_order')
 
@@ -161,6 +161,9 @@ export async function POST(req: NextRequest) {
       moduleNameFr:       module_.name_fr,
       sessionType:        type,
       voiceEnabled:       module_.voice_enabled ?? true,
+      questionType:       firstQuestion.question_type ?? 'text',
+      starterCode:        firstQuestion.starter_code ?? null,
+      codeLanguage:       firstQuestion.code_language ?? null,
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : JSON.stringify(err)
