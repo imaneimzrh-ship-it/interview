@@ -23,7 +23,7 @@ interface Report {
   share_token: string
   overall_score?: number
 }
-interface Session { language: string; skill_modules: { name_en: string; name_fr: string } }
+interface Session { language: string; skill_modules: { name_en: string; name_fr: string; slug: string } }
 
 function ScoreMeter({ score, label }: { score: number; label: string }) {
   const band = scoreToBand(score * 25)
@@ -47,8 +47,8 @@ function ScoreMeter({ score, label }: { score: number; label: string }) {
 
 function ShareCard({ report, lang, moduleName }: { report: Report; lang: string; moduleName: string }) {
   const [copied, setCopied] = useState(false)
-  const shareUrl  = typeof window !== 'undefined' ? `${window.location.origin}/share/${report.share_token}` : ''
-  const shareText = `🎯 Just did a mock ${moduleName} interview on Sonne AI.\n\n✓ Strength: ${report.top_strength}\n→ Gap: ${report.top_gap}\n\nPractice yours: ${shareUrl}`
+  const shareUrl  = `https://sonneai.com/share/${report.share_token}`
+  const shareText = `🎯 Just completed a mock ${moduleName} interview on Sonne AI — AI interview prep for applied AI roles.\n\n✓ Strength: ${report.top_strength}\n→ Gap: ${report.top_gap}\n\nSee the full result: ${shareUrl}\n\n#AIEngineering #InterviewPrep`
   function copy() { navigator.clipboard.writeText(shareText); setCopied(true); setTimeout(() => setCopied(false), 2500) }
   return (
     <div className="bg-[#EEF1F6] border border-[#C7D0E0] rounded-2xl p-5">
@@ -59,14 +59,25 @@ function ShareCard({ report, lang, moduleName }: { report: Report; lang: string;
         <p className="text-xs text-[#7A7267] mb-2">🎯 Mock {moduleName} — Sonne AI</p>
         <p className="text-sm text-[#17140F] mb-1.5"><span className="text-[#2E7D5B] font-medium">✓</span> {report.top_strength}</p>
         <p className="text-sm text-[#17140F] mb-3"><span className="text-[#C77D2E] font-medium">→</span> {report.top_gap}</p>
-        <p className="text-xs text-[#7A7267] font-mono truncate">{shareUrl}</p>
+        <p className="text-xs text-[#F5A524] font-mono truncate">{shareUrl}</p>
       </div>
-      <div className="flex gap-2">
-        <button onClick={copy} className="flex-1 bg-[#1E2A44] text-white text-xs font-semibold px-4 py-2.5 rounded-lg hover:bg-[#2d3f61] transition-colors"
+      <div className="flex gap-2 flex-wrap">
+        <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+          target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-[#0A66C2] text-white text-xs font-semibold px-4 py-2.5 rounded-lg hover:bg-[#004182] transition-colors"
           style={{ fontFamily:"'Space Grotesk',sans-serif" }}>
-          {copied ? '✓ Copied!' : (lang==='fr' ? 'Copier pour LinkedIn' : 'Copy for LinkedIn')}
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+          </svg>
+          {lang==='fr' ? 'Partager sur LinkedIn' : 'Share on LinkedIn'}
+        </a>
+        <button onClick={copy}
+          className="flex-1 bg-[#1E2A44] text-white text-xs font-semibold px-4 py-2.5 rounded-lg hover:bg-[#2d3f61] transition-colors"
+          style={{ fontFamily:"'Space Grotesk',sans-serif" }}>
+          {copied ? '✓ Copied!' : (lang==='fr' ? 'Copier le texte' : 'Copy caption')}
         </button>
-        <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer"
+        <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🎯 Mock ${moduleName} interview on Sonne AI\n✓ ${report.top_strength}\n${shareUrl}`)}`}
+          target="_blank" rel="noopener noreferrer"
           className="px-4 py-2.5 border border-[#E7E2D8] text-xs text-[#7A7267] rounded-lg hover:text-[#17140F] transition-colors">𝕏</a>
       </div>
     </div>
@@ -144,6 +155,72 @@ function TradeoffCard({ report, lang, isPro }: { report: Report; lang: string; i
           </a>
         </div>
       )}
+    </div>
+  )
+}
+
+const SUGGESTED_QUESTIONS: Record<string, string[]> = {
+  rag_system_design: [
+    "How do you currently measure retrieval quality in production — do you use offline eval sets, online metrics, or both?",
+    "What's your approach to handling embedding model upgrades when you have millions of already-indexed documents?",
+    "When do you choose to add a reranking step versus investing in better chunking or a higher-quality embedding model?",
+  ],
+  agent_orchestration: [
+    "How do you handle mid-loop failures in your production agents — do you retry at the tool call level or restart the whole plan?",
+    "What does your memory architecture look like for long-running agents, and how do you decide what to persist versus summarize?",
+    "Have you run into prompt injection through tool results in production, and how do you currently defend against it?",
+  ],
+  production_mlops: [
+    "How do you detect output quality drift in production when you don't have real-time ground-truth labels?",
+    "What's your current guardrails approach — rule-based filters, a separate LLM judge, or something else?",
+    "How do you decide when observability overhead is worth adding to a latency-sensitive inference path?",
+  ],
+  evaluation_testing: [
+    "What does your team use as the primary signal that an LLM change actually improved things — human eval, LLM-as-judge, or something else?",
+    "How do you handle the coverage gap when your eval set can't realistically cover the long tail of user inputs?",
+    "When a model upgrade passes your evals but causes regressions in production, what's your postmortem process?",
+  ],
+}
+
+function SuggestedQuestions({ moduleSlug, lang }: { moduleSlug: string; lang: string }) {
+  const questions = SUGGESTED_QUESTIONS[moduleSlug] ?? []
+  const [copied, setCopied] = useState<number | null>(null)
+  if (!questions.length) return null
+
+  function copy(i: number, q: string) {
+    navigator.clipboard.writeText(q)
+    setCopied(i)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#E7E2D8] shadow-sm p-5">
+      <p className="text-xs font-semibold text-[#7A7267] uppercase tracking-widest mb-1" style={{ fontFamily:"'JetBrains Mono',monospace" }}>
+        {lang === 'fr' ? '💡 QUESTIONS À POSER À VOTRE INTERVIEWEUR' : '💡 QUESTIONS TO ASK YOUR INTERVIEWER'}
+      </p>
+      <p className="text-xs text-[#9CA3AF] mb-4">
+        {lang === 'fr'
+          ? 'Ces questions montrent que vous avez compris les enjeux — pas seulement les réponses.'
+          : 'These signal depth — candidates who ask them leave a strong impression.'}
+      </p>
+      <div className="space-y-3">
+        {questions.map((q, i) => (
+          <div key={i} className="flex items-start gap-3 bg-[#FBFAF7] border border-[#E7E2D8] rounded-xl px-4 py-3">
+            <p className="text-sm text-[#374151] leading-relaxed flex-1">"{q}"</p>
+            <button
+              onClick={() => copy(i, q)}
+              className="flex-shrink-0 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all"
+              style={{
+                background: copied === i ? '#ECFDF5' : '#F3F0EB',
+                color:      copied === i ? '#065F46' : '#7A7267',
+                border:     `1px solid ${copied === i ? '#A7F3D0' : '#E7E2D8'}`,
+                fontFamily: "'JetBrains Mono',monospace",
+              }}>
+              {copied === i ? '✓' : lang === 'fr' ? 'COPIER' : 'COPY'}
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -505,6 +582,9 @@ function ReportInner() {
             <p className="text-sm text-[#374151] leading-relaxed whitespace-pre-line">{summary}</p>
           </div>
         )}
+
+        {/* Suggested questions to ask */}
+        <SuggestedQuestions moduleSlug={session.skill_modules?.slug ?? ''} lang={lang} />
 
         {/* Ask the Interviewer */}
         <AskInterviewer sessionId={sessionId!} lang={lang} />

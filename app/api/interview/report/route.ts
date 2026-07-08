@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     const { data: session } = await sb
       .from('interview_sessions')
-      .select(`*, skill_modules(name_en, name_fr)`)
+      .select(`*, skill_modules(name_en, name_fr, slug)`)
       .eq('id', sessionId)
       .eq('user_id', user.id)
       .single()
