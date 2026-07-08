@@ -19,6 +19,9 @@ interface Report {
   difficulty_rating: number | null
   outcome: string
   upvotes: number
+  depth: 'core' | 'applied' | 'deep_dive' | null
+  frequently_asked: boolean | null
+  entry_type: 'seeded' | 'user_submitted' | null
   created_at: string
 }
 
@@ -42,6 +45,11 @@ const OUTCOME_META: Record<string, { label: string; color: string }> = {
   no_response:       { label: 'No response',      color: '#6B7280' },
   still_in_process:  { label: 'In process',       color: '#C77D2E' },
   prefer_not_to_say: { label: '',                 color: '' },
+}
+const DEPTH_META: Record<string, { label: string; bg: string; color: string }> = {
+  core:       { label: 'Core',       bg: '#F3F4F6', color: '#4B5563' },
+  applied:    { label: 'Applied',    bg: '#EFF6FF', color: '#1D4ED8' },
+  deep_dive:  { label: 'Deep Dive',  bg: '#FDF4FF', color: '#7E22CE' },
 }
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -355,6 +363,11 @@ function ReportCard({ report, onFlag, onUpvote }: { report: Report; onFlag: (id:
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-2">
+            {report.frequently_asked && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF8EE] text-[#C77D2E] border border-[#FDE68A]">
+                🔥 Frequently asked
+              </span>
+            )}
             {companyLabel && (
               <span className="text-xs font-semibold text-[#1E2A44] bg-[#EEF1F6] px-2 py-0.5 rounded-full border border-[#C7D0E0]">
                 {companyLabel}
@@ -364,6 +377,12 @@ function ReportCard({ report, onFlag, onUpvote }: { report: Report; onFlag: (id:
               style={{ background: round.bg, color: round.color }}>
               {round.label}
             </span>
+            {report.depth && DEPTH_META[report.depth] && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: DEPTH_META[report.depth].bg, color: DEPTH_META[report.depth].color }}>
+                {DEPTH_META[report.depth].label}
+              </span>
+            )}
             <span className="text-[10px] text-[#9CA3AF]">{CLUSTER_LABELS[report.role_cluster] ?? report.role_cluster}</span>
             {report.year && <span className="text-[10px] text-[#9CA3AF]">{report.year}</span>}
             {report.difficulty_rating && (
@@ -397,6 +416,8 @@ export default function QuestionsPage() {
   const [loading,    setLoading]    = useState(true)
   const [cluster,    setCluster]    = useState('all')
   const [round,      setRound]      = useState('all')
+  const [depth,      setDepth]      = useState('all')
+  const [frequent,   setFrequent]   = useState(false)
   const [search,     setSearch]     = useState('')
   const [showForm,   setShowForm]   = useState(false)
   const [submitted,  setSubmitted]  = useState(false)
@@ -406,12 +427,14 @@ export default function QuestionsPage() {
     const params = new URLSearchParams()
     if (cluster !== 'all') params.set('cluster', cluster)
     if (round   !== 'all') params.set('round',   round)
-    if (search)            params.set('q',       search)
+    if (depth   !== 'all') params.set('depth',   depth)
+    if (frequent)          params.set('frequent', 'true')
+    if (search)            params.set('q',        search)
     const res = await fetch(`/api/questions?${params}`)
     const d   = await res.json()
     setReports(d.reports ?? [])
     setLoading(false)
-  }, [cluster, round, search])
+  }, [cluster, round, depth, frequent, search])
 
   useEffect(() => { load() }, [load])
 
@@ -497,7 +520,7 @@ export default function QuestionsPage() {
         )}
 
         {/* ── Filters ── */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="flex flex-col sm:flex-row gap-3 mb-3">
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search questions…"
             className="flex-1 text-sm border border-[#E5E7EB] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/20 focus:border-[#F5A524]" />
@@ -518,6 +541,25 @@ export default function QuestionsPage() {
             <option value="behavioral">Behavioral</option>
             <option value="final">Final / Onsite</option>
           </select>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-5">
+          <select value={depth} onChange={e => setDepth(e.target.value)}
+            className="text-sm border border-[#E5E7EB] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/20 focus:border-[#F5A524]">
+            <option value="all">All depths</option>
+            <option value="core">Core</option>
+            <option value="applied">Applied</option>
+            <option value="deep_dive">Deep Dive</option>
+          </select>
+          <button onClick={() => setFrequent(v => !v)}
+            className="text-sm px-3 py-1.5 rounded-lg border transition-all"
+            style={{
+              borderColor: frequent ? '#F5A524' : '#E5E7EB',
+              background: frequent ? '#FFF8EE' : 'white',
+              color: frequent ? '#C77D2E' : '#6B7280',
+              fontWeight: frequent ? 600 : 400,
+            }}>
+            🔥 Frequently asked
+          </button>
         </div>
 
         {/* ── List ── */}

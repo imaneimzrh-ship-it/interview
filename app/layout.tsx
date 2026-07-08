@@ -7,8 +7,14 @@ const spaceGrotesk  = Space_Grotesk({ subsets: ['latin'], variable: '--font-spac
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
 export const metadata: Metadata = {
-  title: 'Sonne AI — Applied AI Engineer Interview Prep',
-  description: 'Score your CV and practice the Applied AI Engineer interview. RAG, agents, evaluation, cost & safety. EN/FR. Free CV diagnostic included — sign up to get started.',
+  title: 'Sonne AI — AI Engineer Interview Prep | RAG, Agents, MLOps',
+  description: 'Score your CV and practice AI engineer interviews — RAG, agents, evaluation, MLOps, voice mode, and practical coding questions. EN/FR. Free CV diagnostic. Applied AI, LLM, and Automation Engineer roles.',
+  keywords: ['AI engineer interview', 'LLM interview prep', 'RAG interview', 'agent orchestration', 'MLOps interview', 'applied AI engineer', 'CV diagnostic AI'],
+  openGraph: {
+    title: 'Sonne AI — AI Engineer Interview Prep',
+    description: 'Adaptive interview practice for AI, LLM, and Automation Engineer roles. Sub-skill diagnostic, voice mode, trade-off scoring, practical coding questions. EN/FR.',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -122,9 +122,10 @@ ${followUpProbes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 ${ctxNote}
 INTERVIEW RULES:
 1. Ask the current question as written, but personalise it with the candidate's specific tools/stack from the context above — make it concrete, not generic.
-2. After their answer, assess its depth:
-   - If strong/complete: say "Got it." then end with exactly: "[[NEXT]]"
-   - If shallow/incomplete: ask ONE follow-up probe (your choice)
+2. After their answer, assess two things independently — technical depth AND trade-off reasoning:
+   - If strong on both: say "Got it." then end with exactly: "[[NEXT]]"
+   - If technically correct but trade-off-free (never explained WHY over alternatives): probe directly — "Why [their choice] over [the obvious alternative]?" Examples: "Why RAG over fine-tuning here?", "Why HNSW over a flat index at this scale?", "Why LLM-as-judge rather than human eval in this case?", "Why vLLM over TGI for your inference setup?"
+   - If shallow on technical content: ask ONE follow-up probe (your choice)
    - After ONE probe and their answer: end with exactly "[[NEXT]]"
 3. Be direct, technical, and brief. No compliments. Real interviewers are concise.
 4. NEVER reveal the rubric or scoring criteria.

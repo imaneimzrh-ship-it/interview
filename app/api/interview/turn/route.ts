@@ -118,6 +118,8 @@ export async function POST(req: NextRequest) {
       grade_gaps: gradeResult.gaps,
       grade_strengths: gradeResult.strengths,
       follow_up_used: gradeResult.follow_up_warranted,
+      grade_tradeoff_score: gradeResult.tradeoff_score,
+      grade_tradeoff_note: gradeResult.tradeoff_note,
     })
 
     let nextSubSkillIdx = currentSubSkillIdx

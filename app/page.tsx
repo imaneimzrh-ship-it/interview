@@ -33,7 +33,7 @@ export default function Home() {
       <section className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-[#FFF8EE] border border-[#F5A524]/30 text-[#D98A0B] text-xs font-semibold px-3 py-1.5 rounded-full mb-7"
           style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '.04em' }}>
-          🇬🇧 EN · 🇫🇷 FR — APPLIED AI ENGINEER · 2026
+          🇬🇧 EN · 🇫🇷 FR — AI · LLM · AUTOMATION ENGINEER · 2026
         </div>
 
         <h1 className="text-4xl sm:text-5xl font-bold text-[#17140F] leading-[1.1] tracking-tight mb-5"
@@ -43,10 +43,10 @@ export default function Home() {
         </h1>
 
         <p className="text-lg text-[#7A7267] max-w-xl mx-auto mb-4 leading-relaxed">
-          Score your CV against the 5 signals hiring managers actually care about. Then practice the exact interview loop — adaptive, bilingual, sub-skill diagnostic.
+          Score your CV against 5 signals hiring managers care about. Then practice the exact interview loop — adaptive, bilingual, sub-skill diagnostic, with voice mode and practical coding questions.
         </p>
 
-        <p className="text-sm text-[#7A7267] mb-10">Free CV diagnostic included with every account. Takes 30 seconds.</p>
+        <p className="text-sm text-[#7A7267] mb-10">For Applied AI, LLM, MLOps, and Automation Engineer roles. Free CV diagnostic included. Takes 30 seconds.</p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
           <Link href="/cv"
@@ -119,9 +119,9 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           {[
-            { q: "Walk me through how you'd debug retrieval quality in a RAG pipeline where recall is dropping on out-of-domain queries.", round: 'Technical', cluster: 'RAG System Design' },
+            { q: "We use a flat FAISS index today. At what point does switching to HNSW become worth it, and what do you trade off when you make that switch?", round: 'System Design', cluster: 'RAG System Design' },
             { q: "Your agent is stuck in a tool-call loop — how do you detect it, break out of it, and prevent it in future runs?", round: 'System Design', cluster: 'Agent Orchestration' },
-            { q: "You're seeing 15% hallucination rate in prod. How do you build an eval harness to triage root cause?", round: 'Technical', cluster: 'Evaluation & Testing' },
+            { q: "You're seeing 15% hallucination rate in prod. How do you build an eval harness to triage root cause without labeled data?", round: 'Technical', cluster: 'Evaluation & Testing' },
             { q: "How would you reduce inference cost by 40% on a latency-sensitive RAG endpoint without degrading quality?", round: 'System Design', cluster: 'Production / MLOps' },
           ].map((item, i) => (
             <div key={i} className="bg-white rounded-xl border border-[#E7E2D8] p-4 shadow-sm flex flex-col gap-2">
@@ -149,10 +149,10 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
-            { emoji:'🔍', name:'RAG System Design',         desc:'Chunking · Hybrid retrieval · Reranking · Retrieval diagnosis', free:true },
-            { emoji:'🕵️', name:'Agentic Systems',            desc:'Planner & tool design · Memory · Multi-agent failures · Evaluation', free:false },
-            { emoji:'🧪', name:'Evaluation & Observability', desc:'Offline evals · LLM-as-judge · Online evals · Hallucination metrics', free:false },
-            { emoji:'⚙️', name:'Cost, Latency & Safety',     desc:'Token budgets · Model routing · Streaming · Guardrails', free:false },
+            { emoji:'🔍', name:'RAG System Design',         desc:'Chunking · Hybrid retrieval · Reranking · FAISS vs HNSW trade-offs · Retrieval diagnosis', free:true },
+            { emoji:'🕵️', name:'Agent Orchestration',        desc:'Tool creation & validation · Memory management · Multi-agent failures · LangGraph · MCP', free:false },
+            { emoji:'🧪', name:'Evaluation & Testing',       desc:'Offline evals · LLM-as-judge vs human eval · Online evals · Hallucination metrics', free:false },
+            { emoji:'⚙️', name:'Production / MLOps',         desc:'Observability & tracing · Guardrails · vLLM · Cost/latency · Safe failure', free:false },
           ].map(m => (
             <div key={m.name} className="bg-white rounded-xl border border-[#E7E2D8] p-5 shadow-sm">
               <div className="flex items-start justify-between mb-3">

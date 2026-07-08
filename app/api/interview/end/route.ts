@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
           gaps: turn.grade_gaps ?? [],
           strengths: turn.grade_strengths ?? [],
           follow_up_warranted: turn.follow_up_used ?? false,
+          tradeoff_score: turn.grade_tradeoff_score ?? 1,
+          tradeoff_note: turn.grade_tradeoff_note ?? '',
         }
       }
     }
@@ -72,6 +74,8 @@ export async function POST(req: NextRequest) {
         headline_en: diagnostic.headline_en,
         headline_fr: diagnostic.headline_fr,
         sub_skill_scores: diagnostic.sub_skill_scores,
+        tradeoff_avg: diagnostic.tradeoff_avg,
+        tradeoff_summary: diagnostic.tradeoff_summary,
         improvement_plan: diagnostic.improvement_plan,
         full_summary_en: diagnostic.full_summary_en,
         full_summary_fr: diagnostic.full_summary_fr,

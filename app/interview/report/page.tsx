@@ -11,11 +11,13 @@ async function authHeader(): Promise<Record<string, string>> {
   return {}
 }
 
-interface SubSkillScore { score: number; summary: string; evidence: string }
+interface SubSkillScore { score: number; summary: string; evidence: string; tradeoff_score?: number; tradeoff_note?: string }
 interface Report {
   top_strength: string; top_gap: string
   headline_en: string;  headline_fr: string
   sub_skill_scores: Record<string, SubSkillScore>
+  tradeoff_avg?: number
+  tradeoff_summary?: string
   improvement_plan: string
   full_summary_en: string; full_summary_fr: string
   share_token: string
@@ -67,6 +69,81 @@ function ShareCard({ report, lang, moduleName }: { report: Report; lang: string;
         <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer"
           className="px-4 py-2.5 border border-[#E7E2D8] text-xs text-[#7A7267] rounded-lg hover:text-[#17140F] transition-colors">𝕏</a>
       </div>
+    </div>
+  )
+}
+
+function TradeoffCard({ report, lang, isPro }: { report: Report; lang: string; isPro: boolean }) {
+  const avg = report.tradeoff_avg ?? null
+  const summary = report.tradeoff_summary ?? ''
+
+  const band = avg == null ? null : avg >= 3.5 ? 'Strong' : avg >= 2.5 ? 'Developing' : avg >= 1.5 ? 'Gap' : 'Gap'
+  const bandColor = band === 'Strong'
+    ? { bg:'#ECFDF5', text:'#065F46', border:'#A7F3D0' }
+    : band === 'Developing'
+    ? { bg:'#FFFBEB', text:'#92400E', border:'#FDE68A' }
+    : { bg:'#FEF2F2', text:'#991B1B', border:'#FECACA' }
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#E7E2D8] shadow-sm p-5">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold text-[#7A7267] uppercase tracking-widest" style={{ fontFamily:"'JetBrains Mono',monospace" }}>
+          {lang === 'fr' ? 'RAISONNEMENT PAR COMPROMIS' : 'TRADE-OFF REASONING'}
+        </p>
+        {avg != null && band && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: bandColor.bg, color: bandColor.text, border: `1px solid ${bandColor.border}` }}>{band}</span>
+            <span className="text-xs font-mono font-bold" style={{ color: bandColor.text }}>{avg.toFixed(1)}/4</span>
+          </div>
+        )}
+      </div>
+
+      <p className="text-xs text-[#7A7267] mb-4 leading-relaxed">
+        {lang === 'fr'
+          ? 'Évalue si vous expliquez POURQUOI vous avez choisi une approche plutôt qu\'une autre — pas seulement si votre réponse est techniquement correcte.'
+          : 'Measures whether you explain WHY you chose one approach over alternatives — not just whether your answer is technically correct.'}
+      </p>
+
+      {isPro ? (
+        <>
+          {avg != null && (
+            <div className="mb-4 space-y-1.5">
+              <div className="h-1.5 rounded-full bg-[#E7E2D8] overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700"
+                  style={{ width:`${(avg/4)*100}%`, background: bandColor.text }} />
+              </div>
+            </div>
+          )}
+          {summary && <p className="text-sm text-[#374151] leading-relaxed mb-4">{summary}</p>}
+          <div className="bg-[#F8F9FB] rounded-xl p-3.5 space-y-1.5">
+            <p className="text-xs font-semibold text-[#374151]">
+              {lang === 'fr' ? 'Comparaisons à maîtriser' : 'Trade-offs to master'}
+            </p>
+            {[
+              'RAG vs fine-tuning — when does each win?',
+              'FAISS flat vs HNSW — what changes at 10M+ vectors?',
+              'LLM-as-judge vs human eval — cost, latency, bias trade-offs',
+              'Agent loop vs direct call — when is orchestration overkill?',
+              'Online vs offline eval — what each catches and misses',
+            ].map(t => (
+              <p key={t} className="text-xs text-[#6B7280] flex gap-2">
+                <span className="text-[#C77D2E] flex-shrink-0">→</span>{t}
+              </p>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="text-center border border-[#E7E2D8] rounded-xl p-4">
+          <p className="text-xs text-[#7A7267] mb-3">
+            {lang === 'fr' ? 'Score détaillé et feedback réservés aux membres Pro.' : 'Detailed score and feedback are Pro-only.'}
+          </p>
+          <a href="/pricing" className="inline-flex items-center gap-1.5 bg-[#F5A524] text-[#17140F] text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#D98A0B] transition-all"
+            style={{ fontFamily:"'Space Grotesk',sans-serif" }}>
+            {lang === 'fr' ? 'Passer à Pro →' : 'Upgrade to Pro →'}
+          </a>
+        </div>
+      )}
     </div>
   )
 }
@@ -415,6 +492,9 @@ function ReportInner() {
             </div>
           </div>
         )}
+
+        {/* Trade-off Reasoning */}
+        <TradeoffCard report={report} lang={lang} isPro={isPro} />
 
         {/* Improvement plan */}
         {isPro && summary && (

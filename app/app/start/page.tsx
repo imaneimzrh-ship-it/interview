@@ -6,10 +6,10 @@ import AppLayout from '@/components/app/AppLayout'
 import { createClient } from '@/lib/supabase/client'
 
 const MODULES = [
-  { id: 'rag_system_design',   emoji: '🔍', name: 'RAG System Design',       desc: 'Chunking · Retrieval quality · Reranking · Freshness',           free: true,  voice: true },
-  { id: 'agent_orchestration', emoji: '🕵️', name: 'Agent Orchestration',      desc: 'Tool use · Planning · Failure handling · Multi-agent',            free: false, voice: true },
-  { id: 'evaluation_testing',  emoji: '🧪', name: 'Evaluation & Testing',     desc: 'Eval design · Hallucination · Offline/online · Regression',       free: false, voice: true },
-  { id: 'production_mlops',    emoji: '⚙️', name: 'Production / MLOps',       desc: 'Monitoring · Cost/latency · Versioning · Deployment',             free: false, voice: true },
+  { id: 'rag_system_design',   emoji: '🔍', name: 'RAG System Design',       desc: 'Chunking · Hybrid retrieval · Reranking · FAISS vs HNSW · Freshness · Retrieval diagnosis',                        free: true,  voice: true },
+  { id: 'agent_orchestration', emoji: '🕵️', name: 'Agent Orchestration',      desc: 'Tool creation & validation · Memory management · Planning · Failure handling · Multi-agent · LangGraph · MCP',    free: false, voice: true },
+  { id: 'evaluation_testing',  emoji: '🧪', name: 'Evaluation & Testing',     desc: 'Offline evals · LLM-as-judge vs human eval · Online evals · Hallucination · Regression gates',                   free: false, voice: true },
+  { id: 'production_mlops',    emoji: '⚙️', name: 'Production / MLOps',       desc: 'Observability & tracing · Guardrails & safe failure · MCP integration · Cost/latency · vLLM · Deployment',        free: false, voice: true },
 ]
 
 async function authHeader(): Promise<Record<string, string>> {

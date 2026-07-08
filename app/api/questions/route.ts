@@ -26,18 +26,22 @@ function generateUsername(email: string): string {
   return `${base}_${suffix}`
 }
 
+const VALID_DEPTHS = ['core', 'applied', 'deep_dive']
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const cluster  = searchParams.get('cluster')
-  const round    = searchParams.get('round')
-  const q        = searchParams.get('q')
-  const limit    = Math.min(parseInt(searchParams.get('limit') ?? '60', 10), 100)
+  const cluster       = searchParams.get('cluster')
+  const round         = searchParams.get('round')
+  const depth         = searchParams.get('depth')
+  const frequent      = searchParams.get('frequent')
+  const q             = searchParams.get('q')
+  const limit         = Math.min(parseInt(searchParams.get('limit') ?? '60', 10), 100)
 
   // Use service-role client so RLS doesn't block (we filter status='published' manually)
   const sb = adminClient()
   let query = sb
     .from('question_reports')
-    .select('id, display_name, role_title, role_cluster, company_visibility, company_name, company_size, industry, interview_round, year, question_text, difficulty_rating, outcome, upvotes, created_at')
+    .select('id, display_name, role_title, role_cluster, company_visibility, company_name, company_size, industry, interview_round, year, question_text, difficulty_rating, outcome, upvotes, depth, frequently_asked, entry_type, created_at')
     .eq('status', 'published')
     .order('upvotes', { ascending: false })
     .order('created_at', { ascending: false })
@@ -51,6 +55,12 @@ export async function GET(req: NextRequest) {
   }
   if (q) {
     query = query.ilike('question_text', `%${q}%`)
+  }
+  if (depth && VALID_DEPTHS.includes(depth)) {
+    query = query.eq('depth', depth)
+  }
+  if (frequent === 'true') {
+    query = query.eq('frequently_asked', true)
   }
 
   const { data, error } = await query
