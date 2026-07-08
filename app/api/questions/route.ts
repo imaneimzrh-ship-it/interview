@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
     outcome,
     source_url:         source_url?.trim() || null,
     source_note:        source_note?.trim() || null,
-    status:             'published',
+    status:             'pending',
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

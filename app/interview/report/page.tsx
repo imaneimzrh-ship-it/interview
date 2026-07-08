@@ -322,7 +322,7 @@ function ShareQuestionPrompt({ lang, moduleName }: { lang: string; moduleName: s
       <span className="text-lg">✓</span>
       <div>
         <p className="font-semibold">{lang === 'fr' ? 'Merci pour votre contribution !' : 'Report submitted — thank you.'}</p>
-        <p className="text-xs text-[#047857] mt-0.5">{lang === 'fr' ? 'Votre question aide la communauté.' : 'Your question is now in the AI role interview database.'}</p>
+        <p className="text-xs text-[#047857] mt-0.5">{lang === 'fr' ? 'Votre question sera publiée après vérification, sous 24–48h.' : 'Your question will appear in the database once reviewed — usually within 24–48h.'}</p>
       </div>
     </div>
   )
