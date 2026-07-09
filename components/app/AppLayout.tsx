@@ -12,17 +12,17 @@ const NAV = [
   {
     group: 'Practice',
     items: [
-      { href: '/app/start',   label: 'New Interview', icon: '🚀' },
-      { href: '/cv',          label: 'CV Diagnostic', icon: '📄' },
-      { href: '/app/history',   label: 'Past Sessions',  icon: '🕐' },
-      { href: '/app/questions', label: 'AI Reports',      icon: '🗂️' },
+      { href: '/cv',            label: 'CV Diagnostic',  icon: '📄' },
+      { href: '/app/questions', label: 'Question Bank',  icon: '🗂️' },
+      { href: '/app/glossary',  label: 'Tools Glossary', icon: '📖' },
     ],
   },
   {
     group: 'Account',
     items: [
-      { href: '/pricing',      label: 'Upgrade',  icon: '⭐' },
-      { href: '/app/settings', label: 'Settings', icon: '⚙️' },
+      { href: '/app/history',   label: 'Past Sessions', icon: '🕐' },
+      { href: '/pricing',       label: 'Upgrade',       icon: '⭐' },
+      { href: '/app/settings',  label: 'Settings',      icon: '⚙️' },
     ],
   },
 ]
@@ -64,37 +64,47 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="flex-1 px-3 py-4 space-y-5">
+        {/* Primary CTA — always at top */}
+        <Link href="/app/start"
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
+          style={{
+            background: pathname === '/app/start' ? '#D98A0B' : '#F5A524',
+            color: '#17140F',
+            boxShadow: '0 2px 8px rgba(245,165,36,.25)',
+          }}>
+          <span>🚀</span>
+          <span>New Interview</span>
+        </Link>
+
         {NAV.map(section => (
           <div key={section.group}>
             <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-widest px-2 mb-1.5">{section.group}</p>
-            {section.items.map(item => {
-              const active = pathname === item.href || pathname.startsWith(item.href + '/')
-              return (
-                <Link key={item.href} href={item.href}
-                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all mb-0.5"
-                  style={{
-                    background: active ? '#FFF8EE' : 'transparent',
-                    color: active ? '#D98A0B' : '#374151',
-                    fontWeight: active ? 500 : 400,
-                  }}>
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              )
-            })}
+            {section.items
+              .filter(item => !(item.href === '/pricing' && user?.plan === 'pro'))
+              .map(item => {
+                const active = pathname === item.href || pathname.startsWith(item.href + '/')
+                return (
+                  <Link key={item.href} href={item.href}
+                    className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all mb-0.5"
+                    style={{
+                      background: active ? '#FFF8EE' : 'transparent',
+                      color: active ? '#D98A0B' : '#374151',
+                      fontWeight: active ? 500 : 400,
+                    }}>
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
           </div>
         ))}
       </div>
 
       <div className="px-3 pb-2">
-        {user?.plan === 'pro' ? (
+        {user?.plan === 'pro' && (
           <div className="bg-[#ECFDF5] border border-[#A7F3D0] rounded-lg px-3 py-2 text-xs text-[#065F46] font-medium">
             ✓ Pro plan — unlimited
           </div>
-        ) : (
-          <Link href="/pricing" className="block bg-[#FFF8EE] border border-[#F5A524]/30 rounded-lg px-3 py-2 text-xs text-[#C77D2E] font-medium hover:bg-[#FEEFC7] transition-colors">
-            ↑ Upgrade to Pro →
-          </Link>
         )}
       </div>
 

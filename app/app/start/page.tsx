@@ -27,6 +27,8 @@ const MODULE_TO_CLUSTER: Record<string, string> = {
 
 type PreviewQuestion = { id: string; question_text: string; interview_round: string; difficulty_rating: number | null }
 
+interface MockPanel { id: string; role_cluster: string; title: string; description: string; round_sequence: string[]; estimated_minutes: number }
+
 function StartPageInner() {
   const router       = useRouter()
   const searchParams = useSearchParams()
@@ -42,6 +44,10 @@ function StartPageInner() {
   const [preview,      setPreview]    = useState<PreviewQuestion[]>([])
   const [highlight,    setHighlight]  = useState(false)
   const [focusSubSkill, setFocusSubSkill] = useState('')
+  const [panels,        setPanels]        = useState<MockPanel[]>([])
+  const [selectedPanel, setSelectedPanel] = useState('')
+  const [showPanel,     setShowPanel]     = useState(false)
+  const [panelLoading,  setPanelLoading]  = useState(false)
 
   useEffect(() => {
     createClient().auth.getUser().then(async ({ data: { user } }) => {
@@ -49,6 +55,11 @@ function StartPageInner() {
       const { data: p } = await createClient().from('profiles').select('plan').eq('id', user.id).single()
       setIsPro(p?.plan === 'pro')
     })
+  }, [])
+
+  useEffect(() => {
+    createClient().from('mock_panels').select('*').eq('is_active', true).order('role_cluster')
+      .then(({ data }) => setPanels(data ?? []))
   }, [])
 
   // Pre-select module from URL param (e.g. coming from CV diagnostic gap CTA)
@@ -90,6 +101,11 @@ function StartPageInner() {
 
   const contextOk = jd.trim().length >= 50 || resume.trim().length >= 50
 
+  // Clear the error banner the moment the user satisfies the condition — no submit needed
+  useEffect(() => {
+    if (contextOk) setError('')
+  }, [contextOk])
+
   async function start() {
     if (!module_) { setError('Please select a module.'); return }
     if (!contextOk) { setError('Please paste at least 50 characters of a job description or your resume so the AI can personalize the interview.'); return }
@@ -116,6 +132,36 @@ function StartPageInner() {
       }
       router.push(`/app/interview/session?id=${data.sessionId}&lang=${lang}&module=${module_}`)
     } catch { setError('Network error.'); setLoading(false) }
+  }
+
+  async function startPanel() {
+    if (!selectedPanel) return
+    if (!contextOk) { setError('Please paste at least 50 characters of a job description or your resume.'); return }
+    setPanelLoading(true); setError('')
+    try {
+      const hdrs = await authHeader()
+      const res  = await fetch('/api/panel/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...hdrs },
+        body: JSON.stringify({ mock_panel_id: selectedPanel, lang, job_description: jd, resume }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        if (data.upgrade) { router.push('/pricing'); return }
+        setError(data.error ?? 'Failed to start panel.'); setPanelLoading(false); return
+      }
+      sessionStorage.setItem(`panel_${data.panelSessionId}`, JSON.stringify({
+        roundType:     data.roundType,
+        panelRoundId:  data.panelRoundId,
+        roundIdx:      data.roundIdx,
+        totalRounds:   data.totalRounds,
+        roundSequence: data.roundSequence,
+        openingMessage: data.openingMessage,
+        roleCluster:   data.roleCluster,
+        panelTitle:    data.panelTitle,
+      }))
+      router.push(`/app/panel?id=${data.panelSessionId}&lang=${lang}`)
+    } catch { setError('Network error.'); setPanelLoading(false) }
   }
 
   const planLoaded = isPro !== null
@@ -238,6 +284,83 @@ function StartPageInner() {
                   style={{ background: '#F5A524', color: '#17140F' }}>
                   Upgrade to Pro →
                 </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mock Panel section */}
+          <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+            <button
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#F8F9FB] transition-colors"
+              onClick={() => setShowPanel(p => !p)}>
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🎭</span>
+                <div className="text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-[#111827] text-sm">Mock Panel Simulation</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#EEF1F6] text-[#1E2A44] border border-[#C7D0E0]">PRO</span>
+                  </div>
+                  <p className="text-xs text-[#6B7280]">4 rounds · ~45 min · Screen → Technical → System Design → Behavioral</p>
+                </div>
+              </div>
+              <svg className="flex-shrink-0 transition-transform text-[#9CA3AF]"
+                style={{ transform: showPanel ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showPanel && (
+              <div className="border-t border-[#F3F4F6] px-5 pb-5 pt-4 space-y-3">
+                {planLoaded && !isPro && (
+                  <div className="bg-[#FFF8EE] border border-[#F5A524]/30 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
+                    <p className="text-xs text-[#6B7280]">Mock Panel requires a <strong className="text-[#111827]">Pro plan</strong></p>
+                    <Link href="/pricing" className="text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap" style={{ background: '#F5A524', color: '#17140F' }}>
+                      Upgrade →
+                    </Link>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-2">
+                  {panels.map(p => {
+                    const locked   = planLoaded && !isPro
+                    const selected = selectedPanel === p.id
+                    return (
+                      <button key={p.id} onClick={() => !locked && setSelectedPanel(p.id)}
+                        disabled={locked}
+                        className="text-left p-4 rounded-xl border-2 transition-all"
+                        style={{
+                          borderColor: selected ? '#F5A524' : '#E5E7EB',
+                          background:  selected ? '#FFF8EE' : locked ? '#F9FAFB' : 'white',
+                          opacity:     locked ? 0.6 : 1,
+                        }}>
+                        <div className="flex items-start justify-between mb-1">
+                          <span className="font-semibold text-[#111827] text-sm">{p.title}</span>
+                          {selected && <span className="text-[#F5A524] text-sm ml-2">✓</span>}
+                        </div>
+                        <p className="text-xs text-[#6B7280] mb-2">{p.description}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {p.round_sequence.map((r: string) => (
+                            <span key={r} className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280] border border-[#E5E7EB] capitalize">
+                              {r.replace('_', ' ')}
+                            </span>
+                          ))}
+                          <span className="text-[10px] text-[#9CA3AF]">~{p.estimated_minutes} min</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {isPro && (
+                  <button
+                    onClick={startPanel}
+                    disabled={!selectedPanel || !contextOk || panelLoading}
+                    className="w-full py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ background: selectedPanel && contextOk ? '#1E2A44' : '#E5E7EB', color: selectedPanel && contextOk ? 'white' : '#9CA3AF' }}>
+                    {panelLoading ? 'Starting panel...' : !selectedPanel ? 'Select a panel above' : !contextOk ? 'Add job description or resume to continue' : 'Start full panel →'}
+                  </button>
+                )}
               </div>
             )}
           </div>
