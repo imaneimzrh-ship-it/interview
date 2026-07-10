@@ -51,7 +51,7 @@ function LoginForm() {
       const sb = createClient()
       const { error: err } = await sb.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `https://sonneai.com/api/auth/callback?next=${encodeURIComponent(next)}` },
+        options: { redirectTo: `https://sonneai.com/auth/callback?next=${encodeURIComponent(next)}` },
       })
       if (err) { setError(err.message); setOauthLoading(null) }
     } catch {

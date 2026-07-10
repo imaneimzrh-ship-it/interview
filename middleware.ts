@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PREFIXES = ['/_next', '/favicon.ico', '/api', '/login', '/signup', '/pricing', '/privacy', '/terms', '/cv', '/reset-password']
+const PUBLIC_PREFIXES = ['/_next', '/favicon.ico', '/api', '/auth', '/login', '/signup', '/pricing', '/privacy', '/terms', '/cv', '/reset-password']
 const PUBLIC_EXACT = new Set(['/', '/login', '/signup', '/pricing', '/privacy', '/terms', '/cv', '/reset-password'])
 
 function isPublic(pathname: string): boolean {
