@@ -47,12 +47,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
     load()
 
-    // Handle real auth events: token refresh, sign-out from another tab, session expiry
+    // Only redirect on explicit sign-out — not on transient token refresh events
     const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') { router.push('/login') }
-      if (event === 'TOKEN_REFRESHED' && session) {
-        // Silently update user state after token refresh — no re-render needed
-      }
+      if (event === 'SIGNED_OUT' && !session) { router.push('/login') }
     })
     return () => subscription.unsubscribe()
   }, [])

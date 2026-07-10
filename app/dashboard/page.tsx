@@ -44,8 +44,9 @@ export default function Dashboard() {
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) { router.push('/login'); return }
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) { router.push('/login'); return }
+    const user = session.user
     const [{ data: p }, { data: s }, { data: r }] = await Promise.all([
       sb.from('profiles').select('email, full_name, plan, stripe_customer').eq('id', user.id).single(),
       sb.from('interview_sessions')

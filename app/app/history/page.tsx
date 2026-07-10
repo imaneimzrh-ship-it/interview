@@ -43,8 +43,9 @@ export default function HistoryPage() {
   useEffect(() => { loadSessions() }, [])
 
   async function loadSessions() {
-    const { data: { user: u } } = await sb.auth.getUser()
-    if (!u) { router.push('/login'); return }
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) { router.push('/login'); return }
+    const u = session.user
 
     const { data: s } = await sb
       .from('interview_sessions')

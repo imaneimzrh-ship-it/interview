@@ -36,8 +36,9 @@ export default function SettingsPage() {
   useEffect(() => { load() }, [])
 
   async function load() {
-    const { data: { user: u } } = await sb.auth.getUser()
-    if (!u) { router.push('/login'); return }
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) { router.push('/login'); return }
+    const u = session.user
 
     const [{ data: p }, { data: c }] = await Promise.all([
       sb.from('profiles').select('email, full_name, plan, created_at, question_username').eq('id', u.id).single(),
