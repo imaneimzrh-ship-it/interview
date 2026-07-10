@@ -204,15 +204,65 @@ export default function Dashboard() {
         </div>
 
         {sessions.length === 0 ? (
-          <div className="rounded-xl p-16 text-center" style={{ background: '#fff', border: '1px solid #E8E4DC' }}>
-            <div className="text-4xl mb-4">🎯</div>
-            <h3 className="font-semibold mb-2" style={{ color: '#17140F' }}>No sessions yet</h3>
-            <p className="text-sm mb-6" style={{ color: '#6B7280' }}>Start your first interview to see your progress here.</p>
-            <Link href="/app/start"
-              className="inline-flex items-center text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
-              style={{ background: '#1E2A44', color: '#fff' }}>
-              Start first session →
-            </Link>
+          <div className="space-y-3">
+            {/* What you can do right now */}
+            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #E8E4DC' }}>
+              <div className="px-5 py-4" style={{ background: '#F8F9FB' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#9CA3AF' }}>
+                  {profile?.plan === 'pro' ? 'Get started' : 'Available on your free plan'}
+                </p>
+              </div>
+              <div className="divide-y divide-[#F3F4F6]">
+
+                {/* Action 1 — Practice interview */}
+                <div className="flex items-center gap-4 px-5 py-4" style={{ background: '#fff' }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#F5F3EE' }}>🔍</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold" style={{ color: '#17140F' }}>RAG System Design interview</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
+                      {profile?.plan === 'pro'
+                        ? 'Adaptive AI interviewer · voice mode · full diagnostic'
+                        : '1 free session · adaptive follow-ups · headline diagnostic'}
+                    </p>
+                  </div>
+                  <Link href="/app/start"
+                    className="flex-shrink-0 text-xs font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+                    style={{ background: '#1E2A44', color: '#fff' }}>
+                    Start now →
+                  </Link>
+                </div>
+
+                {/* Action 2 — CV Diagnostic */}
+                <div className="flex items-center gap-4 px-5 py-4" style={{ background: '#fff' }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#F5F3EE' }}>📄</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold" style={{ color: '#17140F' }}>CV Readiness Diagnostic</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Score your CV across 5 Applied AI signals — free on any plan</p>
+                  </div>
+                  <Link href="/cv"
+                    className="flex-shrink-0 text-xs font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+                    style={{ background: '#F5A524', color: '#17140F' }}>
+                    Score CV →
+                  </Link>
+                </div>
+
+                {/* Action 3 — Pro modules (locked for free) */}
+                {profile?.plan !== 'pro' && (
+                  <div className="flex items-center gap-4 px-5 py-4" style={{ background: '#FAFAFA' }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 opacity-40" style={{ background: '#F5F3EE' }}>🔒</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold" style={{ color: '#6B7280' }}>Agent · Evaluation · MLOps modules</p>
+                      <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>Unlimited sessions · voice mode · full sub-skill diagnostics</p>
+                    </div>
+                    <Link href="/pricing"
+                      className="flex-shrink-0 text-xs font-semibold px-4 py-2 rounded-lg whitespace-nowrap"
+                      style={{ background: '#FFF8EE', color: '#92400E', border: '1px solid #F5D78A' }}>
+                      Upgrade →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-2">
@@ -284,8 +334,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Upgrade banner */}
-        {profile?.plan !== 'pro' && (
+        {/* Upgrade banner — only show once user has sessions, so it doesn't stack with the get-started card */}
+        {sessions.length > 0 && profile?.plan !== 'pro' && (
           <div className="mt-8 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-5"
             style={{ background: 'linear-gradient(135deg, #F0F4FF 0%, #FEF9EC 100%)', border: '1px solid #E8E4DC' }}>
             <div className="text-3xl">🚀</div>
