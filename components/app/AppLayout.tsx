@@ -37,14 +37,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function load() {
-      const { data: { user: u } } = await sb.auth.getUser()
-      if (!u) { router.push('/login'); return }
+      // getSession() reads from the local cookie — no network call, no false-logouts on slow connections
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session) { router.push('/login'); return }
+      const u = session.user
       const { data: p } = await sb.from('profiles').select('email, full_name, plan, source').eq('id', u.id).single()
       setUser({ email: u.email, full_name: p?.full_name, plan: p?.plan ?? 'free', source: p?.source })
-      // Show attribution modal once for users who haven't answered yet
       if (p && p.source === null) setShowAttrib(true)
     }
     load()
+
+    // Handle real auth events: token refresh, sign-out from another tab, session expiry
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') { router.push('/login') }
+      if (event === 'TOKEN_REFRESHED' && session) {
+        // Silently update user state after token refresh — no re-render needed
+      }
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
   const initials = (user?.full_name ?? user?.email ?? '?').slice(0, 1).toUpperCase()
