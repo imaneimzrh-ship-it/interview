@@ -27,7 +27,8 @@ async function sendProWelcomeEmail(to: string, name?: string | null) {
   await mailer.sendMail({
     from: '"Sonne AI" <support@sonneai.com>',
     to,
-    subject: 'Welcome to Sonne AI Pro 🎉',
+    subject: 'You are on Sonne AI Pro',
+    text: `Hi ${displayName},\n\nYour Pro plan is now active. You have unlimited interview sessions across all 4 modules — RAG System Design, Agent Orchestration, Evaluation & Testing, and Production / MLOps.\n\nStart practising: https://sonneai.com/app/start\n\nQuestions? Reply to this email — we read every one.\n\nSonne AI\nhttps://sonneai.com`,
     html: `
       <div style="font-family:Inter,system-ui,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#FBFAF7;color:#17140F">
         <div style="margin-bottom:24px">
@@ -39,12 +40,13 @@ async function sendProWelcomeEmail(to: string, name?: string | null) {
         </p>
         <a href="https://sonneai.com/app/start"
           style="display:inline-block;background:#F5A524;color:#17140F;font-weight:700;font-size:15px;padding:12px 28px;border-radius:10px;text-decoration:none">
-          Start practising →
+          Start practising
         </a>
         <hr style="margin:32px 0;border:none;border-top:1px solid #E7E2D8" />
         <p style="font-size:12px;color:#9CA3AF;margin:0">
           Questions? Reply to this email — we read every one.<br/>
-          <a href="https://sonneai.com" style="color:#9CA3AF">sonneai.com</a>
+          Sonne AI · <a href="https://sonneai.com" style="color:#9CA3AF">sonneai.com</a><br/>
+          You are receiving this because you subscribed to Sonne AI Pro.
         </p>
       </div>
     `,
@@ -57,23 +59,25 @@ async function sendPaymentFailedEmail(to: string, name?: string | null) {
     from: '"Sonne AI" <support@sonneai.com>',
     to,
     subject: 'Action needed: your Sonne AI payment failed',
+    text: `Hi ${displayName},\n\nWe could not process your most recent subscription payment. Please update your payment method to keep Pro access.\n\nUpdate payment: https://sonneai.com/pricing\n\nNeed help? Reply to this email.\n\nSonne AI\nhttps://sonneai.com`,
     html: `
       <div style="font-family:Inter,system-ui,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#FBFAF7;color:#17140F">
         <div style="margin-bottom:24px">
           <span style="font-size:20px;font-weight:700">Sonne AI</span>
         </div>
-        <h1 style="font-size:22px;font-weight:700;margin:0 0 12px">Hi ${displayName}, your payment didn't go through.</h1>
+        <h1 style="font-size:22px;font-weight:700;margin:0 0 12px">Hi ${displayName}, your payment did not go through.</h1>
         <p style="font-size:15px;color:#7A7267;margin:0 0 24px;line-height:1.6">
-          We couldn't process your most recent subscription payment. Please update your payment method to keep Pro access.
+          We could not process your most recent subscription payment. Please update your payment method to keep Pro access.
         </p>
         <a href="https://sonneai.com/pricing"
           style="display:inline-block;background:#F5A524;color:#17140F;font-weight:700;font-size:15px;padding:12px 28px;border-radius:10px;text-decoration:none">
-          Update payment →
+          Update payment
         </a>
         <hr style="margin:32px 0;border:none;border-top:1px solid #E7E2D8" />
         <p style="font-size:12px;color:#9CA3AF;margin:0">
           Need help? Reply to this email.<br/>
-          <a href="https://sonneai.com" style="color:#9CA3AF">sonneai.com</a>
+          Sonne AI · <a href="https://sonneai.com" style="color:#9CA3AF">sonneai.com</a><br/>
+          You are receiving this because you subscribed to Sonne AI Pro.
         </p>
       </div>
     `,

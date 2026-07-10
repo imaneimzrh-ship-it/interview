@@ -55,6 +55,8 @@ export async function POST(req: NextRequest) {
     const grades = Object.values(gradesBySubSkill)
     if (!grades.length) return NextResponse.json({ error: 'No grades to report on.' }, { status: 400 })
 
+    const overallScore = grades.reduce((s, g) => s + g.score, 0) / grades.length
+
     // Generate diagnostic
     const diagnostic = await generateDiagnostic({
       lang: session.language as 'en' | 'fr',
@@ -64,23 +66,29 @@ export async function POST(req: NextRequest) {
     })
 
     // Save report
-    const { data: report } = await sb
+    const { data: report, error: reportErr } = await sb
       .from('diagnostic_reports')
       .insert({
-        session_id: sessionId,
-        user_id: user.id,
-        top_strength: diagnostic.top_strength,
-        top_gap: diagnostic.top_gap,
-        headline_en: diagnostic.headline_en,
-        headline_fr: diagnostic.headline_fr,
+        session_id:       sessionId,
+        user_id:          user.id,
+        top_strength:     diagnostic.top_strength,
+        top_gap:          diagnostic.top_gap,
+        headline_en:      diagnostic.headline_en,
+        headline_fr:      diagnostic.headline_fr,
         sub_skill_scores: diagnostic.sub_skill_scores,
-        tradeoff_avg: diagnostic.tradeoff_avg,
+        tradeoff_avg:     diagnostic.tradeoff_avg,
         tradeoff_summary: diagnostic.tradeoff_summary,
         improvement_plan: diagnostic.improvement_plan,
-        full_summary_en: diagnostic.full_summary_en,
-        full_summary_fr: diagnostic.full_summary_fr,
+        full_summary_en:  diagnostic.full_summary_en,
+        full_summary_fr:  diagnostic.full_summary_fr,
+        overall_score:    Math.round(overallScore * 10) / 10,
       })
       .select().single()
+
+    if (reportErr) {
+      console.error('Report insert error:', reportErr)
+      return NextResponse.json({ error: `Failed to save report: ${reportErr.message}` }, { status: 500 })
+    }
 
     // Mark session complete
     const dur = session.started_at

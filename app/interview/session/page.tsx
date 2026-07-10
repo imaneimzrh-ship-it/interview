@@ -66,7 +66,7 @@ function SessionInner() {
   useEffect(() => { timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000); return () => clearInterval(timerRef.current) }, [])
 
   useEffect(() => {
-    if (!sessionId) { router.push('/interview'); return }
+    if (!sessionId) { router.push('/app/start'); return }
     const cached = sessionStorage.getItem(`session_${sessionId}_opening`)
     const cachedTotal = sessionStorage.getItem(`session_${sessionId}_totalSS`)
     if (cached) {

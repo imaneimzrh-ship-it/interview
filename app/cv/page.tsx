@@ -49,14 +49,15 @@ export default function CvPage() {
 
   async function handleFile(file: File) {
     const ext = file.name.split('.').pop()?.toLowerCase()
-    if (!['pdf', 'txt', 'md'].includes(ext ?? '')) {
-      setError('Unsupported file type. Please upload a PDF, TXT, or MD file.')
+    if (!['pdf', 'docx', 'txt', 'md'].includes(ext ?? '')) {
+      setError('Unsupported file type. Please upload a PDF, DOCX, TXT, or MD file.')
       return
     }
     setParsing(true); setError('')
     try {
       let text = ''
       if (ext === 'pdf') {
+        // PDF is parsed client-side to avoid large server-side payloads
         const pdfjsLib = await import('pdfjs-dist')
         pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
         const arrayBuffer = await file.arrayBuffer()
@@ -68,12 +69,18 @@ export default function CvPage() {
           parts.push(content.items.map((item: any) => ('str' in item ? item.str : '')).join(' '))
         }
         text = parts.join('\n')
+        text = text.replace(/\s+/g, ' ').trim().slice(0, 9000)
+        if (text.length < 50) { setError('Could not extract text from file. Try pasting your CV directly.'); return }
+        setCv(text); setError('')
       } else {
-        text = await file.text()
+        // DOCX, TXT, MD → server-side parse
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await fetch('/api/cv/parse', { method: 'POST', body: fd })
+        const data = await res.json()
+        if (!res.ok) { setError(data.error ?? 'Could not parse file. Try pasting your CV directly.'); return }
+        setCv(data.text); setError('')
       }
-      text = text.replace(/\s+/g, ' ').trim().slice(0, 9000)
-      if (text.length < 50) { setError('Could not extract text from file. Try pasting your CV directly.'); return }
-      setCv(text); setError('')
     } catch (e: any) {
       console.error('[cv/handleFile]', e)
       setError('Could not parse file. Try pasting your CV directly.')
@@ -182,14 +189,14 @@ export default function CvPage() {
                   </span>
                   <div className="flex items-center gap-2">
                     {cv.length > 0 && <span className="text-xs text-[#7A7267]">{Math.min(cv.length, 6000).toLocaleString()} / 6,000</span>}
-                    <input ref={fileRef} type="file" accept=".pdf,.txt,.md" className="hidden"
+                    <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.md" className="hidden"
                       onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }} />
                     <div className="flex flex-col items-end gap-1">
                       <button onClick={() => fileRef.current?.click()} disabled={parsing}
                         className="text-xs font-medium border border-[#E7E2D8] text-[#7A7267] hover:text-[#17140F] hover:border-[#C7C2B8] px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-50">
                         {parsing ? '⏳ Parsing...' : '📎 Upload file'}
                       </button>
-                      <span className="text-[10px] text-[#B8B2A8]">PDF, TXT or MD only</span>
+                      <span className="text-[10px] text-[#B8B2A8]">PDF, DOCX, TXT or MD</span>
                     </div>
                   </div>
                 </div>

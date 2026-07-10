@@ -163,7 +163,7 @@ export default function Dashboard() {
                   : 'Free · No sessions remaining — upgrade to continue'}
             </p>
           </div>
-          <Link href="/interview"
+          <Link href="/app/start"
             className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-opacity hover:opacity-90 self-start sm:self-auto"
             style={{ background: '#1E2A44', color: '#fff' }}>
             + New interview session
@@ -208,7 +208,7 @@ export default function Dashboard() {
             <div className="text-4xl mb-4">🎯</div>
             <h3 className="font-semibold mb-2" style={{ color: '#17140F' }}>No sessions yet</h3>
             <p className="text-sm mb-6" style={{ color: '#6B7280' }}>Start your first interview to see your progress here.</p>
-            <Link href="/interview"
+            <Link href="/app/start"
               className="inline-flex items-center text-sm font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
               style={{ background: '#1E2A44', color: '#fff' }}>
               Start first session →

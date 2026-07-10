@@ -3,6 +3,7 @@ import { Suspense, useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import AppLayout from '@/components/app/AppLayout'
+import UpgradeModal from '@/components/app/UpgradeModal'
 import { createClient } from '@/lib/supabase/client'
 
 const MODULES = [
@@ -33,6 +34,7 @@ function StartPageInner() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const moduleRef    = useRef<HTMLDivElement>(null)
+  const contextRef   = useRef<HTMLDivElement>(null)
 
   const [jd,           setJd]         = useState('')
   const [resume,       setResume]     = useState('')
@@ -50,6 +52,7 @@ function StartPageInner() {
   const [selectedPanel, setSelectedPanel] = useState('')
   const [showPanel,     setShowPanel]     = useState(false)
   const [panelLoading,  setPanelLoading]  = useState(false)
+  const [upgradeReason, setUpgradeReason] = useState('')
 
   useEffect(() => {
     createClient().auth.getUser().then(async ({ data: { user } }) => {
@@ -91,10 +94,9 @@ function StartPageInner() {
       .catch(() => {})
   }, [module_])
 
-  function handleModuleClick(id: string, isFreeModule: boolean) {
+  function handleModuleClick(id: string, isFreeModule: boolean, moduleName: string) {
     if (!isFreeModule && isPro === false) {
-      // Free user trying to access a Pro module — send to pricing
-      router.push('/pricing')
+      setUpgradeReason(`${moduleName} is a Pro module.`)
       return
     }
     setModule(id)
@@ -110,7 +112,11 @@ function StartPageInner() {
 
   async function start() {
     if (!module_) { setError('Please select a module.'); return }
-    if (!contextOk) { setError('Please paste at least 50 characters of a job description or your resume so the AI can personalize the interview.'); return }
+    if (!contextOk) {
+      contextRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setError('Please paste at least 50 characters of a job description or your resume so the AI can personalize the interview.')
+      return
+    }
     setLoading(true); setError('')
     try {
       const hdrs = await authHeader()
@@ -122,7 +128,7 @@ function StartPageInner() {
       })
       const data = await res.json()
       if (!res.ok) {
-        if (data.upgrade) { router.push('/pricing'); return }
+        if (data.upgrade) { setUpgradeReason(data.error ?? 'This feature requires a Pro plan.'); setLoading(false); return }
         setError(data.error ?? 'Failed to start.'); setLoading(false); return
       }
       sessionStorage.setItem(`session_${data.sessionId}_opening`, data.openingMessage ?? '')
@@ -149,7 +155,7 @@ function StartPageInner() {
       })
       const data = await res.json()
       if (!res.ok) {
-        if (data.upgrade) { router.push('/pricing'); return }
+        if (data.upgrade) { setUpgradeReason(data.error ?? 'This feature requires a Pro plan.'); setPanelLoading(false); return }
         setError(data.error ?? 'Failed to start panel.'); setPanelLoading(false); return
       }
       sessionStorage.setItem(`panel_${data.panelSessionId}`, JSON.stringify({
@@ -230,7 +236,7 @@ function StartPageInner() {
           </div>
 
           {/* Job Description */}
-          <div className="bg-white rounded-xl border border-[#E5E7EB] p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+          <div ref={contextRef} className="bg-white rounded-xl border border-[#E5E7EB] p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
             <div className="flex items-center justify-between mb-3">
               <label className="font-semibold text-[#111827] text-sm">Job Description</label>
               <span className="text-xs text-[#9CA3AF]">Optional — personalizes the questions</span>
@@ -274,7 +280,7 @@ function StartPageInner() {
                 const locked    = planLoaded && !isPro && !m.free
 
                 return (
-                  <button key={m.id} onClick={() => handleModuleClick(m.id, m.free)}
+                  <button key={m.id} onClick={() => handleModuleClick(m.id, m.free, m.name)}
                     className="text-left p-4 rounded-xl border-2 transition-all relative"
                     style={{
                       borderColor: selected ? '#F5A524' : locked ? '#E5E7EB' : '#E5E7EB',
@@ -338,6 +344,21 @@ function StartPageInner() {
                   Upgrade to Pro →
                 </Link>
               </div>
+            )}
+
+            {/* Context prompt — appears right after module selection when fields are empty */}
+            {module_ && !contextOk && (
+              <button
+                onClick={() => contextRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                className="mt-4 w-full flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition-all"
+                style={{ borderColor: '#F5A524', background: '#FFF8EE' }}>
+                <span className="text-xl flex-shrink-0">📋</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[#111827]">One more thing before you start</p>
+                  <p className="text-xs text-[#6B7280] mt-0.5">Paste your job description or resume above — the AI uses it to personalise every question to your exact role.</p>
+                </div>
+                <span className="text-[#F5A524] font-bold text-sm flex-shrink-0">↑ Fill in</span>
+              </button>
             )}
           </div>
 
@@ -435,15 +456,24 @@ function StartPageInner() {
           )}
 
           {error && (
-            <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-4 text-sm text-[#DC2626] flex justify-between items-center">
-              {error}
-              <button onClick={() => setError('')} className="text-[#DC2626]/50 hover:text-[#DC2626]">×</button>
+            <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-4 text-sm text-[#DC2626] flex justify-between items-start gap-3">
+              <div className="flex-1">
+                <p>{error}</p>
+                {!contextOk && (
+                  <button
+                    onClick={() => contextRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                    className="mt-2 text-xs font-semibold underline text-[#DC2626] hover:text-[#B91C1C]">
+                    ↑ Scroll to job description / resume fields
+                  </button>
+                )}
+              </div>
+              <button onClick={() => setError('')} className="text-[#DC2626]/50 hover:text-[#DC2626] flex-shrink-0">×</button>
             </div>
           )}
 
-          <button onClick={start} disabled={!module_ || !contextOk || loading}
+          <button onClick={start} disabled={loading}
             className="w-full py-3.5 rounded-xl text-base font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: module_ && contextOk ? '#F5A524' : '#E5E7EB', color: module_ && contextOk ? '#17140F' : '#9CA3AF', boxShadow: module_ && contextOk ? '0 4px 12px rgba(245,165,36,.3)' : 'none' }}>
+            style={{ background: module_ && contextOk ? '#F5A524' : '#E5E7EB', color: module_ && contextOk ? '#17140F' : '#9CA3AF', boxShadow: module_ && contextOk ? '0 4px 12px rgba(245,165,36,.3)' : 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
             {loading ? (
               <span className="flex items-center justify-center gap-3">
                 <span style={{ width:18,height:18,border:'2.5px solid rgba(255,255,255,.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 1s linear infinite',display:'inline-block' }} />
@@ -452,7 +482,7 @@ function StartPageInner() {
             ) : !module_ ? (
               'Select a module above'
             ) : !contextOk ? (
-              'Add a job description or resume to continue'
+              'Add a job description or resume to continue ↑'
             ) : (
               'Start interview →'
             )}
@@ -468,6 +498,7 @@ function StartPageInner() {
         </div>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      {upgradeReason && <UpgradeModal reason={upgradeReason} onClose={() => setUpgradeReason('')} />}
     </AppLayout>
   )
 }
