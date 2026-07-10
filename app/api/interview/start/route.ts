@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Pro plan required for this module.', upgrade: true }, { status: 403 })
     }
 
-    // ── Free session cap: 1 session per account ──
+    // ── Free session cap: 1 session per account (DB-backed, not bypassable client-side) ──
     if (!isPro) {
       const { count } = await sb
         .from('interview_sessions')
@@ -58,6 +58,51 @@ export async function POST(req: NextRequest) {
           error: 'You\'ve used your free session. Upgrade to Pro for unlimited sessions across all modules.',
           upgrade: true,
         }, { status: 403 })
+      }
+    }
+
+    // ── Rate limit: min 30 s between session starts, per account (DB-backed) ──
+    // Prevents scripted/automated abuse regardless of Vercel instance count.
+    {
+      const { data: lastSession } = await sb
+        .from('interview_sessions')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (lastSession) {
+        const elapsed = Date.now() - new Date(lastSession.created_at).getTime()
+        if (elapsed < 30_000) {
+          return NextResponse.json({ error: 'Please wait a moment before starting another session.' }, { status: 429 })
+        }
+      }
+    }
+
+    // ── Pro fair-use ceiling: 100 sessions/month, invisible to normal users ──
+    // Hard stop + internal alert at 20 sessions/day. Both checks use the DB so
+    // they work correctly across all Vercel instances.
+    if (isPro) {
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      const dayStart   = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+
+      const [{ count: monthCount }, { count: dayCount }] = await Promise.all([
+        sb.from('interview_sessions').select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id).gte('created_at', monthStart),
+        sb.from('interview_sessions').select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id).gte('created_at', dayStart),
+      ])
+
+      if ((monthCount ?? 0) >= 100) {
+        return NextResponse.json({
+          error: 'Your account has reached the monthly session limit. Contact support@sonneai.com to discuss your usage.',
+        }, { status: 429 })
+      }
+
+      if ((dayCount ?? 0) >= 20) {
+        // Internal alert only — Pro user still proceeds, this is a monitoring signal.
+        console.error(`[ABUSE_ALERT] Pro user ${user.id} has started ${dayCount} sessions today (${new Date().toISOString()})`)
       }
     }
 
