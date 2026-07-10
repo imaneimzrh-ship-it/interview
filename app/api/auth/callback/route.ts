@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
@@ -7,30 +6,14 @@ export async function GET(req: NextRequest) {
   const next = searchParams.get('next') ?? '/dashboard'
 
   if (code) {
-    // Build the redirect response first so we can write cookies into it
-    const redirectTo = `${origin}${next}`
-    let response = NextResponse.redirect(redirectTo)
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll: () => req.cookies.getAll(),
-          // Write refreshed/new cookies directly onto the redirect response
-          setAll: (all: { name: string; value: string; options?: Parameters<typeof response.cookies.set>[2] }[]) => {
-            all.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options)
-            })
-          },
-        },
-      }
+    // Hand off to the client-side page which exchanges the code using the
+    // browser Supabase client — it has access to the PKCE verifier in storage.
+    return NextResponse.redirect(
+      `${origin}/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(next)}`
     )
-
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) return response
   }
 
-  // Code missing or exchange failed
-  return NextResponse.redirect(`${origin}/login?message=Sign-in link expired or already used. Please try again.`)
+  return NextResponse.redirect(
+    `${origin}/login?message=${encodeURIComponent('Sign-in link expired or already used. Please try again.')}`
+  )
 }
