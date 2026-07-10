@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
         cookies: {
           getAll: () => req.cookies.getAll(),
           // Write refreshed/new cookies directly onto the redirect response
-          setAll: (all) => {
+          setAll: (all: { name: string; value: string; options?: Parameters<typeof response.cookies.set>[2] }[]) => {
             all.forEach(({ name, value, options }) => {
               response.cookies.set(name, value, options)
             })
