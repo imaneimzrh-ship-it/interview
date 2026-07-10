@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // Load session
     const { data: session } = await sb
       .from('interview_sessions')
-      .select(`*, skill_modules(name_en, name_fr, voice_enabled), max_sub_skills, job_description, resume_text`)
+      .select(`*, skill_modules(name_en, name_fr, voice_enabled), max_sub_skills, job_description, resume_text, round_type`)
       .eq('id', sessionId).eq('user_id', user.id).single()
 
     if (!session) return NextResponse.json({ error: 'Session not found.' }, { status: 404 })
@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
         subSkillsCompleted: session.sub_skills_covered ?? [],
         totalSubSkills: subSkills.length,
         candidateCtx,
+        roundType: (session as any).round_type ?? null,
       }),
       gradeAnswer({
         subSkill: { id: currentSubSkill.id, slug: currentSubSkill.slug, name_en: currentSubSkill.name_en, name_fr: currentSubSkill.name_fr },
@@ -149,6 +150,7 @@ export async function POST(req: NextRequest) {
             subSkillsCompleted: covered,
             totalSubSkills: effectiveTotal,
             candidateCtx,
+            roundType: (session as any).round_type ?? null,
           })
         }
       }

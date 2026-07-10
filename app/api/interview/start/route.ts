@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const { sb, user } = await getServerUser(req)
     if (!user) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
-    const { module_slug, lang = 'en', session_type = 'full', job_description = '', resume: resumeRaw = '' } = body
+    const { module_slug, lang = 'en', session_type = 'full', job_description = '', resume: resumeRaw = '', interview_stage = 'general_practice', round_type = null } = body
     if (!module_slug) return NextResponse.json({ error: 'module_slug required.' }, { status: 400 })
 
     // Require at least one of JD or resume (≥50 chars)
@@ -103,6 +103,8 @@ export async function POST(req: NextRequest) {
         current_sub_skill_idx: 0,
         job_description:       jd     || null,
         resume_text:           resume || null,
+        interview_stage,
+        round_type:            round_type || null,
       })
       .select().single()
 
@@ -129,6 +131,7 @@ export async function POST(req: NextRequest) {
       subSkillsCompleted: [],
       totalSubSkills: subSkills.length,
       candidateCtx,
+      roundType: (round_type as import('@/lib/claude/interviewer').RoundType) ?? null,
     })
 
     await sb.from('session_turns').insert({

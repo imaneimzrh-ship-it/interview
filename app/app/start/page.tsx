@@ -38,6 +38,8 @@ function StartPageInner() {
   const [resume,       setResume]     = useState('')
   const [module_,      setModule]     = useState('')
   const [lang,         setLang]       = useState<'en'|'fr'>('en')
+  const [stage,        setStage]      = useState<'general_practice'|'interview_scheduled'>('general_practice')
+  const [roundType,    setRoundType]  = useState<string>('')
   const [loading,      setLoading]    = useState(false)
   const [error,        setError]      = useState('')
   const [isPro,        setIsPro]      = useState<boolean | null>(null)
@@ -116,7 +118,7 @@ function StartPageInner() {
       const res  = await fetch('/api/interview/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...hdrs },
-        body: JSON.stringify({ module_slug: module_, lang, job_description: jd, resume, device_id: deviceId }),
+        body: JSON.stringify({ module_slug: module_, lang, job_description: jd, resume, device_id: deviceId, interview_stage: stage, round_type: roundType || null }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -175,6 +177,57 @@ function StartPageInner() {
         </div>
 
         <div className="space-y-6">
+
+          {/* Interview Stage Selector */}
+          <div className="bg-white rounded-xl border border-[#E5E7EB] p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+            <label className="font-semibold text-[#111827] text-sm block mb-3">What are you preparing for?</label>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {([
+                { id: 'general_practice', label: 'General practice', icon: '🎯', desc: 'Balanced coverage across all sub-skills' },
+                { id: 'interview_scheduled', label: 'I have an interview', icon: '📅', desc: 'Tune questions to your round type' },
+              ] as const).map(opt => (
+                <button key={opt.id} onClick={() => { setStage(opt.id); if (opt.id === 'general_practice') setRoundType('') }}
+                  className="text-left p-3.5 rounded-xl border-2 transition-all"
+                  style={{
+                    borderColor: stage === opt.id ? '#F5A524' : '#E5E7EB',
+                    background:  stage === opt.id ? '#FFF8EE' : 'white',
+                  }}>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span>{opt.icon}</span>
+                    <span className="text-sm font-semibold text-[#111827]">{opt.label}</span>
+                    {stage === opt.id && <span className="text-[#F5A524] text-xs ml-auto">✓</span>}
+                  </div>
+                  <p className="text-xs text-[#6B7280]">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+
+            {stage === 'interview_scheduled' && (
+              <div>
+                <p className="text-xs font-semibold text-[#374151] mb-2">Which round?</p>
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { id: 'screen',        label: 'Screen',        desc: 'Broad, fast-paced' },
+                    { id: 'technical',     label: 'Technical',     desc: 'Deep, trade-off heavy' },
+                    { id: 'system_design', label: 'System Design', desc: 'Architecture & scale' },
+                    { id: 'behavioral',    label: 'Behavioral',    desc: 'STAR, real examples' },
+                    { id: 'final',         label: 'Final round',   desc: 'Technical + culture' },
+                  ] as const).map(r => (
+                    <button key={r.id} onClick={() => setRoundType(r.id)}
+                      className="px-3 py-2 rounded-lg border text-xs font-medium transition-all"
+                      style={{
+                        borderColor: roundType === r.id ? '#1E2A44' : '#E5E7EB',
+                        background:  roundType === r.id ? '#1E2A44' : 'white',
+                        color:       roundType === r.id ? 'white'   : '#374151',
+                      }}>
+                      {r.label}
+                      <span className="block text-[10px] mt-0.5 opacity-70">{r.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Job Description */}
           <div className="bg-white rounded-xl border border-[#E5E7EB] p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>

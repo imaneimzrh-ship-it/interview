@@ -61,6 +61,56 @@ PERSONALISATION INSTRUCTIONS:
 `
 }
 
+const TOOLS_REFERENCE_EN = `
+KEY AI TOOLS IN SCOPE (reference these by name when they are relevant — never use generic terms like "a framework" when a specific tool name fits):
+- Orchestration: LangChain, LangGraph, CrewAI, MCP (Model Context Protocol)
+- Retrieval/Vector DBs: LlamaIndex, Pinecone, Weaviate, pgvector, Qdrant
+- Serving/Inference: vLLM (PagedAttention), TGI (Text Generation Inference), Ollama
+- Evaluation: LangSmith, Arize, Ragas, Braintrust
+- Fine-tuning: LoRA, QLoRA, PEFT
+- Automation: n8n, Zapier, Retool AI
+`
+
+const TOOLS_REFERENCE_FR = `
+OUTILS AI EN SCOPE (référencez-les par nom quand pertinent — jamais "un framework" si un nom précis convient) :
+- Orchestration : LangChain, LangGraph, CrewAI, MCP
+- Retrieval/Vector DBs : LlamaIndex, Pinecone, Weaviate, pgvector, Qdrant
+- Serving/Inférence : vLLM, TGI, Ollama
+- Évaluation : LangSmith, Arize, Ragas, Braintrust
+- Fine-tuning : LoRA, QLoRA, PEFT
+- Automatisation : n8n, Zapier, Retool AI
+`
+
+export type RoundType = 'screen' | 'technical' | 'system_design' | 'behavioral' | 'final' | null
+
+function buildRoundNote(lang: 'en' | 'fr', roundType: RoundType): string {
+  if (!roundType) return ''
+  const notes: Record<NonNullable<RoundType>, { en: string; fr: string }> = {
+    screen: {
+      en: `ROUND TYPE: SCREENING ROUND — Keep questions lighter and faster-paced. Prioritise breadth over depth. Focus on whether the candidate can communicate concepts clearly and demonstrates foundational awareness. Skip deep architecture dives unless they naturally open up. Aim for 1 clean follow-up max per question.`,
+      fr: `TYPE DE ROUND : ENTRETIEN DE PRÉSÉLECTION — Gardez les questions légères et rapides. Privilégiez la largeur sur la profondeur. Vérifiez la communication et les bases fondamentales. Limitez les plongées architecturales profondes. Maximum 1 sonde de suivi par question.`,
+    },
+    technical: {
+      en: `ROUND TYPE: TECHNICAL ROUND — Go deep. Push hard on architecture choices, trade-offs, and production realities. Expect the candidate to justify every design decision with "why this over the alternative?" Don't accept hand-wavy answers. Follow-up aggressively on gaps.`,
+      fr: `TYPE DE ROUND : ENTRETIEN TECHNIQUE — Allez en profondeur. Poussez sur les choix d'architecture, les compromis et les réalités de production. Exigez des justifications pour chaque décision de conception. Sondez agressivement les lacunes.`,
+    },
+    system_design: {
+      en: `ROUND TYPE: SYSTEM DESIGN ROUND — Frame questions around open-ended design problems. Focus on architecture, scalability, failure modes, and component trade-offs. Ask the candidate to walk through their design, then probe specific decisions (e.g. "What happens when X fails?", "How would this scale to 10x volume?").`,
+      fr: `TYPE DE ROUND : ENTRETIEN CONCEPTION SYSTÈME — Orientez les questions vers des problèmes de conception ouverts. Concentrez-vous sur l'architecture, la scalabilité, les modes de défaillance et les compromis. Demandez au candidat de présenter sa conception, puis sondez les décisions spécifiques.`,
+    },
+    behavioral: {
+      en: `ROUND TYPE: BEHAVIORAL ROUND — Focus on real examples using the STAR framework (Situation, Task, Action, Result). For each answer, probe for: specificity of their role, concrete actions they took personally, measurable results, and what they learned. Push back on vague "we did X" answers with "What did YOU specifically do?"`,
+      fr: `TYPE DE ROUND : ENTRETIEN COMPORTEMENTAL — Concentrez-vous sur des exemples réels via la méthode STAR. Pour chaque réponse, sondez : le rôle spécifique du candidat, ses actions concrètes personnelles, les résultats mesurables et les apprentissages.`,
+    },
+    final: {
+      en: `ROUND TYPE: FINAL / ON-SITE ROUND — Mix deep technical questions with culture and collaboration signals. After technical answers, ask one follow-up that probes team dynamics, stakeholder communication, or how they'd advocate for a technical decision. Balance rigour with judgment about how they'd fit in a senior team.`,
+      fr: `TYPE DE ROUND : ROUND FINAL / PRÉSENTIEL — Mélangez questions techniques profondes et signaux culturels et de collaboration. Après les réponses techniques, ajoutez une sonde sur la dynamique d'équipe ou la communication avec les parties prenantes.`,
+    },
+  }
+  const note = notes[roundType]
+  return note ? `\n${lang === 'fr' ? note.fr : note.en}\n` : ''
+}
+
 function buildInterviewerPrompt(
   lang: 'en' | 'fr',
   moduleName: string,
@@ -70,14 +120,16 @@ function buildInterviewerPrompt(
   totalSubSkills: number,
   followUpProbes: string[],
   candidateCtx?: CandidateContext,
+  roundType?: RoundType,
 ): string {
   const isLast      = subSkillsCompleted.length === totalSubSkills - 1
   const progressNote = `You are on sub-skill ${subSkillsCompleted.length + 1} of ${totalSubSkills} in this module.`
   const ctxNote      = candidateCtx ? buildCandidateContextNote(lang, candidateCtx) : ''
+  const roundNote    = buildRoundNote(lang, roundType ?? null)
 
   if (lang === 'fr') {
     return `Vous êtes un ingénieur IA senior qui conduit un entretien technique pour un poste d'Ingénieur IA Appliqué, en vous concentrant sur le module : ${moduleName}.
-
+${roundNote}
 CONTEXTE DE L'ENTRETIEN :
 ${progressNote}
 Compétence actuelle : ${subSkill.name_fr}
@@ -90,7 +142,7 @@ Réponse faible : ${question.rubric_weak}
 
 SONDES DE SUIVI disponibles (utilisez-en UNE si la réponse est superficielle) :
 ${followUpProbes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-${ctxNote}
+${ctxNote}${TOOLS_REFERENCE_FR}
 RÈGLES D'ENTRETIEN :
 1. Posez la question actuelle en premier. Ne commencez pas par vous présenter.
 2. Après leur réponse, évaluez sa profondeur :
@@ -106,7 +158,7 @@ Commencez maintenant par poser la question.`
   }
 
   return `You are a senior AI engineer conducting a technical interview for an Applied AI Engineer role, focusing on the module: ${moduleName}.
-
+${roundNote}
 INTERVIEW CONTEXT:
 ${progressNote}
 Current sub-skill: ${subSkill.name_en}
@@ -119,7 +171,7 @@ Weak answer: ${question.rubric_weak}
 
 FOLLOW-UP PROBES available (use ONE if the answer is shallow):
 ${followUpProbes.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-${ctxNote}
+${ctxNote}${TOOLS_REFERENCE_EN}
 INTERVIEW RULES:
 1. Ask the current question as written, but personalise it with the candidate's specific tools/stack from the context above — make it concrete, not generic.
 2. After their answer, assess two things independently — technical depth AND trade-off reasoning:
@@ -148,12 +200,13 @@ export async function conductTurn(params: {
   subSkillsCompleted: string[]
   totalSubSkills: number
   candidateCtx?: CandidateContext
+  roundType?: RoundType
 }): Promise<{ response: string; shouldAdvance: boolean; isComplete: boolean }> {
-  const { lang, moduleName, subSkill, question, history, userMessage, subSkillsCompleted, totalSubSkills, candidateCtx } = params
+  const { lang, moduleName, subSkill, question, history, userMessage, subSkillsCompleted, totalSubSkills, candidateCtx, roundType } = params
 
   const systemPrompt = buildInterviewerPrompt(
     lang, moduleName, subSkill, question,
-    subSkillsCompleted, totalSubSkills, question.follow_up_probes, candidateCtx,
+    subSkillsCompleted, totalSubSkills, question.follow_up_probes, candidateCtx, roundType,
   )
 
   const messages: Anthropic.MessageParam[] = [
@@ -190,12 +243,13 @@ export async function openQuestion(params: {
   subSkillsCompleted: string[]
   totalSubSkills: number
   candidateCtx?: CandidateContext
+  roundType?: RoundType
 }): Promise<string> {
-  const { lang, moduleName, subSkill, question, subSkillsCompleted, totalSubSkills, candidateCtx } = params
+  const { lang, moduleName, subSkill, question, subSkillsCompleted, totalSubSkills, candidateCtx, roundType } = params
 
   const systemPrompt = buildInterviewerPrompt(
     lang, moduleName, subSkill, question,
-    subSkillsCompleted, totalSubSkills, question.follow_up_probes, candidateCtx,
+    subSkillsCompleted, totalSubSkills, question.follow_up_probes, candidateCtx, roundType,
   )
 
   const res = await client.messages.create({
