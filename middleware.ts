@@ -13,7 +13,7 @@ function hasAuthCookie(req: NextRequest): boolean {
   // The cookie contains both access token AND refresh token, so presence means
   // the user has a stored session. The browser-side Supabase client handles
   // refreshing the access token automatically when it expires.
-  return req.cookies.getAll().some(c => /^sb-.+-auth-token/.test(c.name))
+  return req.cookies.getAll().some(c => /^sb-.+-auth-token(\.[\d]+)?$/.test(c.name))
 }
 
 export async function middleware(req: NextRequest) {
