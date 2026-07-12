@@ -276,7 +276,7 @@ export default function Dashboard() {
                         style={{ background: '#FEF9EC', color: '#92400E', border: '1px solid #F5D78A' }}>In progress</span>
                     )}
                     {isCompleted && (
-                      <Link href={`/interview/report?id=${s.id}&lang=${s.language}`}
+                      <Link href={`/interview/report?id=${s.id}&lang=${s.language ?? 'en'}`}
                         className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
                         style={{ background: '#F0F4FF', color: '#1E2A44', border: '1px solid #C7D2FE' }}>
                         {report ? 'View report →' : 'No report'}

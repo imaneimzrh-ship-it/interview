@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import AppLayout from '@/components/app/AppLayout'
 
 interface Msg { role: 'user' | 'assistant'; content: string }
 
@@ -226,7 +227,8 @@ function SessionInner() {
   }
 
   if (scoring) return (
-    <div className="h-screen bg-[#F8F9FB] flex items-center justify-center" style={{ fontFamily:'Inter,sans-serif' }}>
+    <AppLayout>
+    <div className="h-full bg-[#F8F9FB] flex items-center justify-center min-h-[60vh]" style={{ fontFamily:'Inter,sans-serif' }}>
       <div className="text-center bg-white rounded-2xl border border-[#E5E7EB] p-12 shadow-lg">
         <div className="w-16 h-16 bg-[#FFF8EE] rounded-full flex items-center justify-center mx-auto mb-5">
           <div style={{ width:28, height:28, border:'3px solid rgba(245,165,36,.3)', borderTopColor:'#F5A524', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
@@ -236,13 +238,15 @@ function SessionInner() {
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
+    </AppLayout>
   )
 
   const mm  = String(Math.floor(elapsed/60)).padStart(2,'0')
   const ss_ = String(elapsed%60).padStart(2,'0')
 
   return (
-    <div className="h-screen flex flex-col bg-[#F8F9FB]" style={{ fontFamily:'Inter,sans-serif' }}>
+    <AppLayout>
+    <div className="h-full flex flex-col bg-[#F8F9FB]" style={{ fontFamily:'Inter,sans-serif' }}>
 
       {/* Top bar */}
       <div className="bg-white border-b border-[#E5E7EB] px-4 sm:px-6 py-3 flex items-center justify-between flex-shrink-0" style={{ boxShadow:'0 1px 3px rgba(0,0,0,.06)' }}>
@@ -287,11 +291,6 @@ function SessionInner() {
                   </div>
                 </div>
               )}
-              {isSpeaking && (
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#FFF8EE] border-2 border-[#F5A524]/30 flex items-center justify-center">
-                  <span className="text-xs">🔊</span>
-                </div>
-              )}
             </div>
             <div className="text-center">
               <div className="font-bold text-[#111827] mb-0.5">AI Interviewer</div>
@@ -329,9 +328,8 @@ function SessionInner() {
           {voiceOn && (
             <div className="bg-[#FFF8EE] border-b border-[#F5A524]/30 px-4 py-2 flex items-center justify-center gap-3 flex-shrink-0">
               <span className="text-xs text-[#C77D2E] font-medium">
-                {isSpeaking ? '🔊 Interviewer speaking...' : isRecording ? '🔴 Recording — speak your answer...' : '🎙️ Voice mode — hold mic to answer'}
+                {isRecording ? '🔴 Recording — speak your answer...' : '🎙️ Voice mode — hold mic to answer'}
               </span>
-              {isSpeaking && <button onClick={() => window.speechSynthesis?.cancel()} className="text-xs text-[#C77D2E]/60 hover:text-[#C77D2E]">Skip ×</button>}
             </div>
           )}
 
@@ -422,11 +420,11 @@ function SessionInner() {
                     onMouseUp={() => { stopRec(); setTimeout(() => { if (input.trim()) send() }, 200) }}
                     onTouchStart={startRec}
                     onTouchEnd={() => { stopRec(); setTimeout(() => { if (input.trim()) send() }, 200) }}
-                    disabled={sending || done || isSpeaking}
-                    style={{ width:72, height:72, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, background: isRecording ? '#FEE2E2' : isSpeaking ? '#FFF8EE' : '#F5A524', border: isRecording ? '3px solid #DC2626' : '3px solid transparent', boxShadow: isRecording ? '0 0 0 6px rgba(220,38,38,.2)' : '0 4px 12px rgba(245,165,36,.3)', cursor:'pointer' }}>
-                    {isSpeaking ? '🔊' : isRecording ? '⏹' : '🎤'}
+                    disabled={sending || done}
+                    style={{ width:72, height:72, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, background: isRecording ? '#FEE2E2' : '#F5A524', border: isRecording ? '3px solid #DC2626' : '3px solid transparent', boxShadow: isRecording ? '0 0 0 6px rgba(220,38,38,.2)' : '0 4px 12px rgba(245,165,36,.3)', cursor:'pointer' }}>
+                    {isRecording ? '⏹' : '🎤'}
                   </button>
-                  <p className="text-xs text-[#9CA3AF] text-center">{isSpeaking ? 'Wait...' : isRecording ? 'Release to send' : 'Hold to speak'}</p>
+                  <p className="text-xs text-[#9CA3AF] text-center">{isRecording ? 'Release to send' : 'Hold to speak'}</p>
                   {input && <div className="w-full bg-[#F8F9FB] border border-[#E5E7EB] rounded-xl px-4 py-2.5 text-sm text-[#374151]"><span className="text-[#9CA3AF] text-xs">Transcript: </span>{input}</div>}
                   <button onClick={() => setVoiceOn(false)} className="text-xs text-[#9CA3AF] hover:text-[#6B7280]">Switch to text</button>
                 </div>
@@ -459,6 +457,7 @@ function SessionInner() {
         @keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
       `}</style>
     </div>
+    </AppLayout>
   )
 }
 

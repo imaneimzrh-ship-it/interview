@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { BAND_COLORS, scoreToBand } from '@/lib/signals'
+import AppLayout from '@/components/app/AppLayout'
 
 async function authHeader(): Promise<Record<string, string>> {
   const { data: { session } } = await createClient().auth.getSession()
@@ -444,19 +445,23 @@ function ReportInner() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background:'#FBFAF7' }}>
-      <div style={{ width:24,height:24,border:'2.5px solid #C7D0E0',borderTopColor:'#1E2A44',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+    <AppLayout>
+      <div className="flex items-center justify-center h-full min-h-[60vh]">
+        <div style={{ width:24,height:24,border:'2.5px solid #C7D0E0',borderTopColor:'#1E2A44',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    </AppLayout>
   )
 
   if (error || !report || !session) return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background:'#FBFAF7' }}>
-      <div className="text-center">
-        <p className="text-[#B24C3F] text-sm mb-4">{error||'Report not found.'}</p>
-        <Link href="/app/history" className="text-sm text-[#1E2A44] hover:underline">← Back to history</Link>
+    <AppLayout>
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
+        <div className="text-center">
+          <p className="text-[#B24C3F] text-sm mb-4">{error||'Report not found.'}</p>
+          <Link href="/app/history" className="text-sm text-[#1E2A44] hover:underline">← Back to history</Link>
+        </div>
       </div>
-    </div>
+    </AppLayout>
   )
 
   const lang       = session.language as 'en'|'fr'
@@ -467,37 +472,8 @@ function ReportInner() {
   const overall    = report.overall_score
 
   return (
-    <div className="min-h-screen" style={{ background:'#FBFAF7', fontFamily:"'Inter',system-ui,sans-serif" }}>
-      <nav className="border-b border-[#E7E2D8] sticky top-0 z-20" style={{ background:'rgba(251,250,247,.9)', backdropFilter:'blur(12px)' }}>
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link href="/dashboard" className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-7 h-7 rounded-lg bg-[#1E2A44] flex items-center justify-center"><SunMark /></div>
-              <span className="font-bold text-[#17140F] text-sm hidden sm:block" style={{ fontFamily:"'Space Grotesk',sans-serif" }}>Sonne AI</span>
-            </Link>
-            <span className="text-[#E7E2D8] hidden sm:block">·</span>
-            <span className="text-sm text-[#7A7267] hidden sm:block truncate">{lang==='fr'?'Rapport de diagnostic':'Diagnostic Report'}</span>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {userEmail && (
-              <span className="text-xs text-[#7A7267] hidden md:block truncate max-w-[140px]">{userEmail}</span>
-            )}
-            <Link href="/dashboard" className="text-xs text-[#7A7267] hover:text-[#17140F] px-2 py-1.5 rounded-lg hover:bg-[#F0EDE6] transition-colors">
-              ← Dashboard
-            </Link>
-            <button onClick={async () => { await createClient().auth.signOut(); router.push('/') }}
-              className="text-xs text-[#7A7267] hover:text-[#17140F] px-2 py-1.5 rounded-lg hover:bg-[#F0EDE6] transition-colors">
-              Sign out
-            </button>
-            <Link href="/app/start" className="text-xs font-medium bg-[#1E2A44] text-white px-3 py-1.5 rounded-lg hover:bg-[#2d3f61] transition-colors shadow-sm"
-              style={{ fontFamily:"'Space Grotesk',sans-serif" }}>
-              {lang==='fr'?'Nouvel entretien →':'New interview →'}
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
+    <AppLayout>
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-5">
 
         {/* Header */}
         <div className="bg-white rounded-2xl border border-[#E7E2D8] shadow-sm p-6">
@@ -629,22 +605,10 @@ function ReportInner() {
         </p>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+    </AppLayout>
   )
 }
 
 export default function ReportPage() {
   return <Suspense fallback={null}><ReportInner /></Suspense>
-}
-
-function SunMark() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="3" fill="#F5A524"/>
-      {[0,45,90,135,180,225,270,315].map((deg,i)=>{
-        const r=Math.PI*deg/180
-        return <line key={i} x1={7+4*Math.cos(r)} y1={7+4*Math.sin(r)} x2={7+5.5*Math.cos(r)} y2={7+5.5*Math.sin(r)} stroke="#F5A524" strokeWidth="1.2" strokeLinecap="round"/>
-      })}
-    </svg>
-  )
 }

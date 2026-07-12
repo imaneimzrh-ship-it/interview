@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import AppLayout from '@/components/app/AppLayout'
 
 interface Msg { role: 'user' | 'assistant'; content: string; idx?: number }
 
@@ -152,7 +153,8 @@ function SessionInner() {
   }
 
   if (scoring) return (
-    <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <AppLayout>
+    <div className="min-h-[60vh] bg-[#F8F9FB] flex items-center justify-center" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div className="text-center bg-white rounded-2xl border border-[#E5E7EB] p-12" style={{ boxShadow: '0 10px 40px rgba(0,0,0,.08)' }}>
         <div className="w-16 h-16 bg-[#EFF6FF] rounded-full flex items-center justify-center mx-auto mb-5">
           <div style={{ width:28,height:28,border:'3px solid rgba(245,165,36,.3)',borderTopColor:'#F5A524',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
@@ -162,13 +164,15 @@ function SessionInner() {
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
+    </AppLayout>
   )
 
   const mm  = String(Math.floor(elapsed/60)).padStart(2,'0')
   const ss_ = String(elapsed%60).padStart(2,'0')
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] flex flex-col" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <AppLayout>
+    <div className="h-full bg-[#F8F9FB] flex flex-col" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
 
       {/* Header */}
       <div className="bg-white border-b border-[#E5E7EB] flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
@@ -340,6 +344,7 @@ function SessionInner() {
         @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
       `}</style>
     </div>
+    </AppLayout>
   )
 }
 

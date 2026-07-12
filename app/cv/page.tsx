@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { BAND_COLORS, type Band } from '@/lib/signals'
 import { GAP_TO_MODULE, MODULE_NAME_TO_SLUG, SUB_SKILL_TO_MODULE } from '@/lib/gap-module-map'
+import AppLayout from '@/components/app/AppLayout'
 
 const SIGNAL_LABELS: Record<string, { en: string; fr: string; icon: string }> = {
   production: { en: 'Production Evidence', fr: 'Expérience en production',   icon: '🚀' },
@@ -31,7 +32,6 @@ export default function CvPage() {
   const [parsing,     setParsing]    = useState(false)
   const [result,      setResult]     = useState<CvResult | null>(null)
   const [error,       setError]      = useState('')
-  const [loggedIn,    setLoggedIn]   = useState(false)
   const [isPro,       setIsPro]      = useState(false)
   const [saved,       setSaved]      = useState(false)
   const [saving,      setSaving]     = useState(false)
@@ -40,7 +40,6 @@ export default function CvPage() {
   useEffect(() => {
     createClient().auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
-      setLoggedIn(true)
       const sb = createClient()
       const { data: p } = await sb.from('profiles').select('plan').eq('id', user.id).single()
       setIsPro(p?.plan === 'pro')
@@ -127,42 +126,27 @@ export default function CvPage() {
 
   // Free signed-in users get full CV breakdown — it's the free-tier feature
   // Anon users (should not reach here due to middleware) see only overall
-  const canSeeFullBreakdown = loggedIn
+  const canSeeFullBreakdown = true
   const weakestSignal = result?.signals?.reduce((a, b) => a.score < b.score ? a : b) ?? null
   // Config-driven gap → module lookup (uses weakest signal key, not AI free text)
   const gapModule = weakestSignal ? (GAP_TO_MODULE[weakestSignal.key] ?? null) : null
 
   return (
-    <div className="min-h-screen" style={{ background: '#FBFAF7', fontFamily: "'Inter', system-ui, sans-serif" }}>
-      {/* Nav */}
-      <nav className="border-b border-[#E7E2D8] bg-[#FBFAF7]/80 backdrop-blur-sm sticky top-0 z-20">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#1E2A44] flex items-center justify-center"><SunMark /></div>
-            <span className="font-bold text-[#17140F] text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Sonne AI</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="flex gap-0.5 bg-[#F0EDE8] rounded-lg p-0.5">
-              {(['en','fr'] as const).map(l => (
-                <button key={l} onClick={() => setLang(l)}
-                  className="px-2.5 py-1 rounded-md text-xs font-medium transition-all"
-                  style={{ background: lang === l ? 'white' : 'transparent', color: lang === l ? '#17140F' : '#7A7267', boxShadow: lang === l ? '0 1px 2px rgba(0,0,0,.06)' : 'none' }}>
-                  {l === 'en' ? '🇬🇧 EN' : '🇫🇷 FR'}
-                </button>
-              ))}
-            </div>
-            {loggedIn
-              ? <Link href="/app/start" className="text-xs font-medium bg-[#1E2A44] text-white px-3 py-1.5 rounded-lg hover:bg-[#2d3f61] transition-colors shadow-sm">Practice →</Link>
-              : <>
-                  <Link href="/login"  className="text-xs text-[#7A7267] hover:text-[#17140F] transition-colors">Sign in</Link>
-                  <Link href="/app/start" className="text-xs font-medium bg-[#1E2A44] text-white px-3 py-1.5 rounded-lg hover:bg-[#2d3f61] transition-colors shadow-sm">Practice →</Link>
-                </>
-            }
+    <AppLayout>
+      <div className="max-w-2xl mx-auto px-4 py-8">
+
+        {/* Language switcher */}
+        <div className="flex justify-end mb-6">
+          <div className="flex gap-0.5 bg-[#F0EDE8] rounded-lg p-0.5">
+            {(['en','fr'] as const).map(l => (
+              <button key={l} onClick={() => setLang(l)}
+                className="px-2.5 py-1 rounded-md text-xs font-medium transition-all"
+                style={{ background: lang === l ? 'white' : 'transparent', color: lang === l ? '#17140F' : '#7A7267', boxShadow: lang === l ? '0 1px 2px rgba(0,0,0,.06)' : 'none' }}>
+                {l === 'en' ? '🇬🇧 EN' : '🇫🇷 FR'}
+              </button>
+            ))}
           </div>
         </div>
-      </nav>
-
-      <main className="max-w-2xl mx-auto px-4 py-12">
 
         {!result ? (
           <>
@@ -430,17 +414,7 @@ export default function CvPage() {
             )}
 
             {/* Save to profile */}
-            {!loggedIn ? (
-              <div className="bg-[#FFF8EE] border border-[#F5A524]/30 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap mb-4">
-                <p className="text-sm text-[#7A7267]">
-                  {lang === 'en' ? 'Sign in to save this report and see all 5 signals.' : 'Connectez-vous pour sauvegarder ce rapport.'}
-                </p>
-                <Link href="/login?redirect=/cv" className="text-sm font-semibold text-[#D98A0B] hover:text-[#17140F] whitespace-nowrap"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                  {lang === 'en' ? 'Sign in →' : 'Se connecter →'}
-                </Link>
-              </div>
-            ) : saved ? (
+            {saved ? (
               <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-4 text-sm text-[#2E7D5B] font-medium text-center mb-4">
                 ✓ {lang === 'en' ? 'Saved to your profile' : 'Sauvegardé dans votre profil'}
               </div>
@@ -472,20 +446,8 @@ export default function CvPage() {
             </div>
           </>
         )}
-      </main>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
-}
-
-function SunMark() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="7" cy="7" r="3" fill="#F5A524"/>
-      {[0,45,90,135,180,225,270,315].map((deg, i) => {
-        const r = Math.PI * deg / 180
-        return <line key={i} x1={7+4*Math.cos(r)} y1={7+4*Math.sin(r)} x2={7+5.5*Math.cos(r)} y2={7+5.5*Math.sin(r)} stroke="#F5A524" strokeWidth="1.2" strokeLinecap="round"/>
-      })}
-    </svg>
+      </div>
+    </AppLayout>
   )
 }
