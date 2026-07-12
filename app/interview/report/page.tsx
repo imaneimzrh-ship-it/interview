@@ -409,23 +409,25 @@ function ReportInner() {
   const sessionId = params.get('id')
   const lang_     = params.get('lang') ?? 'en'
 
-  const [report,   setReport]   = useState<Report | null>(null)
-  const [session,  setSession]  = useState<Session | null>(null)
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState('')
-  const [deleting, setDeleting] = useState(false)
-  const [isPro,    setIsPro]    = useState(false)
+  const [report,    setReport]    = useState<Report | null>(null)
+  const [session,   setSession]   = useState<Session | null>(null)
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState('')
+  const [deleting,  setDeleting]  = useState(false)
+  const [isPro,     setIsPro]     = useState(false)
+  const [userEmail, setUserEmail] = useState('')
 
   useEffect(() => {
     if (!sessionId) { router.push('/app/start'); return }
     Promise.all([
       authHeader().then(hdrs => fetch(`/api/interview/report?id=${sessionId}`, { headers: hdrs }).then(r=>r.json())),
       createClient().auth.getUser().then(async ({ data: { user } }) => {
-        if (!user) return false
+        if (!user) return { pro: false, email: '' }
+        setUserEmail(user.email ?? '')
         const { data: p } = await createClient().from('profiles').select('plan').eq('id', user.id).single()
-        return p?.plan === 'pro'
+        return { pro: p?.plan === 'pro', email: user.email ?? '' }
       }),
-    ]).then(([d, pro]) => {
+    ]).then(([d, { pro }]) => {
       if (d.report) { setReport(d.report); setSession(d.session) } else setError(d.error ?? 'Failed to load.')
       setIsPro(pro as boolean)
       setLoading(false)
@@ -467,19 +469,31 @@ function ReportInner() {
   return (
     <div className="min-h-screen" style={{ background:'#FBFAF7', fontFamily:"'Inter',system-ui,sans-serif" }}>
       <nav className="border-b border-[#E7E2D8] sticky top-0 z-20" style={{ background:'rgba(251,250,247,.9)', backdropFilter:'blur(12px)' }}>
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/app/start" className="flex items-center gap-2">
+        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/dashboard" className="flex items-center gap-2 flex-shrink-0">
               <div className="w-7 h-7 rounded-lg bg-[#1E2A44] flex items-center justify-center"><SunMark /></div>
               <span className="font-bold text-[#17140F] text-sm hidden sm:block" style={{ fontFamily:"'Space Grotesk',sans-serif" }}>Sonne AI</span>
             </Link>
-            <span className="text-[#E7E2D8]">·</span>
-            <span className="text-sm text-[#7A7267]">{lang==='fr'?'Rapport de diagnostic':'Diagnostic Report'}</span>
+            <span className="text-[#E7E2D8] hidden sm:block">·</span>
+            <span className="text-sm text-[#7A7267] hidden sm:block truncate">{lang==='fr'?'Rapport de diagnostic':'Diagnostic Report'}</span>
           </div>
-          <Link href="/app/start" className="text-xs font-medium bg-[#1E2A44] text-white px-3 py-1.5 rounded-lg hover:bg-[#2d3f61] transition-colors shadow-sm"
-            style={{ fontFamily:"'Space Grotesk',sans-serif" }}>
-            {lang==='fr'?'Nouvel entretien →':'New interview →'}
-          </Link>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {userEmail && (
+              <span className="text-xs text-[#7A7267] hidden md:block truncate max-w-[140px]">{userEmail}</span>
+            )}
+            <Link href="/dashboard" className="text-xs text-[#7A7267] hover:text-[#17140F] px-2 py-1.5 rounded-lg hover:bg-[#F0EDE6] transition-colors">
+              ← Dashboard
+            </Link>
+            <button onClick={async () => { await createClient().auth.signOut(); router.push('/') }}
+              className="text-xs text-[#7A7267] hover:text-[#17140F] px-2 py-1.5 rounded-lg hover:bg-[#F0EDE6] transition-colors">
+              Sign out
+            </button>
+            <Link href="/app/start" className="text-xs font-medium bg-[#1E2A44] text-white px-3 py-1.5 rounded-lg hover:bg-[#2d3f61] transition-colors shadow-sm"
+              style={{ fontFamily:"'Space Grotesk',sans-serif" }}>
+              {lang==='fr'?'Nouvel entretien →':'New interview →'}
+            </Link>
+          </div>
         </div>
       </nav>
 

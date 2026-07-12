@@ -282,8 +282,8 @@ function SessionInner() {
               {skipLoad ? '...' : lang === 'fr' ? 'Passer →' : 'Skip →'}
             </button>
           )}
-          <button onClick={() => { if (confirm('Exit? Progress saved.')) router.push('/app/history') }}
-            className="text-xs text-[#9CA3AF] hover:text-[#374151] px-2 py-1.5 transition-colors">Exit ×</button>
+          <button onClick={() => { if (confirm('Exit? Progress saved.')) router.push('/dashboard') }}
+            className="text-xs text-[#9CA3AF] hover:text-[#374151] px-2 py-1.5 transition-colors">← Dashboard</button>
         </div>
       </div>
 

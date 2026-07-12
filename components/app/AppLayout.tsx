@@ -36,20 +36,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showAttrib,   setShowAttrib]   = useState(false)
 
   useEffect(() => {
-    async function load() {
-      // getSession() reads from the local cookie — no network call, no false-logouts on slow connections
-      const { data: { session } } = await sb.auth.getSession()
-      if (!session) { router.push('/login'); return }
-      const u = session.user
-      const { data: p } = await sb.from('profiles').select('email, full_name, plan, source').eq('id', u.id).single()
-      setUser({ email: u.email, full_name: p?.full_name, plan: p?.plan ?? 'free', source: p?.source })
+    async function loadProfile(userId: string, email?: string) {
+      const { data: p } = await sb.from('profiles').select('email, full_name, plan, source').eq('id', userId).single()
+      setUser({ email, full_name: p?.full_name, plan: p?.plan ?? 'free', source: p?.source })
       if (p && p.source === null) setShowAttrib(true)
     }
-    load()
 
-    // Only redirect on explicit sign-out — not on transient token refresh events
+    // Use onAuthStateChange as the single source of truth.
+    // INITIAL_SESSION fires immediately with the current session (or null).
+    // This avoids the race where getSession() returns null while the token
+    // is mid-refresh, causing a false redirect to /login.
     const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' && !session) { router.push('/login') }
+      if (!session) {
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') {
+          router.push('/login')
+        }
+      } else if (
+        event === 'INITIAL_SESSION' ||
+        event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'USER_UPDATED'
+      ) {
+        loadProfile(session.user.id, session.user.email)
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
