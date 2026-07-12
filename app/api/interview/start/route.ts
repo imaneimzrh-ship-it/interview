@@ -10,12 +10,13 @@ export async function POST(req: NextRequest) {
     const { sb, user } = await getServerUser(req)
     if (!user) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
-    const { module_slug, lang = 'en', session_type = 'full', job_description = '', resume: resumeRaw = '', interview_stage = 'general_practice', round_type = null } = body
+    const { module_slug, lang = 'en', session_type = 'full', job_description = '', resume: resumeRaw = '', interview_stage = 'general_practice', round_type = null, company_name = '' } = body
     if (!module_slug) return NextResponse.json({ error: 'module_slug required.' }, { status: 400 })
 
     // Require at least one of JD or resume (≥50 chars)
-    const jd     = String(job_description).trim()
-    const resume = String(resumeRaw).trim()
+    const jd      = String(job_description).trim()
+    const resume  = String(resumeRaw).trim()
+    const company = String(company_name).trim().slice(0, 100)
     if (jd.length < 50 && resume.length < 50) {
       return NextResponse.json({ error: 'Please provide a job description or resume (at least 50 characters) to personalise the interview.' }, { status: 400 })
     }
@@ -146,8 +147,9 @@ export async function POST(req: NextRequest) {
         max_sub_skills:        maxSubSkills,
         status:                'active',
         current_sub_skill_idx: 0,
-        job_description:       jd     || null,
-        resume_text:           resume || null,
+        job_description:       jd      || null,
+        resume_text:           resume  || null,
+        company_name:          company || null,
         interview_stage,
         round_type:            round_type || null,
       })
@@ -158,7 +160,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Failed to create session: ${sErr?.message ?? 'unknown'}` }, { status: 500 })
     }
 
-    const candidateCtx = { jobDescription: jd || undefined, resume: resume || undefined }
+    const candidateCtx = {
+      jobDescription:  jd      || undefined,
+      resume:          resume  || undefined,
+      companyName:     company || undefined,
+      interviewStage:  (interview_stage as 'general_practice' | 'interview_scheduled') || 'general_practice',
+    }
+
+    // Auto-save CV/JD to profile for pre-fill on next session (signed-in users only)
+    sb.from('profiles').update({
+      saved_resume_text:   resume  || null,
+      saved_jd_text:       jd      || null,
+      saved_company_name:  company || null,
+      resume_updated_at:   new Date().toISOString(),
+    }).eq('id', user.id).then(() => {}) // fire-and-forget, don't block session start
 
     const openingMessage = await openQuestion({
       lang: lang as 'en' | 'fr',

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // Load session
     const { data: session } = await sb
       .from('interview_sessions')
-      .select(`*, skill_modules(name_en, name_fr, voice_enabled), max_sub_skills, job_description, resume_text, round_type`)
+      .select(`*, skill_modules(name_en, name_fr, voice_enabled), max_sub_skills, job_description, resume_text, company_name, round_type, interview_stage`)
       .eq('id', sessionId).eq('user_id', user.id).single()
 
     if (!session) return NextResponse.json({ error: 'Session not found.' }, { status: 404 })
@@ -60,8 +60,13 @@ export async function POST(req: NextRequest) {
 
     // Build candidate context from JD/resume stored at session creation
     const candidateCtx: CandidateContext | undefined =
-      session.job_description || session.resume_text
-        ? { jobDescription: session.job_description ?? undefined, resume: session.resume_text ?? undefined }
+      session.job_description || session.resume_text || session.company_name
+        ? {
+            jobDescription: session.job_description ?? undefined,
+            resume:         session.resume_text     ?? undefined,
+            companyName:    (session as any).company_name    ?? undefined,
+            interviewStage: ((session as any).interview_stage ?? 'general_practice') as 'general_practice' | 'interview_scheduled',
+          }
         : undefined
 
     // Run interviewer + grader in parallel

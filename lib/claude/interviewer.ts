@@ -29,19 +29,27 @@ export interface TurnMessage {
 export interface CandidateContext {
   jobDescription?: string
   resume?: string
+  companyName?: string
+  interviewStage?: 'general_practice' | 'interview_scheduled'
 }
 
 function buildCandidateContextNote(lang: 'en' | 'fr', ctx: CandidateContext): string {
-  const jd  = ctx.jobDescription?.trim().slice(0, 600) ?? ''
-  const res = ctx.resume?.trim().slice(0, 600) ?? ''
-  if (!jd && !res) return ''
+  const jd      = ctx.jobDescription?.trim().slice(0, 600) ?? ''
+  const res     = ctx.resume?.trim().slice(0, 600) ?? ''
+  const company = ctx.companyName?.trim() ?? ''
+  const staged  = ctx.interviewStage === 'interview_scheduled'
+  if (!jd && !res && !company && !staged) return ''
 
   if (lang === 'fr') {
     const parts: string[] = []
-    if (jd)  parts.push(`Fiche de poste ciblée : "${jd}"`)
-    if (res) parts.push(`Expérience du candidat : "${res}"`)
+    if (company) parts.push(`Entreprise cible : "${company}"`)
+    if (jd)      parts.push(`Fiche de poste ciblée : "${jd}"`)
+    if (res)     parts.push(`Expérience du candidat : "${res}"`)
+    const stageNote = staged
+      ? `\nURGENCE : Le candidat a un entretien réel prévu prochainement. Traitez cet entretien comme une simulation haute-fidélité — soyez rigoureux, poussez sur les lacunes, ne faites pas de concessions.`
+      : ''
     return `\nCONTEXTE DU CANDIDAT :
-${parts.join('\n')}
+${parts.join('\n')}${stageNote}
 INSTRUCTIONS DE PERSONNALISATION :
 - Posez la question telle quelle, mais si elle mentionne des outils génériques (ex. "un système RAG", "un outil d'orchestration"), remplacez-les par les technologies concrètes mentionnées dans le contexte ci-dessus (ex. Weaviate, LangGraph, vLLM) si elles sont pertinentes.
 - Lors des sondes de suivi, référencez les outils, systèmes ou expériences spécifiques du candidat — ne posez pas de questions génériques si vous pouvez les rendre concrètes.
@@ -50,14 +58,19 @@ INSTRUCTIONS DE PERSONNALISATION :
   }
 
   const parts: string[] = []
-  if (jd)  parts.push(`Target job description: "${jd}"`)
-  if (res) parts.push(`Candidate background: "${res}"`)
+  if (company) parts.push(`Target company: "${company}"`)
+  if (jd)      parts.push(`Target job description: "${jd}"`)
+  if (res)     parts.push(`Candidate background: "${res}"`)
+  const stageNote = staged
+    ? `\nURGENT: The candidate has a real interview coming up soon. Treat this session as a high-fidelity simulation — be rigorous, push hard on gaps, do not give easy passes.`
+    : ''
   return `\nCANDIDATE CONTEXT:
-${parts.join('\n')}
+${parts.join('\n')}${stageNote}
 PERSONALISATION INSTRUCTIONS:
 - Ask the current question as written, but if it refers to generic tools (e.g. "a RAG system", "an orchestration tool"), substitute the specific technologies named in the candidate context above (e.g. Weaviate, LangGraph, vLLM) where relevant.
 - In follow-up probes, reference the candidate's specific tools, systems, or claimed experience — don't ask generic questions when you can make them concrete.
 - If their answer under-delivers on a claim in their background, probe that gap directly.
+${company ? `- This candidate is applying to "${company}" — if that company's known stack, scale, or culture is relevant to the question, bring it in.` : ''}
 `
 }
 

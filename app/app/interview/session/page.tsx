@@ -74,18 +74,6 @@ async function authHeader(): Promise<Record<string, string>> {
   return {}
 }
 
-function speak(text: string, lang: 'en'|'fr', onEnd?: () => void) {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return
-  window.speechSynthesis.cancel()
-  const u = new SpeechSynthesisUtterance(text.replace(/\[\[.*?\]\]/g, '').trim())
-  u.lang = lang === 'fr' ? 'fr-FR' : 'en-US'; u.rate = 0.9
-  const voices = window.speechSynthesis.getVoices()
-  const v = voices.find(v => v.lang.startsWith(lang === 'fr' ? 'fr' : 'en') && (v.name.includes('Samantha') || v.name.includes('Neural') || v.name.includes('Google')))
-    || voices.find(v => v.lang.startsWith(lang === 'fr' ? 'fr' : 'en'))
-  if (v) u.voice = v
-  if (onEnd) u.onend = onEnd
-  window.speechSynthesis.speak(u)
-}
 
 function SessionInner() {
   const params    = useSearchParams()
@@ -106,7 +94,6 @@ function SessionInner() {
   const [elapsed,     setElapsed]     = useState(0)
   const [voiceOn,      setVoiceOn]      = useState(false)
   const [isRecording,  setIsRecording]  = useState(false)
-  const [isSpeaking,   setIsSpeaking]   = useState(false)
   const [voiceOk,      setVoiceOk]      = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(true)
   const [skipLoad,     setSkipLoad]     = useState(false)
@@ -122,7 +109,7 @@ function SessionInner() {
   const currentQuestion = messages.filter(m => m.role === 'assistant').pop()?.content ?? ''
 
   useEffect(() => {
-    setVoiceOk(!!(((window as any).SpeechRecognition) || (window as any).webkitSpeechRecognition) && !!window.speechSynthesis)
+    setVoiceOk(!!(((window as any).SpeechRecognition) || (window as any).webkitSpeechRecognition))
     if (sessionId) {
       const flag = sessionStorage.getItem(`session_${sessionId}_voiceEnabled`)
       if (flag === 'false') setVoiceEnabled(false)
@@ -131,7 +118,7 @@ function SessionInner() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, isTyping])
   useEffect(() => {
     timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
-    return () => { clearInterval(timerRef.current); window.speechSynthesis?.cancel() }
+    return () => clearInterval(timerRef.current)
   }, [])
 
   useEffect(() => {
@@ -164,7 +151,6 @@ function SessionInner() {
   function startRec() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SR) return
-    window.speechSynthesis?.cancel()
     const r = new SR()
     r.lang = lang === 'fr' ? 'fr-FR' : 'en-US'
     r.continuous = true; r.interimResults = false
@@ -179,7 +165,6 @@ function SessionInner() {
     const content = (text ?? input).trim()
     if (!content || sending || done) return
     setInput(''); setSending(true); setIsTyping(true); setError('')
-    window.speechSynthesis?.cancel()
     setMessages(prev => [...prev, { role: 'user', content }])
     try {
       const hdrs = await authHeader()
@@ -192,7 +177,7 @@ function SessionInner() {
       setIsTyping(false)
       if (!res.ok) { setError(data.error ?? 'Error'); setMessages(prev => prev.slice(0,-1)); setSending(false); return }
       setMessages(prev => [...prev, { role: 'assistant', content: data.aiResponse }])
-      if (voiceOn) { setIsSpeaking(true); speak(data.aiResponse, lang, () => { setIsSpeaking(false); if (voiceOn && !data.isComplete) setTimeout(startRec, 400) }) }
+      if (voiceOn && !data.isComplete) setTimeout(startRec, 400)
       if (data.shouldAdvance) {
         setSubIdx(data.nextSubSkillIdx)
         if (data.starterCode) { setStarterCode(data.starterCode); setCodeLanguage(data.codeLanguage ?? 'python') }
@@ -200,7 +185,7 @@ function SessionInner() {
       }
       if (data.nextOpeningMessage) setTimeout(() => {
         setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }])
-        if (voiceOn) { setIsSpeaking(true); speak(data.nextOpeningMessage, lang, () => { setIsSpeaking(false); if (voiceOn) setTimeout(startRec, 400) }) }
+        if (voiceOn) setTimeout(startRec, 400)
       }, 500)
       if (data.isComplete) { setDone(true); clearInterval(timerRef.current); setTimeout(end, 1500) }
     } catch { setIsTyping(false); setError('Network error'); setMessages(prev => prev.slice(0,-1)) }
@@ -209,7 +194,7 @@ function SessionInner() {
 
   async function skip() {
     if (skipLoad || done) return
-    setSkipLoad(true); window.speechSynthesis?.cancel()
+    setSkipLoad(true)
     setMessages(prev => [...prev, { role: 'user', content: lang === 'fr' ? '(Passée)' : '(Skipped)' }]); setIsTyping(true)
     try {
       const hdrs = await authHeader()
@@ -222,13 +207,13 @@ function SessionInner() {
       setIsTyping(false)
       if (d.isComplete) { setDone(true); clearInterval(timerRef.current); setTimeout(end, 1200); return }
       setSubIdx(d.nextSubSkillIdx)
-      if (d.nextOpeningMessage) { setMessages(prev => [...prev, { role: 'assistant', content: d.nextOpeningMessage }]); if (voiceOn) speak(d.nextOpeningMessage, lang) }
+      if (d.nextOpeningMessage) { setMessages(prev => [...prev, { role: 'assistant', content: d.nextOpeningMessage }]); if (voiceOn) setTimeout(startRec, 400) }
     } catch { setIsTyping(false) }
     finally { setSkipLoad(false) }
   }
 
   async function end() {
-    setScoring(true); window.speechSynthesis?.cancel()
+    setScoring(true)
     const hdrs = await authHeader()
     const res  = await fetch('/api/interview/end', {
       method: 'POST',

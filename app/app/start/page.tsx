@@ -38,6 +38,7 @@ function StartPageInner() {
 
   const [jd,           setJd]         = useState('')
   const [resume,       setResume]     = useState('')
+  const [company,      setCompany]    = useState('')
   const [module_,      setModule]     = useState('')
   const [lang,         setLang]       = useState<'en'|'fr'>('en')
   const [stage,        setStage]      = useState<'general_practice'|'interview_scheduled'>('general_practice')
@@ -53,12 +54,23 @@ function StartPageInner() {
   const [showPanel,     setShowPanel]     = useState(false)
   const [panelLoading,  setPanelLoading]  = useState(false)
   const [upgradeReason, setUpgradeReason] = useState('')
+  const [savedAt,       setSavedAt]       = useState<string | null>(null)
+  const [savedBannerDismissed, setSavedBannerDismissed] = useState(false)
 
   useEffect(() => {
     createClient().auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
-      const { data: p } = await createClient().from('profiles').select('plan').eq('id', user.id).single()
+      const { data: p } = await createClient()
+        .from('profiles')
+        .select('plan, saved_resume_text, saved_jd_text, saved_company_name, resume_updated_at')
+        .eq('id', user.id).single()
       setIsPro(p?.plan === 'pro')
+      if (p?.saved_resume_text || p?.saved_jd_text) {
+        if (p.saved_jd_text)      setJd(p.saved_jd_text)
+        if (p.saved_resume_text)  setResume(p.saved_resume_text)
+        if (p.saved_company_name) setCompany(p.saved_company_name)
+        if (p.resume_updated_at)  setSavedAt(p.resume_updated_at)
+      }
     })
   }, [])
 
@@ -124,7 +136,7 @@ function StartPageInner() {
       const res  = await fetch('/api/interview/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...hdrs },
-        body: JSON.stringify({ module_slug: module_, lang, job_description: jd, resume, device_id: deviceId, interview_stage: stage, round_type: roundType || null }),
+        body: JSON.stringify({ module_slug: module_, lang, job_description: jd, resume, company_name: company, device_id: deviceId, interview_stage: stage, round_type: roundType || null }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -151,7 +163,7 @@ function StartPageInner() {
       const res  = await fetch('/api/panel/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...hdrs },
-        body: JSON.stringify({ mock_panel_id: selectedPanel, lang, job_description: jd, resume }),
+        body: JSON.stringify({ mock_panel_id: selectedPanel, lang, job_description: jd, resume, company_name: company }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -235,6 +247,22 @@ function StartPageInner() {
             )}
           </div>
 
+          {/* Saved data banner */}
+          {savedAt && !savedBannerDismissed && (
+            <div className="flex items-center justify-between gap-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="text-green-600 text-sm">✓</span>
+                <p className="text-xs text-[#166534]">
+                  Using your saved CV/JD from <span className="font-semibold">{new Date(savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span> — edit the fields below to update.
+                </p>
+              </div>
+              <button onClick={() => { setSavedBannerDismissed(true); setJd(''); setResume(''); setCompany('') }}
+                className="text-xs text-[#166534] hover:text-[#14532D] font-medium whitespace-nowrap flex-shrink-0">
+                Clear all
+              </button>
+            </div>
+          )}
+
           {/* Job Description */}
           <div ref={contextRef} className="bg-white rounded-xl border border-[#E5E7EB] p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
             <div className="flex items-center justify-between mb-3">
@@ -256,6 +284,18 @@ function StartPageInner() {
             <textarea value={resume} onChange={e => setResume(e.target.value)} rows={4}
               placeholder={`Paste your resume or relevant experience...\n\nExample: '3 years ML engineering. Built RAG systems, deployed LLMs in production, experience with agent frameworks...'`}
               className="w-full text-sm text-[#111827] placeholder:text-[#9CA3AF] bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/15 focus:border-[#F5A524] resize-none transition-all"
+            />
+          </div>
+
+          {/* Company Name */}
+          <div className="bg-white rounded-xl border border-[#E5E7EB] p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <label className="font-semibold text-[#111827] text-sm">Company Name</label>
+              <span className="text-xs text-[#9CA3AF]">Optional — tailors questions to the company's known stack</span>
+            </div>
+            <input type="text" value={company} onChange={e => setCompany(e.target.value)} maxLength={100}
+              placeholder="e.g. Anthropic, Mistral AI, Hugging Face..."
+              className="w-full text-sm text-[#111827] placeholder:text-[#9CA3AF] bg-[#F8F9FB] border border-[#E5E7EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#F5A524]/15 focus:border-[#F5A524] transition-all"
             />
           </div>
 
