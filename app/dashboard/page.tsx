@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import AppLayout from '@/components/app/AppLayout'
 
 interface Session {
   id: string
@@ -106,49 +107,17 @@ export default function Dashboard() {
   const scoreColor = (s: number | null) => s === null ? '#9CA3AF' : s >= 3 ? '#2E7D5B' : s >= 2 ? '#C77D2E' : '#B24C3F'
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#FBFAF7' }}>
-      <div style={{ width:32,height:32,border:'3px solid #E8E4DC',borderTopColor:'#1E2A44',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+    <AppLayout>
+      <div className="flex items-center justify-center h-full min-h-[60vh]">
+        <div style={{ width:32,height:32,border:'3px solid #E8E4DC',borderTopColor:'#1E2A44',borderRadius:'50%',animation:'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    </AppLayout>
   )
 
   return (
-    <div className="min-h-screen" style={{ background: '#FBFAF7', fontFamily: "'Space Grotesk', Inter, system-ui, sans-serif" }}>
-
-      {/* Nav */}
-      <nav style={{ background: '#fff', borderBottom: '1px solid #E8E4DC' }}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: '#1E2A44' }}>S</div>
-            <span className="font-semibold text-[15px]" style={{ color: '#17140F' }}>Sonne AI</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            {profile?.plan === 'pro' && profile?.stripe_customer ? (
-              <button
-                onClick={openPortal}
-                disabled={portalLoading}
-                className="text-xs font-semibold px-3 py-1.5 rounded-full transition-colors disabled:opacity-60"
-                style={{ background: '#F0F4FF', border: '1px solid #C7D2FE', color: '#1E2A44' }}
-              >
-                {portalLoading ? 'Opening…' : 'Pro · Manage billing'}
-              </button>
-            ) : profile?.plan === 'pro' ? (
-              <span className="text-xs font-semibold px-3 py-1.5 rounded-full"
-                style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46' }}>
-                ✓ Pro
-              </span>
-            ) : (
-              <Link href="/pricing" className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: '#FEF9EC', border: '1px solid #F5D78A', color: '#92400E' }}>
-                ↑ Upgrade to Pro
-              </Link>
-            )}
-            <button onClick={signOut} className="text-sm transition-colors" style={{ color: '#6B7280' }}>Sign out</button>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <AppLayout>
+      <div className="max-w-4xl mx-auto px-6 py-8">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -166,8 +135,8 @@ export default function Dashboard() {
           </div>
           <Link href="/app/start"
             className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-opacity hover:opacity-90 self-start sm:self-auto"
-            style={{ background: '#1E2A44', color: '#fff' }}>
-            + New interview session
+            style={{ background: '#F5A524', color: '#17140F' }}>
+            🚀 New interview
           </Link>
         </div>
 
@@ -351,9 +320,20 @@ export default function Dashboard() {
             </Link>
           </div>
         )}
+
+        {/* Billing portal for Pro with Stripe customer */}
+        {profile?.plan === 'pro' && profile?.stripe_customer && (
+          <div className="mt-6 flex items-center justify-end">
+            <button onClick={openPortal} disabled={portalLoading}
+              className="text-xs font-medium text-[#6B7280] hover:text-[#374151] transition-colors disabled:opacity-50">
+              {portalLoading ? 'Opening billing portal…' : 'Manage billing →'}
+            </button>
+          </div>
+        )}
+        {portalError && <p className="mt-2 text-xs text-[#B24C3F] text-right">{portalError}</p>}
       </div>
 
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
+    </AppLayout>
   )
 }
