@@ -527,25 +527,52 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
           )}
         </div>
 
-        {/* Test results console */}
-        {testResults && status !== 'graded' && (
-          <div className="border-t border-[#2D3748] flex-shrink-0" style={{ background: '#0F1723', maxHeight: 160, overflowY: 'auto' }}>
-            <div className="px-4 py-2 flex items-center gap-2 border-b border-[#2D3748]">
-              <span className="text-[10px] font-mono text-[#718096] uppercase tracking-wide">Test Results</span>
-              <span className="text-[10px] font-bold" style={{ color: testResults.passed === testResults.total_tests ? '#68D391' : '#FC8181' }}>
-                {testResults.passed}/{testResults.total_tests} passed
-              </span>
+        {/* Test results console — always visible */}
+        {status !== 'graded' && (
+          <div className="border-t border-[#2D3748] flex-shrink-0" style={{ background: '#0F1723', height: 180, overflowY: 'auto' }}>
+            <div className="px-4 py-2 flex items-center gap-2 border-b border-[#2D3748] sticky top-0" style={{ background: '#0F1723' }}>
+              <span className="text-[10px] font-mono text-[#718096] uppercase tracking-wide">Console</span>
+              {testResults && (
+                <span className="text-[10px] font-bold" style={{ color: testResults.passed === testResults.total_tests ? '#68D391' : '#FC8181' }}>
+                  {testResults.passed}/{testResults.total_tests} passed
+                </span>
+              )}
             </div>
-            <div className="px-4 py-2 space-y-1">
-              {testResults.details.map((d, i) => (
-                <div key={i} className="flex items-start gap-2 text-[11px] font-mono">
-                  <span style={{ color: d.status === 'pass' ? '#68D391' : '#FC8181' }}>{d.status === 'pass' ? '✓' : '✗'}</span>
-                  <span className="text-[#E2E8F0]">{d.test_name}</span>
-                  {d.error && <span className="text-[#FC8181] ml-1 truncate" title={d.error}>— {d.error.slice(0, 80)}</span>}
+            <div className="px-4 py-2 space-y-1.5">
+              {!testResults && status === 'idle' && (
+                <p className="text-[11px] font-mono text-[#4A5568]">▸ Run your code to see test results</p>
+              )}
+              {(status === 'running' || status === 'grading') && (
+                <p className="text-[11px] font-mono text-[#718096] animate-pulse">▸ Running tests…</p>
+              )}
+              {testResults && testResults.details.map((d, i) => {
+                const isRuntimeCrash = d.status !== 'pass' && d.error &&
+                  (d.error.includes('Error') || d.error.includes('Traceback') || d.error.includes('Exception'))
+                const icon = d.status === 'pass' ? '✓' : isRuntimeCrash ? '⚠' : '✗'
+                const iconColor = d.status === 'pass' ? '#68D391' : isRuntimeCrash ? '#F6AD55' : '#FC8181'
+                const errColor = isRuntimeCrash ? '#F6AD55' : '#FC8181'
+                return (
+                  <div key={i} className="font-mono text-[11px]">
+                    <div className="flex items-start gap-2">
+                      <span style={{ color: iconColor, flexShrink: 0 }}>{icon}</span>
+                      <span className="text-[#E2E8F0]">{d.test_name}</span>
+                      {d.status === 'pass' && <span className="text-[#4A5568] ml-auto text-[10px]">passed</span>}
+                    </div>
+                    {d.error && d.status !== 'pass' && (
+                      <div className="ml-5 mt-0.5 space-y-0.5">
+                        {d.error.split('\n').filter(Boolean).map((line, li) => (
+                          <div key={li} style={{ color: errColor }}>{line}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {testResults && testResults.runtime_errors.map((e, i) => (
+                <div key={`re${i}`} className="font-mono text-[11px]">
+                  <div className="text-[#F6AD55]">⚠ Runtime error</div>
+                  <div className="ml-5 text-[#F6AD55] whitespace-pre-wrap">{e}</div>
                 </div>
-              ))}
-              {testResults.runtime_errors.map((e, i) => (
-                <div key={`re${i}`} className="text-[11px] font-mono text-[#FC8181]">⚠ {e.slice(0, 120)}</div>
               ))}
             </div>
           </div>
@@ -583,21 +610,40 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
         {/* Controls */}
         <div className="flex-shrink-0 border-t border-[#E5E7EB] bg-white px-4 py-3 flex items-center gap-2">
           {/* Hint button */}
-          {!isSql && (
-            <button
-              onClick={requestHint}
-              disabled={!hasRunOnce || hintsUsed >= MAX_HINTS || hintLoading || status === 'running' || status === 'grading'}
-              title={!hasRunOnce ? 'Run tests first to unlock hints' : hintsUsed >= MAX_HINTS ? 'All hints revealed' : 'Get next hint'}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E5E7EB] text-[#6B7280] hover:bg-[#FFF8EE] hover:border-[#FDE68A] hover:text-[#92400E] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
-            >
-              {hintLoading ? (
-                <span style={{ width: 10, height: 10, border: '1.5px solid #D1D5DB', borderTopColor: '#6B7280', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }} />
-              ) : (
-                <span>💡</span>
-              )}
-              <span>Hint {hintsUsed > 0 ? `(${hintsUsed}/${MAX_HINTS})` : ''}</span>
-            </button>
-          )}
+          {!isSql && (() => {
+            const hintsLeft = MAX_HINTS - hintsUsed
+            const scoreCap = hintsUsed === 0 ? null : hintsUsed === 1 ? 9 : hintsUsed === 2 ? 7 : 6
+            const isDisabled = !hasRunOnce || hintsUsed >= MAX_HINTS || hintLoading || status === 'running' || status === 'grading'
+            const tooltip = !hasRunOnce
+              ? 'Try running your code first — hints unlock after your first attempt'
+              : hintsUsed >= MAX_HINTS
+              ? 'No more hints available'
+              : `Get hint ${hintsUsed + 1} of ${MAX_HINTS} — max score becomes ${hintsUsed === 0 ? 9 : hintsUsed === 1 ? 7 : 6}`
+            return (
+              <div className="flex flex-col gap-0.5 flex-shrink-0">
+                <button
+                  onClick={requestHint}
+                  disabled={isDisabled}
+                  title={tooltip}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#E5E7EB] text-[#6B7280] hover:bg-[#FFF8EE] hover:border-[#FDE68A] hover:text-[#92400E] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {hintLoading ? (
+                    <span style={{ width: 10, height: 10, border: '1.5px solid #D1D5DB', borderTopColor: '#6B7280', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }} />
+                  ) : <span>💡</span>}
+                  <span>
+                    {hintsUsed >= MAX_HINTS
+                      ? 'No more hints'
+                      : hintsUsed === 0
+                      ? 'Get a hint'
+                      : `Get another hint (${hintsLeft} left)`}
+                  </span>
+                </button>
+                {scoreCap !== null && (
+                  <p className="text-[9px] text-[#D97706] text-center">max score capped at {scoreCap}</p>
+                )}
+              </div>
+            )
+          })()}
 
           {error && <p className="text-xs text-red-600 flex-1">{error}</p>}
           {!error && <div className="flex-1" />}
@@ -611,8 +657,7 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
               {(status === 'running' || status === 'grading') && (
                 <span style={{ width: 12, height: 12, border: '2px solid rgba(0,0,0,.2)', borderTopColor: '#17140F', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }} />
               )}
-              {status === 'idle' && '▶'}
-              {status === 'idle' ? ' Run Tests' : status === 'running' ? ' Running tests...' : ' Grading...'}
+              {status === 'idle' ? '▶ Run & Submit' : status === 'running' ? 'Running tests…' : 'Grading…'}
             </button>
           )}
         </div>

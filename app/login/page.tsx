@@ -61,6 +61,7 @@ function LoginForm() {
         width: 400,
         text: 'continue_with',
         shape: 'rectangular',
+        locale: 'en',
       })
     }
   }

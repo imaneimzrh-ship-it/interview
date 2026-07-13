@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/app/AppLayout'
 import UpgradeModal from '@/components/app/UpgradeModal'
@@ -51,6 +51,21 @@ export default function TechnicalPracticePage() {
   const [error, setError] = useState('')
   const [isPro, setIsPro] = useState<boolean | null>(null)
   const [upgradeReason, setUpgradeReason] = useState('')
+  const [filterDifficulty, setFilterDifficulty] = useState<string[]>([])
+  const [filterLanguage, setFilterLanguage] = useState<string[]>([])
+
+  const filteredExercises = useMemo(() => exercises.filter(ex => {
+    if (filterDifficulty.length > 0 && !filterDifficulty.includes(ex.difficulty)) return false
+    if (filterLanguage.length > 0 && !filterLanguage.includes(ex.language)) return false
+    return true
+  }), [exercises, filterDifficulty, filterLanguage])
+
+  function toggleDifficulty(d: string) {
+    setFilterDifficulty(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
+  }
+  function toggleLanguage(l: string) {
+    setFilterLanguage(prev => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l])
+  }
 
   useEffect(() => {
     createClient().auth.getUser().then(async ({ data: { user } }) => {
@@ -127,12 +142,12 @@ export default function TechnicalPracticePage() {
             <li>Code runs in an isolated sandbox — no setup required</li>
             <li>Automated test suite grades your solution immediately</li>
             <li>Claude grades your explanation and code quality</li>
-            <li>Mirrors exercises at companies like Anthropic, Cohere, and AI-first startups</li>
+            <li>Modeled on real-world technical interview formats used across the AI industry</li>
           </ul>
         </div>
 
         {/* Quick start */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold text-[#111827]">Exercise library</h2>
           <button
             onClick={() => startExercise()}
@@ -148,6 +163,45 @@ export default function TechnicalPracticePage() {
           </button>
         </div>
 
+        {/* Filter bar */}
+        <div className="flex flex-wrap items-center gap-2 mb-5">
+          {(['easy', 'medium', 'hard'] as const).map(d => (
+            <button
+              key={d}
+              onClick={() => toggleDifficulty(d)}
+              className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+              style={filterDifficulty.includes(d)
+                ? { background: DIFFICULTY_STYLE[d].bg, color: DIFFICULTY_STYLE[d].color, borderColor: DIFFICULTY_STYLE[d].color }
+                : { background: 'white', color: '#6B7280', borderColor: '#E5E7EB' }
+              }
+            >
+              {DIFFICULTY_STYLE[d].label}
+            </button>
+          ))}
+          <div className="w-px self-stretch bg-[#E5E7EB]" />
+          {([['python', '🐍 Python'], ['sql', '🗃️ SQL'], ['text', '✍️ Prompt']] as const).map(([lang, label]) => (
+            <button
+              key={lang}
+              onClick={() => toggleLanguage(lang)}
+              className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+              style={filterLanguage.includes(lang)
+                ? { background: '#EEF2FF', color: '#4F46E5', borderColor: '#4F46E5' }
+                : { background: 'white', color: '#6B7280', borderColor: '#E5E7EB' }
+              }
+            >
+              {label}
+            </button>
+          ))}
+          {(filterDifficulty.length > 0 || filterLanguage.length > 0) && (
+            <button
+              onClick={() => { setFilterDifficulty([]); setFilterLanguage([]) }}
+              className="px-3 py-1 text-xs font-medium text-[#6B7280] hover:text-[#111827] transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
         {error && (
           <div className="mb-4 p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-lg text-sm text-[#DC2626]">{error}</div>
         )}
@@ -159,13 +213,15 @@ export default function TechnicalPracticePage() {
               <div key={i} className="h-24 bg-[#F3F4F6] rounded-xl animate-pulse" />
             ))}
           </div>
-        ) : exercises.length === 0 ? (
+        ) : filteredExercises.length === 0 ? (
           <div className="text-center py-12 text-[#6B7280] text-sm">
-            No exercises found. Run migrations 008–010 in Supabase SQL Editor.
+            {exercises.length === 0
+              ? 'No exercises found. Run migrations 008–010 in Supabase SQL Editor.'
+              : 'No exercises match the selected filters.'}
           </div>
         ) : (
           <div className="space-y-3">
-            {exercises.map(ex => {
+            {filteredExercises.map(ex => {
               const diff = DIFFICULTY_STYLE[ex.difficulty] ?? DIFFICULTY_STYLE.medium
               const topics = TOPIC_MAP[ex.title] ?? []
               const isStarting = starting === ex.id
