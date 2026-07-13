@@ -73,48 +73,13 @@ VALUES (
   E'import json\nimport re\n\ndef extract_json(text: str) -> dict:\n    """\n    Extract and parse the first valid JSON object from LLM output.\n    Handles markdown fences and surrounding prose.\n    Raises ValueError if no valid JSON object is found.\n    """\n    # TODO: implement robust JSON extraction\n    return json.loads(text)\n',
   'python',
   E'Robust implementation:\n```python\nimport json, re\n\ndef extract_json(text: str) -> dict:\n    # 1. Strip markdown code fences first\n    fence = re.search(r"```(?:json)?\\s*\\n?({.*?})\\s*\\n?```", text, re.DOTALL)\n    if fence:\n        return json.loads(fence.group(1))\n    # 2. Find the first { and try to parse progressively larger substrings\n    start = text.find("{")\n    if start == -1:\n        raise ValueError("No valid JSON found")\n    # Find matching closing brace by scanning for valid JSON\n    for end in range(len(text), start, -1):\n        candidate = text[start:end]\n        try:\n            result = json.loads(candidate)\n            if isinstance(result, dict):\n                return result\n        except json.JSONDecodeError:\n            continue\n    raise ValueError("No valid JSON found")\n```\nKey: handle fence format first, then fall back to greedy brace extraction. The reverse scan (longest first) is efficient because valid JSON is usually near the end of the object.',
-  '[
-    {
-      "name": "plain JSON",
-      "function": "extract_json",
-      "setup": "",
-      "call": "extract_json('''{\"name\": \"Alice\", \"score\": 42}''')",
-      "expected": "{\"name\": \"Alice\", \"score\": 42}",
-      "visible": true
-    },
-    {
-      "name": "JSON in ```json fence",
-      "function": "extract_json",
-      "setup": "",
-      "call": "extract_json(\"```json\\n{\\\"result\\\": \\\"pass\\\", \\\"score\\\": 9}\\n```\")",
-      "expected": "{\"result\": \"pass\", \"score\": 9}",
-      "visible": true
-    },
-    {
-      "name": "JSON preceded by prose",
-      "function": "extract_json",
-      "setup": "",
-      "call": "extract_json(\"Sure, here is the extracted info: {\\\"entity\\\": \\\"Paris\\\", \\\"type\\\": \\\"city\\\"}\")",
-      "expected": "{\"entity\": \"Paris\", \"type\": \"city\"}",
-      "visible": true
-    },
-    {
-      "name": "raises ValueError when no JSON",
-      "function": "extract_json",
-      "setup": "",
-      "call": "extract_json(\"I cannot determine the answer from the context provided.\")",
-      "expected_exception": "ValueError",
-      "visible": true
-    },
-    {
-      "name": "nested object (hidden)",
-      "function": "extract_json",
-      "setup": "",
-      "call": "extract_json(\"Result: {\\\"data\\\": {\\\"items\\\": [1, 2, 3], \\\"count\\\": 3}, \\\"status\\\": \\\"ok\\\"}\")",
-      "expected": "{\"data\": {\"items\": [1, 2, 3], \"count\": 3}, \"status\": \"ok\"}",
-      "visible": false
-    }
-  ]',
+  $tc_9$[
+    {"name":"plain JSON","function":"extract_json","setup":"","call":"extract_json('{\"name\": \"Alice\", \"score\": 42}')","expected":"{\"name\": \"Alice\", \"score\": 42}","visible":true},
+    {"name":"JSON in ```json fence","function":"extract_json","setup":"","call":"extract_json(\"```json\\n{\\\"result\\\": \\\"pass\\\", \\\"score\\\": 9}\\n```\")","expected":"{\"result\": \"pass\", \"score\": 9}","visible":true},
+    {"name":"JSON preceded by prose","function":"extract_json","setup":"","call":"extract_json(\"Sure, here is the extracted info: {\\\"entity\\\": \\\"Paris\\\", \\\"type\\\": \\\"city\\\"}\")","expected":"{\"entity\": \"Paris\", \"type\": \"city\"}","visible":true},
+    {"name":"raises ValueError when no JSON","function":"extract_json","setup":"","call":"extract_json(\"I cannot determine the answer from the context provided.\")","expected_exception":"ValueError","visible":true},
+    {"name":"nested object (hidden)","function":"extract_json","setup":"","call":"extract_json(\"Result: {\\\"data\\\": {\\\"items\\\": [1, 2, 3], \\\"count\\\": 3}, \\\"status\\\": \\\"ok\\\"}\")","expected":"{\"data\": {\"items\": [1, 2, 3], \"count\": 3}, \"status\": \"ok\"}","visible":false}
+  ]$tc_9$::jsonb,
   true,
   'medium'
 );
