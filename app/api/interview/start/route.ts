@@ -11,29 +11,30 @@ export async function POST(req: NextRequest) {
     const { sb, user } = await getServerUser(req)
     if (!user) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
 
-    const { module_slug, lang = 'en', session_type = 'full', job_description = '', resume: resumeRaw = '', interview_stage = 'general_practice', round_type = null, company_name = '' } = body
+    const { module_slug, lang = 'en', session_type = 'full', job_description = '', resume: resumeRaw = '', interview_stage = 'general_practice', round_type = null, company_name = '', exercise_id: requestedExerciseId = null } = body
     if (!module_slug) return NextResponse.json({ error: 'module_slug required.' }, { status: 400 })
 
-    // Require at least one of JD or resume (≥50 chars)
     const jd      = String(job_description).trim()
     const resume  = String(resumeRaw).trim()
     const company = String(company_name).trim().slice(0, 100)
-    if (jd.length < 50 && resume.length < 50) {
-      return NextResponse.json({ error: 'Please provide a job description or resume (at least 50 characters) to personalise the interview.' }, { status: 400 })
-    }
 
-    // Semantic check: reject obvious placeholder text and low-diversity content
-    const PLACEHOLDER_PATTERNS = [/\blorem\s+ipsum\b/i, /^(.{1,15})\1{4,}/m, /^[a-z\s]{0,5}$/i]
-    const combined = jd + ' ' + resume
-    const uniqueWords = new Set((combined.toLowerCase().match(/\b[a-z]{3,}\b/g) ?? []))
-    if (PLACEHOLDER_PATTERNS.some(p => p.test(combined)) || uniqueWords.size < 8) {
-      return NextResponse.json({ error: 'Please paste a real job description or resume — the text you entered doesn\'t look like professional content.' }, { status: 400 })
-    }
+    // Technical coding exercises don't need context — skip JD/resume checks
+    if (module_slug !== 'technical_coding') {
+      if (jd.length < 50 && resume.length < 50) {
+        return NextResponse.json({ error: 'Please provide a job description or resume (at least 50 characters) to personalise the interview.' }, { status: 400 })
+      }
 
-    // Injection guard
-    const INJECT_PATTERNS = [/ignore (previous|above|all) instructions/i, /you are now/i, /system prompt/i, /disregard your/i]
-    if (INJECT_PATTERNS.some(p => p.test(combined))) {
-      return NextResponse.json({ error: 'Invalid content detected in job description or resume.' }, { status: 400 })
+      const PLACEHOLDER_PATTERNS = [/\blorem\s+ipsum\b/i, /^(.{1,15})\1{4,}/m, /^[a-z\s]{0,5}$/i]
+      const combined = jd + ' ' + resume
+      const uniqueWords = new Set((combined.toLowerCase().match(/\b[a-z]{3,}\b/g) ?? []))
+      if (PLACEHOLDER_PATTERNS.some(p => p.test(combined)) || uniqueWords.size < 8) {
+        return NextResponse.json({ error: 'Please paste a real job description or resume — the text you entered doesn\'t look like professional content.' }, { status: 400 })
+      }
+
+      const INJECT_PATTERNS = [/ignore (previous|above|all) instructions/i, /you are now/i, /system prompt/i, /disregard your/i]
+      if (INJECT_PATTERNS.some(p => p.test(combined))) {
+        return NextResponse.json({ error: 'Invalid content detected in job description or resume.' }, { status: 400 })
+      }
     }
 
     const type = (session_type === 'short' ? 'short' : 'full') as SessionType
@@ -108,11 +109,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Technical coding exercise: bypass Q&A flow, assign a random exercise ──
+    // ── Technical coding exercise: bypass Q&A flow, assign a specific or random exercise ──
     if (module_slug === 'technical_coding') {
       const { data: exercises } = await sb.from('exercises').select('id, title, difficulty').eq('role_track', 'ai_engineer')
       if (!exercises?.length) return NextResponse.json({ error: 'No exercises available.' }, { status: 500 })
-      const exercise = exercises[Math.floor(Math.random() * exercises.length)]
+      const exercise = requestedExerciseId
+        ? (exercises.find(e => e.id === requestedExerciseId) ?? exercises[Math.floor(Math.random() * exercises.length)])
+        : exercises[Math.floor(Math.random() * exercises.length)]
 
       const { data: tcModule } = await sb.from('skill_modules').select('id, role_track_id').eq('slug', 'technical_coding').single()
       if (!tcModule) return NextResponse.json({ error: 'technical_coding module not found in DB — run migration 009.' }, { status: 500 })
