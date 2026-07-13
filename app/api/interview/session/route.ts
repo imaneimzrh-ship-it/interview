@@ -21,6 +21,21 @@ export async function GET(req: NextRequest) {
 
     const lang = session.language as 'en' | 'fr'
 
+    // Technical coding exercise — return exerciseId, skip Q&A sub-skill flow
+    if ((session as Record<string, unknown>).exercise_id || session.skill_modules?.slug === 'technical_coding') {
+      const exerciseId = (session as Record<string, unknown>).exercise_id as string
+      const { data: ex } = await sb.from('exercises').select('title, difficulty').eq('id', exerciseId).single()
+      return NextResponse.json({
+        exerciseId,
+        openingMessage: ex
+          ? `Let's work through a hands-on coding exercise: **${ex.title}** (${ex.difficulty}). Read the task description on the left, write your fix in the editor, and click Run Tests when ready.`
+          : 'Ready for your coding exercise. See the task description on the left.',
+        totalSubSkills: 1,
+        language: lang,
+        voiceEnabled: false,
+      })
+    }
+
     // Load sub-skills for this module
     const { data: subSkills } = await sb
       .from('sub_skills')

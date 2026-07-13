@@ -107,6 +107,49 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── Technical coding exercise: bypass Q&A flow, assign a random exercise ──
+    if (module_slug === 'technical_coding') {
+      const { data: exercises } = await sb.from('exercises').select('id, title, difficulty').eq('role_track', 'ai_engineer')
+      if (!exercises?.length) return NextResponse.json({ error: 'No exercises available.' }, { status: 500 })
+      const exercise = exercises[Math.floor(Math.random() * exercises.length)]
+
+      const { data: tcModule } = await sb.from('skill_modules').select('id, role_track_id').eq('slug', 'technical_coding').single()
+      if (!tcModule) return NextResponse.json({ error: 'technical_coding module not found in DB — run migration 009.' }, { status: 500 })
+
+      const { data: session, error: sErr } = await sb.from('interview_sessions').insert({
+        id:                    sessionId,
+        user_id:               user.id,
+        role_track_id:         tcModule.role_track_id,
+        skill_module_id:       tcModule.id,
+        exercise_id:           exercise.id,
+        language:              lang,
+        modality:              'text',
+        session_type:          type,
+        max_sub_skills:        1,
+        status:                'active',
+        current_sub_skill_idx: 0,
+        job_description:       jd      || null,
+        resume_text:           resume  || null,
+        company_name:          company || null,
+        interview_stage,
+        round_type:            round_type || null,
+      }).select().single()
+
+      if (sErr || !session) return NextResponse.json({ error: `Failed to create session: ${sErr?.message}` }, { status: 500 })
+
+      if (!isPro) {
+        await sb.from('profiles').update({ has_used_free_session: true }).eq('id', user.id)
+      }
+
+      return NextResponse.json({
+        sessionId:    session.id,
+        exerciseId:   exercise.id,
+        openingMessage: `Let's work through a hands-on coding exercise: **${exercise.title}** (${exercise.difficulty}). Read the task description on the left, write your fix in the editor, and click Run Tests when you're ready.`,
+        totalSubSkills: 1,
+        voiceEnabled:   false,
+      })
+    }
+
     // Load module + role track
     const { data: module_ } = await sb
       .from('skill_modules')

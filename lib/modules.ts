@@ -158,6 +158,16 @@ export const MODULES: Module[] = [
       },
     ],
   },
+  {
+    id: 'technical_coding',
+    name_en: 'Hands-On Coding',
+    name_fr: 'Exercice pratique',
+    free: false,
+    emoji: '⌨️',
+    desc_en: 'Fix real bugs · Run tests · AI scorecard',
+    desc_fr: 'Corriger de vrais bugs · Exécuter des tests · Scorecard IA',
+    sub_skills: [],
+  },
 ]
 
 export const MODULE_MAP = Object.fromEntries(MODULES.map(m => [m.id, m]))
