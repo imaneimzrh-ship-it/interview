@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
   // Execute tests in E2B sandbox and measure wall-clock time
   const e2bStart = Date.now()
   const test_results = exercise.language === 'sql'
-    ? { total_tests: 0, passed: 0, failed: 0, details: [], runtime_errors: ['SQL graded client-side'] }
+    ? { total_tests: 0, passed: 0, failed: 0, details: [], runtime_errors: ['SQL graded client-side'], overall_status: 'all_passed' as const }
     : await executeSubmission(candidate_code, exercise.test_cases, exercise.language as 'python' | 'javascript' | 'text' | 'sql')
   const e2bElapsedMs = Date.now() - e2bStart
 

@@ -270,6 +270,22 @@ function SessionInner() {
     </AppLayout>
   )
 
+  // Full-page layout for technical coding exercises — bypasses AppLayout sidebar
+  if (module_ === 'technical_coding' && exerciseData && sessionId) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column' }}>
+        <TechnicalExercisePanel
+          exercise={exerciseData}
+          sessionId={sessionId}
+          elapsed={elapsed}
+          onContinue={() => { setExerciseId(null); setExerciseData(null); end() }}
+          onSkip={skip}
+          onDashboard={() => router.push('/dashboard')}
+        />
+      </div>
+    )
+  }
+
   const mm  = String(Math.floor(elapsed/60)).padStart(2,'0')
   const ss_ = String(elapsed%60).padStart(2,'0')
 
