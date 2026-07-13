@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import AppLayout from '@/components/app/AppLayout'
+import TechnicalExercisePanel from '@/components/app/TechnicalExercisePanel'
 
 interface Msg { role: 'user' | 'assistant'; content: string }
 
@@ -100,6 +101,9 @@ function SessionInner() {
   const [skipLoad,     setSkipLoad]     = useState(false)
   const [starterCode,  setStarterCode]  = useState<string | null>(null)
   const [codeLanguage, setCodeLanguage] = useState<string>('python')
+  const [exerciseId,   setExerciseId]   = useState<string | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [exerciseData, setExerciseData] = useState<any | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
@@ -128,10 +132,12 @@ function SessionInner() {
     const cachedTotal = sessionStorage.getItem(`session_${sessionId}_totalSS`)
     const cachedCode  = sessionStorage.getItem(`session_${sessionId}_starterCode`)
     const cachedLang  = sessionStorage.getItem(`session_${sessionId}_codeLanguage`)
+    const cachedExId  = sessionStorage.getItem(`session_${sessionId}_exerciseId`)
     if (cached) {
       setMessages([{ role: 'assistant', content: cached }])
       if (cachedTotal) setTotal(Number(cachedTotal))
       if (cachedCode)  { setStarterCode(cachedCode); setCodeLanguage(cachedLang ?? 'python') }
+      if (cachedExId)  setExerciseId(cachedExId)
       return
     }
     authHeader().then(hdrs =>
@@ -142,12 +148,23 @@ function SessionInner() {
             setMessages([{ role: 'assistant', content: d.openingMessage }])
             setTotal(d.totalSubSkills ?? 4)
             if (d.starterCode) { setStarterCode(d.starterCode); setCodeLanguage(d.codeLanguage ?? 'python') }
+            if (d.exerciseId)  { setExerciseId(d.exerciseId); sessionStorage.setItem(`session_${sessionId}_exerciseId`, d.exerciseId) }
           }
           if (d.error) setError(d.error)
         })
         .catch(() => setError('Failed to load session.'))
     )
   }, [sessionId])
+
+  useEffect(() => {
+    if (!exerciseId) { setExerciseData(null); return }
+    createClient()
+      .from('exercises')
+      .select('id, title, task_description, starter_code, language, test_cases, explanation_required, difficulty')
+      .eq('id', exerciseId)
+      .single()
+      .then(({ data }) => { if (data) setExerciseData(data) })
+  }, [exerciseId])
 
   function startRec() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -183,6 +200,8 @@ function SessionInner() {
         setSubIdx(data.nextSubSkillIdx)
         if (data.starterCode) { setStarterCode(data.starterCode); setCodeLanguage(data.codeLanguage ?? 'python') }
         else setStarterCode(null)
+        if (data.exerciseId) { setExerciseId(data.exerciseId); setExerciseData(null) }
+        else setExerciseId(null)
       }
       if (data.nextOpeningMessage) setTimeout(() => {
         setMessages(prev => [...prev, { role: 'assistant', content: data.nextOpeningMessage }])
@@ -390,8 +409,21 @@ function SessionInner() {
             </div>
           </div>
 
-          {/* Practical question code panel */}
-          {starterCode && (
+          {/* Technical Exercise Panel — replaces text input for coding exercises */}
+          {exerciseData && sessionId && (
+            <TechnicalExercisePanel
+              exercise={exerciseData}
+              sessionId={sessionId}
+              onContinue={() => {
+                setExerciseId(null)
+                setExerciseData(null)
+                end()
+              }}
+            />
+          )}
+
+          {/* Practical question code panel (read-only, no exerciseId) */}
+          {starterCode && !exerciseData && (
             <div className="border-t border-[#E5E7EB] flex-shrink-0" style={{ background: '#1A202C', maxHeight: '38vh', overflowY: 'auto' }}>
               <div className="flex items-center justify-between px-4 py-2" style={{ background: '#2D3748' }}>
                 <div className="flex items-center gap-2">
@@ -410,8 +442,8 @@ function SessionInner() {
             </div>
           )}
 
-          {/* Input */}
-          <div className="bg-white border-t border-[#E5E7EB] px-4 sm:px-6 py-4 flex-shrink-0" style={{ boxShadow:'0 -1px 6px rgba(0,0,0,.05)' }}>
+          {/* Input — hidden when a technical exercise panel is active */}
+          {!exerciseData && <div className="bg-white border-t border-[#E5E7EB] px-4 sm:px-6 py-4 flex-shrink-0" style={{ boxShadow:'0 -1px 6px rgba(0,0,0,.05)' }}>
             <div className="max-w-2xl mx-auto">
               {voiceOn ? (
                 <div className="flex flex-col items-center gap-3">
@@ -447,7 +479,7 @@ function SessionInner() {
                 </div>
               )}
             </div>
-          </div>
+          </div>}
         </div>
       </div>
 
