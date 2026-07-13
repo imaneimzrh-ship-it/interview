@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import AppLayout from '@/components/app/AppLayout'
 import TechnicalExercisePanel from '@/components/app/TechnicalExercisePanel'
+import { trackClientEvent } from '@/lib/analytics'
 
 interface Msg { role: 'user' | 'assistant'; content: string }
 
@@ -163,7 +164,16 @@ function SessionInner() {
       .select('id, title, task_description, starter_code, language, test_cases, explanation_required, difficulty')
       .eq('id', exerciseId)
       .single()
-      .then(({ data }) => { if (data) setExerciseData(data) })
+      .then(async ({ data }) => {
+        if (data) {
+          setExerciseData(data)
+          // Analytics: exercise opened
+          const { data: { user } } = await createClient().auth.getUser()
+          if (user && sessionId) {
+            trackClientEvent({ name: 'technical_exercise_opened', user_id: user.id, session_id: sessionId, exercise_id: exerciseId })
+          }
+        }
+      })
   }, [exerciseId])
 
   function startRec() {

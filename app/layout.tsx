@@ -8,15 +8,15 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mon
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://sonneai.com'),
-  title: 'Sonne AI — AI Engineer Interview Prep | RAG, Agents, MLOps',
-  description: 'Score your CV and practice AI engineer interviews — RAG, agents, evaluation, MLOps, voice mode, and practical coding questions. EN/FR. Free CV diagnostic. Applied AI, LLM, and Automation Engineer roles.',
-  keywords: ['AI engineer interview', 'LLM interview prep', 'RAG interview', 'agent orchestration', 'MLOps interview', 'applied AI engineer', 'CV diagnostic AI'],
+  title: 'Sonne AI — AI Engineer Interview Prep | Coding Exercises, RAG, Agents, MLOps',
+  description: 'Practice AI engineer interviews with real hands-on coding exercises graded by AI — fix bugs, run tests, get a scorecard. Plus RAG, agents, evaluation, and MLOps Q&A. EN/FR. Free CV diagnostic.',
+  keywords: ['AI engineer interview', 'LLM interview prep', 'RAG interview', 'agent orchestration', 'MLOps interview', 'applied AI engineer', 'CV diagnostic AI', 'hands-on coding interview', 'AI coding exercises'],
   alternates: {
     canonical: 'https://sonneai.com',
   },
   openGraph: {
-    title: 'Sonne AI — AI Engineer Interview Prep',
-    description: 'Adaptive interview practice for AI, LLM, and Automation Engineer roles. Sub-skill diagnostic, voice mode, trade-off scoring, practical coding questions. EN/FR.',
+    title: 'Sonne AI — AI Engineer Interview Prep with Hands-On Coding',
+    description: 'Fix real bugs, run live tests, and get an AI scorecard — then practice RAG, agents, evaluation, and MLOps Q&A. The most practical AI interview prep available. EN/FR.',
     type: 'website',
     url: 'https://sonneai.com',
     siteName: 'Sonne AI',

@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/supabase/server'
 import { adminClient } from '@/lib/supabase/admin'
 import { openQuestion } from '@/lib/claude/interviewer'
 import { SESSION_SUB_SKILLS, type SessionType } from '@/lib/credits'
+import { trackServerEvent } from '@/lib/analytics'
 
 export async function POST(req: NextRequest) {
   try {
@@ -141,6 +142,14 @@ export async function POST(req: NextRequest) {
         await sb.from('profiles').update({ has_used_free_session: true }).eq('id', user.id)
       }
 
+      void trackServerEvent(sb, {
+        name: 'interview_session_started',
+        user_id: user.id,
+        session_id: session.id,
+        module_slug: 'technical_coding',
+        lang,
+      })
+
       return NextResponse.json({
         sessionId:    session.id,
         exerciseId:   exercise.id,
@@ -257,6 +266,14 @@ export async function POST(req: NextRequest) {
           .upsert({ device_id: deviceId, used_free_session: true, last_seen_at: new Date().toISOString() }, { onConflict: 'device_id' })
       }
     }
+
+    void trackServerEvent(sb, {
+      name: 'interview_session_started',
+      user_id: user.id,
+      session_id: session.id,
+      module_slug,
+      lang,
+    })
 
     return NextResponse.json({
       sessionId:          session.id,

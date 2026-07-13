@@ -75,7 +75,7 @@ export async function gradeSubmission(params: {
   candidateCode: string
   candidateExplanation: string | null
   testResults: TestResults
-}): Promise<GradingResult> {
+}): Promise<{ grading: GradingResult; usage: { input_tokens: number; output_tokens: number } | null }> {
   const { taskDescription, referenceSolutionNotes, candidateCode, candidateExplanation, testResults } = params
 
   const userPrompt = `TASK DESCRIPTION:
@@ -95,6 +95,8 @@ ${JSON.stringify(testResults, null, 2)}
 
 Grade this submission per the schema and guidelines in your system prompt. Return only the JSON object.`
 
+  let lastUsage: { input_tokens: number; output_tokens: number } | null = null
+
   async function attempt(temperature: number): Promise<GradingResult | null> {
     const res = await client.messages.create({
       model: 'claude-sonnet-4-6',
@@ -103,6 +105,8 @@ Grade this submission per the schema and guidelines in your system prompt. Retur
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userPrompt }],
     })
+
+    lastUsage = { input_tokens: res.usage.input_tokens, output_tokens: res.usage.output_tokens }
 
     const text = res.content[0].type === 'text' ? res.content[0].text : ''
     const clean = text.replace(/```json\n?|```/g, '').trim()
@@ -152,5 +156,5 @@ Grade this submission per the schema and guidelines in your system prompt. Retur
     })
   }
 
-  return result
+  return { grading: result, usage: lastUsage }
 }

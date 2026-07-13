@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerUser } from '@/lib/supabase/server'
 import { generateDiagnostic } from '@/lib/claude/grader'
 import type { GradeResult } from '@/lib/claude/grader'
+import { trackServerEvent } from '@/lib/analytics'
 
 export async function POST(req: NextRequest) {
   try {
@@ -100,6 +101,14 @@ export async function POST(req: NextRequest) {
       completed_at: new Date().toISOString(),
       duration_secs: dur,
     }).eq('id', sessionId)
+
+    // Analytics: session fully completed
+    void trackServerEvent(sb, {
+      name: 'session_fully_completed',
+      user_id: user.id,
+      session_id: sessionId,
+      module_slug: session.skill_modules?.slug,
+    })
 
     return NextResponse.json({
       reportId: report?.id,
