@@ -11,6 +11,7 @@ const MODULES = [
   { id: 'agent_orchestration', emoji: '🕵️', name: 'Agent Orchestration',      desc: 'Tool creation & validation · Memory management · Planning · Failure handling · Multi-agent · LangGraph · MCP',    free: false, voice: true },
   { id: 'evaluation_testing',  emoji: '🧪', name: 'Evaluation & Testing',     desc: 'Offline evals · LLM-as-judge vs human eval · Online evals · Hallucination · Regression gates',                   free: false, voice: true },
   { id: 'production_mlops',    emoji: '⚙️', name: 'Production / MLOps',       desc: 'Observability & tracing · Guardrails & safe failure · MCP integration · Cost/latency · vLLM · Deployment',        free: false, voice: true },
+  { id: 'technical_coding',    emoji: '⌨️', name: 'Hands-On Coding',          desc: 'Fix real bugs · Run live tests · AI scorecard · BM25, RAG pipelines, SQL, token optimization',                    free: false, voice: false },
 ]
 
 async function authHeader(): Promise<Record<string, string>> {
@@ -149,6 +150,9 @@ function StartPageInner() {
       if (data.starterCode) {
         sessionStorage.setItem(`session_${data.sessionId}_starterCode`, data.starterCode)
         sessionStorage.setItem(`session_${data.sessionId}_codeLanguage`, data.codeLanguage ?? 'python')
+      }
+      if (data.exerciseId) {
+        sessionStorage.setItem(`session_${data.sessionId}_exerciseId`, data.exerciseId)
       }
       router.push(`/app/interview/session?id=${data.sessionId}&lang=${lang}&module=${module_}`)
     } catch { setError('Network error.'); setLoading(false) }
