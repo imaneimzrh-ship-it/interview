@@ -68,14 +68,30 @@ CREATE TABLE IF NOT EXISTS user_topic_performance (
 
 ALTER TABLE user_topic_performance ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Users can read their own topic performance"
-  ON user_topic_performance FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'user_topic_performance'
+      AND policyname = 'Users can read their own topic performance'
+  ) THEN
+    CREATE POLICY "Users can read their own topic performance"
+      ON user_topic_performance FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Service role writes (from API routes)
-CREATE POLICY IF NOT EXISTS "Service role can write topic performance"
-  ON user_topic_performance FOR ALL
-  USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'user_topic_performance'
+      AND policyname = 'Service role can write topic performance'
+  ) THEN
+    CREATE POLICY "Service role can write topic performance"
+      ON user_topic_performance FOR ALL
+      USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 -- ── 6. mock_panel_loops (data-driven loop definitions) ────────────────────────
 CREATE TABLE IF NOT EXISTS mock_panel_loops (
