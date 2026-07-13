@@ -5,14 +5,20 @@ import { type NextRequest } from 'next/server'
 
 export async function createClient() {
   const cookieStore = await cookies()
+  // @supabase/ssr v0.3.0 uses { get, set, remove } — getAll/setAll were added in v0.4
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (all: { name: string; value: string; options?: Parameters<typeof cookieStore.set>[2] }[]) => {
-          try { all.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) } catch {}
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: Parameters<typeof cookieStore.set>[2]) {
+          try { cookieStore.set(name, value, options) } catch {}
+        },
+        remove(name: string, options: Parameters<typeof cookieStore.set>[2]) {
+          try { cookieStore.set(name, '', { ...options, maxAge: 0 }) } catch {}
         },
       },
     }
