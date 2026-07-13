@@ -13,7 +13,7 @@ const NAV = [
     group: 'Practice',
     items: [
       { href: '/cv',              label: 'CV Diagnostic',       icon: '📄' },
-      { href: '/app/technical',   label: 'Technical Practice',  icon: '⌨️' },
+      { href: '/app/practice',    label: 'Practice Hub',        icon: '🎯' },
       { href: '/app/questions',   label: 'Question Bank',       icon: '🗂️' },
       { href: '/app/glossary',    label: 'Tools Glossary',      icon: '📖' },
     ],
