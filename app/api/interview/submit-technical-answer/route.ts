@@ -88,9 +88,17 @@ export async function POST(req: NextRequest) {
     : await executeSubmission(candidate_code, exercise.test_cases, exercise.language as 'python' | 'javascript' | 'text' | 'sql')
   const e2bElapsedMs = Date.now() - e2bStart
 
+  // Count hints used for this session+exercise (DB-authoritative, not client-supplied)
+  const { count: hintsUsed } = await supabase
+    .from('hint_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('session_id', session_id)
+    .eq('exercise_id', exercise_id)
+
   // Grade with Claude and capture token usage
   const gradeStart = Date.now()
-  const { grading, usage: claudeUsage } = await gradeSubmission({
+  const { grading: rawGrading, usage: claudeUsage } = await gradeSubmission({
     taskDescription: exercise.task_description,
     referenceSolutionNotes: exercise.reference_solution_notes,
     candidateCode: candidate_code,
@@ -98,6 +106,15 @@ export async function POST(req: NextRequest) {
     testResults: test_results,
   })
   const gradeElapsedMs = Date.now() - gradeStart
+
+  // Deterministic score cap based on hints used (applied in orchestrator, not in Claude prompt)
+  const hints = hintsUsed ?? 0
+  let cappedScore = rawGrading.overall_score
+  if (hints >= 3) cappedScore = Math.min(cappedScore, 6)
+  else if (hints === 2) cappedScore = Math.min(cappedScore, 7)
+  else if (hints === 1) cappedScore = Math.min(cappedScore, 9)
+
+  const grading = { ...rawGrading, overall_score: cappedScore }
 
   // Cost estimates (USD) — E2B: ~$0.000014/s; Claude Sonnet 4.6: $3/M input + $15/M output
   const e2bCostUsd      = (e2bElapsedMs / 1000) * 0.000014
@@ -138,6 +155,7 @@ export async function POST(req: NextRequest) {
     candidate_explanation: candidate_explanation ?? null,
     test_results,
     grading,
+    hints_used: hints,
   })
 
   // Analytics: exercise submitted
@@ -151,5 +169,5 @@ export async function POST(req: NextRequest) {
   })
 
   // Security: return only test_results and grading — never reference_solution_notes
-  return NextResponse.json({ test_results, grading, submission_id })
+  return NextResponse.json({ test_results, grading, submission_id, hints_used: hints })
 }

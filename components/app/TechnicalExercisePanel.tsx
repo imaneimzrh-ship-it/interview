@@ -69,11 +69,9 @@ function SqlRunner({ exercise, onResults }: { exercise: Exercise; onResults: (r:
       const SQL = await initSqlJs({ locateFile: (f: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/${f}` })
       const db = new SQL.Database()
 
-      // Run seed SQL from first visible test case
       const seed = exercise.test_cases.find(tc => tc.seed_sql)?.seed_sql ?? ''
       if (seed) db.run(seed)
 
-      // Run candidate query
       const stmt = db.exec(query)
       const rows: Record<string, unknown>[] = []
       if (stmt.length > 0) {
@@ -85,7 +83,6 @@ function SqlRunner({ exercise, onResults }: { exercise: Exercise; onResults: (r:
         }
       }
 
-      // Check tests
       const details: TestResults['details'] = []
       for (const tc of exercise.test_cases) {
         const rule = tc as unknown as { query_check?: string; name: string }
@@ -124,9 +121,7 @@ function SqlRunner({ exercise, onResults }: { exercise: Exercise; onResults: (r:
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-2 bg-[#2D3748] border-b border-[#3D4A5C]">
         <span className="text-[10px] font-mono text-[#A0AEC0] uppercase tracking-wide">SQL</span>
-        <button
-          onClick={runSql}
-          disabled={running}
+        <button onClick={runSql} disabled={running}
           className="text-xs font-semibold px-3 py-1 rounded-md disabled:opacity-50"
           style={{ background: '#38A169', color: 'white' }}>
           {running ? 'Running...' : '▶ Run Query'}
@@ -144,18 +139,113 @@ function SqlRunner({ exercise, onResults }: { exercise: Exercise; onResults: (r:
   )
 }
 
+// ── Full-solution reveal (after scorecard) ───────────────────────────────────
+
+interface SolutionData {
+  full_solution_code: string
+  concept_explanation: string | null
+  language: string
+}
+
+function FullSolutionPanel({ exerciseId, sessionId }: { exerciseId: string; sessionId: string }) {
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [solution, setSolution] = useState<SolutionData | null>(null)
+  const [err, setErr] = useState('')
+
+  async function load() {
+    if (solution) { setOpen(o => !o); return }
+    setLoading(true); setErr('')
+    try {
+      const { data: { session } } = await createClient().auth.getSession()
+      const hdrs: Record<string, string> = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {}
+      const res = await fetch(`/api/exercises/${exerciseId}/full-solution?session_id=${sessionId}`, { headers: hdrs })
+      const data = await res.json()
+      if (!res.ok) { setErr(data.error ?? 'Could not load solution'); setLoading(false); return }
+      setSolution(data)
+      setOpen(true)
+    } catch { setErr('Network error') }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm">
+      <button
+        onClick={load}
+        disabled={loading}
+        className="w-full flex items-center justify-between px-5 py-4 text-sm font-semibold text-[#374151] hover:bg-[#F9FAFB] transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <span>📖</span>
+          <span>Show full corrected solution</span>
+        </span>
+        <span className="text-[#9CA3AF]">
+          {loading ? (
+            <span style={{ width: 14, height: 14, border: '2px solid #D1D5DB', borderTopColor: '#6B7280', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }} />
+          ) : (
+            open ? '▴' : '▾'
+          )}
+        </span>
+      </button>
+
+      {err && (
+        <div className="px-5 pb-4 text-xs text-red-600">{err}</div>
+      )}
+
+      {open && solution && (
+        <div className="border-t border-[#E5E7EB]">
+          {/* Full solution code */}
+          <div className="px-5 py-4 space-y-2">
+            <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-widest">Corrected Solution</p>
+            <pre
+              className="rounded-xl text-xs font-mono leading-relaxed overflow-x-auto p-4"
+              style={{ background: '#1A202C', color: '#E2E8F0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+            >
+              {solution.full_solution_code}
+            </pre>
+          </div>
+
+          {/* Concept explanation */}
+          {solution.concept_explanation && (
+            <div className="px-5 pb-5 space-y-2 border-t border-[#E5E7EB] pt-4">
+              <p className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-widest">Why it matters</p>
+              <p className="text-sm text-[#374151] leading-relaxed">{solution.concept_explanation}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main panel ───────────────────────────────────────────────────────────────
+
 export default function TechnicalExercisePanel({ exercise, sessionId, onContinue }: Props) {
-  const [code, setCode] = useState(exercise.starter_code ?? '')
+  const [code,        setCode]        = useState(exercise.starter_code ?? '')
   const [explanation, setExplanation] = useState('')
-  const [status, setStatus] = useState<'idle' | 'running' | 'grading' | 'graded'>('idle')
+  const [status,      setStatus]      = useState<'idle' | 'running' | 'grading' | 'graded'>('idle')
   const [testResults, setTestResults] = useState<TestResults | null>(null)
-  const [grading, setGrading] = useState<GradingResult | null>(null)
-  const [error, setError] = useState('')
-  const [sqlCode, setSqlCode] = useState('')
+  const [grading,     setGrading]     = useState<GradingResult | null>(null)
+  const [error,       setError]       = useState('')
+  const [sqlCode,     setSqlCode]     = useState('')
+
+  // Hint state
+  const [hintsUsed,    setHintsUsed]    = useState(0)
+  const [revealedHints, setRevealedHints] = useState<{ level: number; text: string }[]>([])
+  const [hintLoading,  setHintLoading]  = useState(false)
+  const [hintError,    setHintError]    = useState('')
+  const [hasRunOnce,   setHasRunOnce]   = useState(false)
+
+  // Hints-used count returned from the submit response
+  const [submissionHintsUsed, setSubmissionHintsUsed] = useState<number | null>(null)
 
   const isSql = exercise.language === 'sql'
   const isText = exercise.language === 'text'
   const diffColors = DIFFICULTY_COLORS[exercise.difficulty] ?? DIFFICULTY_COLORS.medium
+
+  const MAX_HINTS = 3
 
   async function getAuthHeader(): Promise<Record<string, string>> {
     const { data: { session } } = await createClient().auth.getSession()
@@ -166,20 +256,20 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
   const runTests = useCallback(async (precomputedResults?: TestResults, submittedCode?: string) => {
     setError('')
     setStatus('running')
+    setHasRunOnce(true)
     const finalCode = submittedCode ?? (isSql ? sqlCode : code)
     let results = precomputedResults ?? null
 
     if (!precomputedResults && !isSql) {
-      // For non-SQL, backend runs E2B
       try {
         const hdrs = await getAuthHeader()
         const res = await fetch('/api/interview/submit-technical-answer', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...hdrs },
           body: JSON.stringify({
-            session_id: sessionId,
-            exercise_id: exercise.id,
-            candidate_code: finalCode,
+            session_id:            sessionId,
+            exercise_id:           exercise.id,
+            candidate_code:        finalCode,
             candidate_explanation: explanation || null,
           }),
         })
@@ -187,16 +277,17 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
         if (!res.ok) { setError(data.error ?? 'Submission failed'); setStatus('idle'); return }
         setTestResults(data.test_results)
         setGrading(data.grading)
+        setSubmissionHintsUsed(data.hints_used ?? null)
         setStatus('graded')
         return
-      } catch (e) {
+      } catch {
         setError('Network error — please try again')
         setStatus('idle')
         return
       }
     }
 
-    // SQL path: results were computed client-side, now grade on backend
+    // SQL path: results were computed client-side
     if (results) {
       setTestResults(results)
       setStatus('grading')
@@ -206,15 +297,16 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...hdrs },
           body: JSON.stringify({
-            session_id: sessionId,
-            exercise_id: exercise.id,
-            candidate_code: finalCode,
+            session_id:            sessionId,
+            exercise_id:           exercise.id,
+            candidate_code:        finalCode,
             candidate_explanation: explanation || null,
           }),
         })
         const data = await res.json()
         if (!res.ok) { setError(data.error ?? 'Grading failed'); setStatus('idle'); return }
         setGrading(data.grading)
+        setSubmissionHintsUsed(data.hints_used ?? null)
         setStatus('graded')
       } catch {
         setError('Network error during grading')
@@ -223,7 +315,35 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
     }
   }, [code, sqlCode, explanation, exercise.id, sessionId, isSql])
 
+  async function requestHint() {
+    if (hintsUsed >= MAX_HINTS || hintLoading) return
+    setHintLoading(true)
+    setHintError('')
+    try {
+      const hdrs = await getAuthHeader()
+      const res = await fetch('/api/interview/request-hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...hdrs },
+        body: JSON.stringify({
+          session_id:        sessionId,
+          exercise_id:       exercise.id,
+          current_hint_level: hintsUsed,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setHintError(data.error ?? 'Could not load hint'); return }
+      setRevealedHints(prev => [...prev, { level: data.hint_level, text: data.hint_text }])
+      setHintsUsed(prev => prev + 1)
+    } catch {
+      setHintError('Network error')
+    } finally {
+      setHintLoading(false)
+    }
+  }
+
   const visibleTests = exercise.test_cases.filter(tc => tc.visible)
+
+  // ── Scorecard view (after grading) ──────────────────────────────────────
 
   if (status === 'graded' && grading) {
     return (
@@ -239,6 +359,17 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
           </div>
           <h3 className="text-lg font-bold text-[#111827] mb-2">{exercise.title}</h3>
           <p className="text-sm text-[#6B7280] leading-relaxed max-w-lg mx-auto">{grading.summary_feedback}</p>
+
+          {/* Hint disclosure */}
+          {submissionHintsUsed !== null && submissionHintsUsed > 0 && (
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF8EE] border border-[#FDE68A] text-xs text-[#92400E]">
+              <span>💡</span>
+              <span>Solved with {submissionHintsUsed} hint{submissionHintsUsed !== 1 ? 's' : ''}</span>
+              {submissionHintsUsed >= 3 && <span>· max score capped at 6</span>}
+              {submissionHintsUsed === 2 && <span>· max score capped at 7</span>}
+              {submissionHintsUsed === 1 && <span>· max score capped at 9</span>}
+            </div>
+          )}
         </div>
 
         {/* Test results banner */}
@@ -252,11 +383,11 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
         {/* Dimension scores */}
         <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 shadow-sm space-y-3">
           <h4 className="text-sm font-semibold text-[#111827] mb-4">Score Breakdown</h4>
-          <ScoreBar label="Correctness" score={grading.correctness_score} />
-          <ScoreBar label="Code Quality" score={grading.code_quality_score} />
-          <ScoreBar label="Efficiency" score={grading.efficiency_score} />
+          <ScoreBar label="Correctness"    score={grading.correctness_score} />
+          <ScoreBar label="Code Quality"   score={grading.code_quality_score} />
+          <ScoreBar label="Efficiency"     score={grading.efficiency_score} />
           <ScoreBar label="Problem Solving" score={grading.problem_solving_score} />
-          <ScoreBar label="Edge Cases" score={grading.edge_case_score} />
+          <ScoreBar label="Edge Cases"     score={grading.edge_case_score} />
         </div>
 
         {/* Strengths */}
@@ -271,7 +402,7 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
           </div>
         )}
 
-        {/* Line notes */}
+        {/* Issues */}
         {grading.line_notes.length > 0 && (
           <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 shadow-sm">
             <h4 className="text-sm font-semibold text-[#111827] mb-3">Issues Found</h4>
@@ -295,7 +426,10 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
           <p className="text-sm text-[#92400E]">{grading.next_steps}</p>
         </div>
 
-        {/* Continue button */}
+        {/* Full solution reveal — collapsed by default */}
+        <FullSolutionPanel exerciseId={exercise.id} sessionId={sessionId} />
+
+        {/* Continue */}
         <button
           onClick={onContinue}
           className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
@@ -305,6 +439,8 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
       </div>
     )
   }
+
+  // ── Active exercise view ────────────────────────────────────────────────
 
   return (
     <div className="flex-1 flex flex-col min-h-0 lg:flex-row" style={{ fontFamily: 'Inter,sans-serif' }}>
@@ -324,9 +460,8 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
         <div className="flex-1 px-5 py-4 space-y-4 bg-[#FAFAFA]">
           <div className="prose prose-sm text-[#374151] max-w-none">
             {exercise.task_description.split('\n').map((line, i) => {
-              if (line.startsWith('**') && line.endsWith('**')) {
+              if (line.startsWith('**') && line.endsWith('**'))
                 return <p key={i} className="font-semibold text-[#111827]">{line.replace(/\*\*/g, '')}</p>
-              }
               if (line.startsWith('```')) return null
               if (line.startsWith('- ')) return <li key={i} className="text-sm text-[#374151] ml-3">{line.slice(2)}</li>
               if (line.trim() === '') return <div key={i} className="h-2" />
@@ -432,20 +567,48 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
           </div>
         )}
 
+        {/* Hints panel — revealed hints stack here */}
+        {revealedHints.length > 0 && (
+          <div className="flex-shrink-0 border-t border-[#E5E7EB] bg-[#FFFBEB] px-4 py-3 space-y-2">
+            {revealedHints.map(h => (
+              <div key={h.level} className="flex gap-2">
+                <span className="text-[10px] font-bold text-[#D97706] mt-0.5 flex-shrink-0">H{h.level}</span>
+                <p className="text-xs text-[#78350F] leading-relaxed">{h.text}</p>
+              </div>
+            ))}
+            {hintError && <p className="text-xs text-red-600">{hintError}</p>}
+          </div>
+        )}
+
         {/* Controls */}
-        <div className="flex-shrink-0 border-t border-[#E5E7EB] bg-white px-4 py-3 flex items-center justify-between gap-3">
+        <div className="flex-shrink-0 border-t border-[#E5E7EB] bg-white px-4 py-3 flex items-center gap-2">
+          {/* Hint button */}
+          {!isSql && (
+            <button
+              onClick={requestHint}
+              disabled={!hasRunOnce || hintsUsed >= MAX_HINTS || hintLoading || status === 'running' || status === 'grading'}
+              title={!hasRunOnce ? 'Run tests first to unlock hints' : hintsUsed >= MAX_HINTS ? 'All hints revealed' : 'Get next hint'}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[#E5E7EB] text-[#6B7280] hover:bg-[#FFF8EE] hover:border-[#FDE68A] hover:text-[#92400E] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            >
+              {hintLoading ? (
+                <span style={{ width: 10, height: 10, border: '1.5px solid #D1D5DB', borderTopColor: '#6B7280', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }} />
+              ) : (
+                <span>💡</span>
+              )}
+              <span>Hint {hintsUsed > 0 ? `(${hintsUsed}/${MAX_HINTS})` : ''}</span>
+            </button>
+          )}
+
           {error && <p className="text-xs text-red-600 flex-1">{error}</p>}
           {!error && <div className="flex-1" />}
+
           {!isSql && (
             <button
               onClick={() => runTests()}
               disabled={status === 'running' || status === 'grading'}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50 transition-all"
               style={{ background: '#F5A524', color: '#17140F', boxShadow: '0 2px 6px rgba(245,165,36,.25)' }}>
-              {status === 'running' && (
-                <span style={{ width: 12, height: 12, border: '2px solid rgba(0,0,0,.2)', borderTopColor: '#17140F', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }} />
-              )}
-              {status === 'grading' && (
+              {(status === 'running' || status === 'grading') && (
                 <span style={{ width: 12, height: 12, border: '2px solid rgba(0,0,0,.2)', borderTopColor: '#17140F', borderRadius: '50%', animation: 'spin 1s linear infinite', display: 'inline-block' }} />
               )}
               {status === 'idle' && '▶'}
