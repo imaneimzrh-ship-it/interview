@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
+import { CreditService } from '@/lib/credits'
+import { PRO_PLAN, FREE_PLAN } from '@/config/plans'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-04-10' })
 
@@ -105,6 +107,8 @@ export async function POST(req: NextRequest) {
       const userId = session.metadata?.supabase_user_id
       if (userId) {
         await sb.from('profiles').update({ plan: 'pro', stripe_customer: session.customer as string }).eq('id', userId)
+        // Grant Pro credits
+        await CreditService.setPlanCredits(sb, userId, 'pro', PRO_PLAN.credits_total, PRO_PLAN.credits_total, true)
         // Send welcome email
         const email = session.customer_details?.email ?? session.customer_email
         if (email) {
@@ -122,6 +126,8 @@ export async function POST(req: NextRequest) {
       const { data: profile } = await sb.from('profiles').select('id').eq('stripe_customer', customerId).single()
       if (profile) {
         await sb.from('profiles').update({ plan: 'free' }).eq('id', profile.id)
+        // Downgrade: set free plan with 0 credits remaining (trial already used)
+        await CreditService.setPlanCredits(sb, profile.id, 'free', 0, FREE_PLAN.credits_total, false)
       }
       break
     }
@@ -134,6 +140,8 @@ export async function POST(req: NextRequest) {
         const { data: profile } = await sb.from('profiles').select('id').eq('stripe_customer', customerId).single()
         if (profile) {
           await sb.from('profiles').update({ plan: 'pro' }).eq('id', profile.id)
+          // Monthly refill: reset to 50 credits
+          await CreditService.setPlanCredits(sb, profile.id, 'pro', PRO_PLAN.credits_total, PRO_PLAN.credits_total, true)
         }
       }
       break

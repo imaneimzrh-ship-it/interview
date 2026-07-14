@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerUser } from '@/lib/supabase/server'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
+import { CreditService } from '@/lib/credits'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(req: NextRequest) {
@@ -11,6 +12,12 @@ export async function POST(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
+
+  // Credit gate: Pro-only, costs 3 credits
+  const creditResult = await CreditService.checkAndDeductCredits(supabase, user.id, 'mock_panel_session', { requirePro: true })
+  if (!creditResult.ok) {
+    return NextResponse.json({ ...creditResult.body, upgrade: true }, { status: creditResult.status })
+  }
 
   let body: { loop_slug: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }

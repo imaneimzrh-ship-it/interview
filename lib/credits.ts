@@ -1,10 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { CREDIT_COSTS as PLAN_CREDIT_COSTS, type ActionType } from '@/config/plans'
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-// Costs are in credits. Change here to reprice without touching route logic.
+// Legacy session-type costs (kept for backward compat with chargeCredits callers)
 export const CREDIT_COSTS = {
-  short: 1,  // 1 sub-skill only — covered by signup bonus
-  full:  2,  // all 4 sub-skills
+  short: 1,
+  full:  2,
 } as const
 
 export type SessionType = keyof typeof CREDIT_COSTS
@@ -12,6 +13,14 @@ export type SessionType = keyof typeof CREDIT_COSTS
 export const SESSION_SUB_SKILLS: Record<SessionType, number> = {
   short: 1,
   full:  4,
+}
+
+// ─── Plan row type ────────────────────────────────────────────────────────────
+export interface UserPlan {
+  plan: string
+  credits_remaining: number
+  credits_total: number
+  renews_monthly: boolean
 }
 
 // ─── Error ────────────────────────────────────────────────────────────────────
@@ -121,9 +130,136 @@ export const CreditService = {
     const { error } = await sb
       .from('cv_score_usage')
       .upsert({ user_id: userId, email }, { onConflict: 'user_id' })
-    // Ignore unique-constraint violations (concurrent duplicate request)
     if (error && !error.message?.includes('unique') && !error.message?.includes('duplicate')) {
       throw error
     }
+  },
+
+  // ─── user_plans credit system ─────────────────────────────────────────────
+
+  /** Read the user's current plan row. Returns null if row doesn't exist yet. */
+  async getUserPlan(sb: SupabaseClient, userId: string): Promise<UserPlan | null> {
+    const { data } = await sb
+      .from('user_plans')
+      .select('plan, credits_remaining, credits_total, renews_monthly')
+      .eq('user_id', userId)
+      .maybeSingle()
+    return data ?? null
+  },
+
+  /**
+   * Atomically check and deduct credits from user_plans.
+   * Returns the updated plan row on success.
+   * Returns { error: 'insufficient_credits', ... } response object on failure —
+   * callers should return this directly as a 402.
+   *
+   * For Pro-only actions pass requirePro=true — returns 403 if plan is 'free'.
+   */
+  async checkAndDeductCredits(
+    sb: SupabaseClient,
+    userId: string,
+    actionType: ActionType,
+    opts?: { requirePro?: boolean },
+  ): Promise<
+    | { ok: true; plan: UserPlan }
+    | { ok: false; status: number; body: Record<string, unknown> }
+  > {
+    const cost = PLAN_CREDIT_COSTS[actionType]
+
+    // Fetch plan
+    const { data: planRow, error: fetchErr } = await sb
+      .from('user_plans')
+      .select('plan, credits_remaining, credits_total, renews_monthly')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (fetchErr) {
+      console.error('[checkAndDeductCredits] fetch error:', fetchErr)
+      return { ok: false, status: 500, body: { error: 'internal_error' } }
+    }
+
+    // Backfill: if row doesn't exist (pre-migration user), create it
+    if (!planRow) {
+      await sb.from('user_plans').upsert({
+        user_id: userId,
+        plan: 'free',
+        credits_remaining: 3,
+        credits_total: 3,
+        renews_monthly: false,
+      }, { onConflict: 'user_id' })
+      // Recurse once
+      return CreditService.checkAndDeductCredits(sb, userId, actionType, opts)
+    }
+
+    if (opts?.requirePro && planRow.plan !== 'pro') {
+      return {
+        ok: false,
+        status: 403,
+        body: {
+          error: 'pro_required',
+          message: 'This feature requires a Pro plan.',
+          plan: planRow.plan,
+        },
+      }
+    }
+
+    if (planRow.credits_remaining < cost) {
+      return {
+        ok: false,
+        status: 402,
+        body: {
+          error: 'insufficient_credits',
+          credits_remaining: planRow.credits_remaining,
+          credits_total: planRow.credits_total,
+          plan: planRow.plan,
+          cost,
+          message: "You've used your free credits. Upgrade to Pro to keep practicing.",
+        },
+      }
+    }
+
+    // Deduct
+    const newBalance = planRow.credits_remaining - cost
+    const { error: updateErr } = await sb
+      .from('user_plans')
+      .update({ credits_remaining: newBalance })
+      .eq('user_id', userId)
+
+    if (updateErr) {
+      console.error('[checkAndDeductCredits] update error:', updateErr)
+      return { ok: false, status: 500, body: { error: 'internal_error' } }
+    }
+
+    // Log transaction
+    await sb.from('credit_transactions').insert({
+      user_id:      userId,
+      action_type:  actionType,
+      credits_used: cost,
+      balance_after: newBalance,
+    }).then(({ error }) => { if (error) console.error('[credit_transactions] insert error:', error) })
+
+    return {
+      ok: true,
+      plan: { ...planRow, credits_remaining: newBalance },
+    }
+  },
+
+  /** Grant / upgrade credits (called from Stripe webhook). */
+  async setPlanCredits(
+    sb: SupabaseClient,
+    userId: string,
+    plan: string,
+    creditsRemaining: number,
+    creditsTotal: number,
+    renewsMonthly: boolean,
+  ): Promise<void> {
+    await sb.from('user_plans').upsert({
+      user_id:           userId,
+      plan,
+      credits_remaining: creditsRemaining,
+      credits_total:     creditsTotal,
+      renews_monthly:    renewsMonthly,
+      last_reset_at:     new Date().toISOString(),
+    }, { onConflict: 'user_id' })
   },
 }

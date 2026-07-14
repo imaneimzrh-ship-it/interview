@@ -6,7 +6,14 @@ import { createClient } from '@/lib/supabase/client'
 import AttributionModal from '@/components/app/AttributionModal'
 import SunMark from '@/components/SunMark'
 
-interface UserData { email?: string; full_name?: string; plan?: string; source?: string | null }
+interface UserData {
+  email?: string
+  full_name?: string
+  plan?: string
+  source?: string | null
+  credits_remaining?: number
+  credits_total?: number
+}
 
 const NAV = [
   {
@@ -14,6 +21,7 @@ const NAV = [
     items: [
       { href: '/cv',              label: 'CV Diagnostic',       icon: '📄' },
       { href: '/app/practice',    label: 'Practice Hub',        icon: '🎯' },
+      { href: '/community',       label: 'Community DB',        icon: '🌐' },
       { href: '/app/questions',   label: 'Question Bank',       icon: '🗂️' },
       { href: '/app/glossary',    label: 'Tools Glossary',      icon: '📖' },
     ],
@@ -38,8 +46,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function loadProfile(userId: string, email?: string) {
-      const { data: p } = await sb.from('profiles').select('email, full_name, plan, source').eq('id', userId).single()
-      setUser({ email, full_name: p?.full_name, plan: p?.plan ?? 'free', source: p?.source })
+      const [profileRes, planRes] = await Promise.all([
+        sb.from('profiles').select('email, full_name, plan, source').eq('id', userId).single(),
+        sb.from('user_plans').select('credits_remaining, credits_total').eq('user_id', userId).maybeSingle(),
+      ])
+      const p = profileRes.data
+      const plan = planRes.data
+      setUser({
+        email,
+        full_name:        p?.full_name,
+        plan:             p?.plan ?? 'free',
+        source:           p?.source,
+        credits_remaining: plan?.credits_remaining ?? (p?.plan === 'pro' ? 50 : 3),
+        credits_total:     plan?.credits_total ?? (p?.plan === 'pro' ? 50 : 3),
+      })
       if (p && p.source === null) setShowAttrib(true)
     }
 
@@ -118,11 +138,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="px-3 pb-2">
-        {user?.plan === 'pro' && (
+        {user?.plan === 'pro' ? (
           <div className="bg-[#ECFDF5] border border-[#A7F3D0] rounded-lg px-3 py-2 text-xs text-[#065F46] font-medium">
-            ✓ Pro plan — unlimited
+            ✓ Pro plan — {user.credits_remaining}/{user.credits_total} sessions this month
           </div>
-        )}
+        ) : user?.plan === 'free' ? (
+          <div className="bg-[#FFF8EE] border border-[#F5A524]/30 rounded-lg px-3 py-2 text-xs text-[#D98A0B] font-medium">
+            Free plan — {user.credits_remaining}/{user.credits_total} free sessions left
+          </div>
+        ) : null}
       </div>
 
       <div className="border-t border-[#E5E7EB] px-3 py-3">

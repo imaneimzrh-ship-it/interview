@@ -1,55 +1,35 @@
 // Single source of truth for all pricing tiers.
 // Import this in every component that shows pricing or plan copy.
+// Numbers derive from config/plans.ts — do not hardcode separately.
+
+import { FREE_PLAN, PRO_PLAN } from '@/config/plans'
 
 export const CURRENCY = '$'
 
 export const FREE_TIER = {
-  name: 'Free',
-  price: 0,
-  period: null as null,
-  description: 'Sign up free · No card required',
-  features: [
-    '1 interview session — RAG System Design module',
-    'Adaptive follow-up questions + trade-off probing',
-    'Headline diagnostic (overall score + top strength/gap)',
-    'CV readiness diagnostic — full 5-signal breakdown',
-    'EN / FR bilingual',
-  ],
-  locked: [
-    'Unlimited sessions across all modules',
-    'Agent Orchestration · Evaluation · Production/MLOps modules',
-    'Full per-sub-skill diagnostic with evidence quotes',
-    'Trade-off Reasoning scorecard dimension',
-    'Practical coding & debug questions',
-  ],
-  cta: 'Start free',
-  ctaHref: '/signup',
+  name:        FREE_PLAN.label,
+  price:       FREE_PLAN.price_monthly,
+  period:      null as null,
+  description: `${FREE_PLAN.credits_total} credits to try the platform, one time`,
+  features:    FREE_PLAN.includes as unknown as string[],
+  locked:      FREE_PLAN.excludes as unknown as string[],
+  cta:         'Try it free',
+  ctaHref:     '/signup',
 }
 
 export const PRO_TIER = {
-  name: 'Pro',
-  price: 39.99,
-  period: 'month' as const,
-  description: 'Cancel anytime · no further charges',
-  features: [
-    'Everything in Free',
-    'Unlimited sessions — any module, any time',
-    'All 4 modules: RAG · Agents · Evaluation · Production/MLOps',
-    'Expanded sub-skills: Memory Management · Tool Creation · MCP · Observability · Guardrails',
-    'Trade-off Reasoning scoring — did you explain WHY, not just what',
-    'Practical coding questions: debug broken code, review flawed AI output',
-    'Voice mode — speak your answers, interviewer speaks back',
-    'Full per-sub-skill diagnostic with evidence quotes + improvement plan',
-    'Question bank — see what real AI engineers were asked',
-  ],
-  locked: [],
-  cta: 'Get Pro →',
-  ctaHref: '/pricing',
+  name:        PRO_PLAN.label,
+  price:       PRO_PLAN.price_monthly,
+  period:      'month' as const,
+  description: `${PRO_PLAN.credits_total} credits every month, renews monthly`,
+  features:    PRO_PLAN.includes as unknown as string[],
+  locked:      [] as string[],
+  cta:         'Upgrade to Pro →',
+  ctaHref:     '/pricing',
 }
 
-// Short human-readable summaries used in non-pricing surfaces (settings, banners, etc.)
-export const FREE_SHORT = 'CV diagnostic + 1 RAG session · headline score · trade-off probing'
-export const PRO_SHORT  = 'All 4 modules · voice mode · practical coding · trade-off scoring · unlimited sessions'
+export const FREE_SHORT = `CV diagnostic + RAG practice · ${FREE_PLAN.credits_total} free credits one-time · community database`
+export const PRO_SHORT  = `All 4 topics · mock panel simulations · ${PRO_PLAN.credits_total} credits/month`
 
 export const PRICING_NOTE  = `You're interviewing for roles that pay ${CURRENCY}100K–${CURRENCY}500K+. This costs ${CURRENCY}${PRO_TIER.price}/month.`
 export const REFUND_NOTE   = ''

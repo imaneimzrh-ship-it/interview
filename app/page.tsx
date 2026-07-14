@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CURRENCY, FREE_TIER, PRO_TIER } from '@/lib/pricing'
+import { FREE_PLAN, PRO_PLAN } from '@/config/plans'
 
 export default function Home() {
   return (
@@ -15,15 +15,16 @@ export default function Home() {
             <span className="font-bold text-[#17140F] text-[15px]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Sonne AI</span>
           </div>
           <div className="hidden sm:flex items-center gap-6 text-sm text-[#7A7267]">
-            <a href="#modules" className="hover:text-[#17140F] transition-colors">Modules</a>
             <a href="#how" className="hover:text-[#17140F] transition-colors">How it works</a>
-            <Link href="/pricing" className="hover:text-[#17140F] transition-colors">Pricing</Link>
+            <a href="#community" className="hover:text-[#17140F] transition-colors">Community</a>
+            <a href="#pricing" className="hover:text-[#17140F] transition-colors">Pricing</a>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm text-[#7A7267] hover:text-[#17140F] transition-colors hidden sm:block">Sign in</Link>
-            <Link href="/cv" className="text-sm font-semibold bg-[#F5A524] text-[#17140F] px-3.5 py-1.5 rounded-lg hover:bg-[#D98A0B] hover:text-white transition-all shadow-sm"
+            <Link href="/signup"
+              className="text-sm font-semibold bg-[#F5A524] text-[#17140F] px-3.5 py-1.5 rounded-lg hover:bg-[#D98A0B] hover:text-white transition-all shadow-sm"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Score my CV →
+              Try it free →
             </Link>
           </div>
         </div>
@@ -46,105 +47,56 @@ export default function Home() {
           Score your CV against 5 signals hiring managers care about. Then practice the exact interview loop — adaptive, bilingual, sub-skill diagnostic, with voice mode and practical coding questions.
         </p>
 
-        <p className="text-sm text-[#7A7267] mb-10">For Applied AI, LLM, MLOps, and Automation Engineer roles. Free CV diagnostic included. Takes 30 seconds.</p>
+        <p className="text-sm text-[#7A7267] mb-10">For Applied AI, LLM, MLOps, and Automation Engineer roles. {FREE_PLAN.credits_total} free credits included. Takes 30 seconds.</p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-          <Link href="/cv"
+          <Link href="/signup"
             className="inline-flex items-center justify-center gap-2 text-base font-bold px-8 py-3.5 rounded-xl transition-all shadow-md"
             style={{ background: '#F5A524', color: '#17140F', fontFamily: "'Space Grotesk', sans-serif", boxShadow: '0 4px 14px rgba(245,165,36,.35)' }}>
-            Score my CV free →
+            Try it free →
           </Link>
-          <Link href="/app/start"
+          <Link href="/community"
             className="inline-flex items-center justify-center gap-2 text-base font-medium px-8 py-3.5 rounded-xl border border-[#E7E2D8] hover:border-[#C7C2B8] transition-all"
             style={{ background: 'white', color: '#374151' }}>
-            Practice interview →
+            Browse Community DB →
           </Link>
         </div>
 
         <div className="flex items-center justify-center gap-5 text-sm text-[#7A7267]">
-          <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> Free plan — no card</span>
+          <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> {FREE_PLAN.credits_total} free credits — no card</span>
           <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> Sign up in 30 seconds</span>
           <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> EN & FR</span>
         </div>
       </section>
 
-      {/* CV diagnostic preview */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-20">
-        <div className="bg-white rounded-2xl border border-[#E7E2D8] shadow-sm overflow-hidden">
-          <div className="bg-[#1E2A44] px-6 py-4 flex items-center gap-3">
-            <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]"/><div className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]"/><div className="w-2.5 h-2.5 rounded-full bg-[#28C840]"/></div>
-            <span className="text-[#EEF1F6] text-xs font-mono">cv-diagnostic.json</span>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="text-4xl font-bold" style={{ fontFamily: "'JetBrains Mono', monospace", color: '#2E7D5B' }}>72</div>
-              <div>
-                <div className="text-sm font-semibold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Overall readiness</div>
-                <div className="text-xs text-[#7A7267]">Applied AI Engineer · EN</div>
-              </div>
-              <div className="ml-auto text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: '#F0FDF4', color: '#2E7D5B', border: '1px solid #BBF7D0' }}>Strong</div>
-            </div>
-            <div className="w-full h-2 rounded-full bg-[#E7E2D8] overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: '72%', background: 'linear-gradient(90deg, #2E7D5B, #4ade80)' }} />
-            </div>
-            <div className="space-y-2">
-              {[
-                { icon:'🚀', label:'Production Evidence', score: 80, band:'Strong',     color:'#2E7D5B', bg:'#F0FDF4', border:'#BBF7D0' },
-                { icon:'🔍', label:'RAG Depth',           score: 75, band:'Strong',     color:'#2E7D5B', bg:'#F0FDF4', border:'#BBF7D0' },
-                { icon:'🧪', label:'Evaluation Literacy', score: 45, band:'Developing', color:'#C77D2E', bg:'#FFFBEB', border:'#FDE68A' },
-                { icon:'🕵️', label:'Agentic Experience',  score: 60, band:'Developing', color:'#C77D2E', bg:'#FFFBEB', border:'#FDE68A' },
-                { icon:'⚙️', label:'Cost & Safety',       score: 30, band:'Gap',        color:'#B24C3F', bg:'#FEF2F2', border:'#FECACA' },
-              ].map(s => (
-                <div key={s.label} className="flex items-center gap-3">
-                  <span className="w-5 text-base">{s.icon}</span>
-                  <span className="text-sm text-[#17140F] flex-1">{s.label}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>{s.band}</span>
-                  <span className="text-xs font-mono w-6 text-right" style={{ color: s.color }}>{s.score}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 pt-3 border-t border-[#E7E2D8]">
-              <p className="text-xs text-[#7A7267]"><span className="font-semibold text-[#C77D2E]">Biggest gap:</span> No evidence of offline evals or regression gates — your strongest differentiator in 2026 hiring.</p>
-            </div>
-          </div>
+      {/* How it works */}
+      <section id="how" className="max-w-3xl mx-auto px-4 sm:px-6 py-16 border-t border-[#E7E2D8]">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>How it works</h2>
         </div>
-      </section>
-
-      {/* What real candidates were asked */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-14 border-t border-[#E7E2D8]">
-        <div className="text-center mb-8">
-          <p className="text-xs font-semibold text-[#7A7267] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>REAL INTERVIEW QUESTIONS</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>What AI engineers are asked in 2026</h2>
-          <p className="text-[#7A7267] text-sm mt-2">Reported by candidates. Practice them in your interview session.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <div className="space-y-4">
           {[
-            { q: "We use a flat FAISS index today. At what point does switching to HNSW become worth it, and what do you trade off when you make that switch?", round: 'System Design', cluster: 'RAG System Design' },
-            { q: "Your agent is stuck in a tool-call loop — how do you detect it, break out of it, and prevent it in future runs?", round: 'System Design', cluster: 'Agent Orchestration' },
-            { q: "You're seeing 15% hallucination rate in prod. How do you build an eval harness to triage root cause without labeled data?", round: 'Technical', cluster: 'Evaluation & Testing' },
-            { q: "How would you reduce inference cost by 40% on a latency-sensitive RAG endpoint without degrading quality?", round: 'System Design', cluster: 'Production / MLOps' },
-          ].map((item, i) => (
-            <div key={i} className="bg-white rounded-xl border border-[#E7E2D8] p-4 shadow-sm flex flex-col gap-2">
-              <p className="text-sm text-[#17140F] leading-relaxed">&ldquo;{item.q}&rdquo;</p>
-              <div className="flex items-center gap-2 mt-auto pt-1">
-                <span className="text-[10px] font-semibold text-[#7A7267] px-2 py-0.5 rounded-full border border-[#E7E2D8]">{item.round}</span>
-                <span className="text-[10px] text-[#7A7267]">{item.cluster}</span>
+            { step:'01', title:'Score your CV',            desc:'Paste your CV — get a score on 5 signals in 30 seconds. Uses 1 credit.',                href:'/cv',          cta:'Score my CV →',    sun:true },
+            { step:'02', title:'Practice your weak spots',  desc:'Drill RAG system design exercises with instant code grading and rubric feedback.',      href:'/app/practice', cta:'Practice →',       sun:false },
+            { step:'03', title:'Run a mock panel',          desc:'A full 4-round interview loop, adaptive to your topic performance. Pro plan.',          href:'/pricing',     cta:'See Pro →',        sun:false },
+            { step:'04', title:'Get your diagnostic',       desc:'Per-sub-skill scores, evidence quotes, and one concrete fix for each gap.',             href:'/app/history', cta:'View example →',   sun:false },
+          ].map(s => (
+            <div key={s.step} className="flex gap-5 bg-white rounded-xl border border-[#E7E2D8] p-5 shadow-sm items-start">
+              <div className="text-base font-bold flex-shrink-0 mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace", color: s.sun ? '#F5A524' : '#7A7267' }}>{s.step}</div>
+              <div className="flex-1">
+                <div className="text-sm font-bold text-[#17140F] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{s.title}</div>
+                <p className="text-sm text-[#7A7267]">{s.desc}</p>
               </div>
+              <Link href={s.href} className="text-xs font-medium text-[#1E2A44] hover:text-[#F5A524] transition-colors flex-shrink-0 whitespace-nowrap hidden sm:block">{s.cta}</Link>
             </div>
           ))}
         </div>
-        <div className="text-center">
-          <Link href="/signup"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1E2A44] hover:text-[#F5A524] transition-colors">
-            Practice these questions with Sonne AI →
-          </Link>
-        </div>
       </section>
 
-      {/* Modules */}
-      <section id="modules" className="max-w-5xl mx-auto px-4 sm:px-6 py-16 border-t border-[#E7E2D8]">
+      {/* What's included */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-16 border-t border-[#E7E2D8]">
         <div className="text-center mb-10">
-          <p className="text-xs font-semibold text-[#7A7267] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>4 MODULES</p>
+          <p className="text-xs font-semibold text-[#7A7267] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>WHAT YOU GET</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>One role, four skill areas</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -168,68 +120,72 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how" className="max-w-3xl mx-auto px-4 sm:px-6 py-16 border-t border-[#E7E2D8]">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>How it works</h2>
-        </div>
-        <div className="space-y-4">
-          {[
-            { step:'01', title:'Score your CV',       desc:'Paste your CV — get a score on 5 signals in 30 seconds. Included on the free plan.', href:'/cv', cta:'Score my CV →', sun:true },
-            { step:'02', title:'Practice the module', desc:'Start with the recommended module. 4 sub-skills, adaptive probing, adaptive follow-ups.', href:'/app/start', cta:'Start session →', sun:false },
-            { step:'03', title:'Get your diagnostic', desc:'Per-sub-skill scores, evidence quotes, and one concrete fix for each gap.', href:'/app/history', cta:'View example →', sun:false },
-          ].map(s => (
-            <div key={s.step} className="flex gap-5 bg-white rounded-xl border border-[#E7E2D8] p-5 shadow-sm items-start">
-              <div className="text-base font-bold flex-shrink-0 mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace", color: s.sun ? '#F5A524' : '#7A7267' }}>{s.step}</div>
-              <div className="flex-1">
-                <div className="text-sm font-bold text-[#17140F] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{s.title}</div>
-                <p className="text-sm text-[#7A7267]">{s.desc}</p>
-              </div>
-              <Link href={s.href} className="text-xs font-medium text-[#1E2A44] hover:text-[#F5A524] transition-colors flex-shrink-0 whitespace-nowrap hidden sm:block">{s.cta}</Link>
+      {/* Community Database */}
+      <section id="community" className="max-w-3xl mx-auto px-4 sm:px-6 py-16 border-t border-[#E7E2D8]">
+        <div className="bg-white rounded-2xl border border-[#E7E2D8] shadow-sm p-8">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-3xl">🌐</span>
+            <div>
+              <p className="text-xs font-semibold text-[#7A7267] uppercase tracking-widest mb-0.5">COMMUNITY DATABASE</p>
+              <h2 className="text-xl font-bold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>A living database of real interview questions</h2>
             </div>
-          ))}
+          </div>
+          <p className="text-[#7A7267] text-base leading-relaxed mb-6">
+            Every question here was reported by someone who actually sat in the interview.
+            Browse for free — no account needed. Create a free account to add your own report,
+            upvote questions you recognise, or join the discussion in comments.
+          </p>
+          <Link href="/community"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold bg-[#1E2A44] text-white hover:bg-[#2d3f61] transition-all">
+            Browse the Community Database →
+          </Link>
         </div>
       </section>
 
-      {/* Pricing preview */}
+      {/* Pricing */}
       <section id="pricing" className="max-w-3xl mx-auto px-4 sm:px-6 py-16 border-t border-[#E7E2D8]">
         <div className="text-center mb-10">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#17140F]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Simple pricing</h2>
-          <p className="text-[#7A7267] text-sm mt-2">Start free. Upgrade when you need more modules.</p>
+          <p className="text-[#7A7267] text-sm mt-2">Start with {FREE_PLAN.credits_total} free credits. Upgrade when you need more.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Free */}
           <div className="bg-white rounded-xl border border-[#E7E2D8] p-6 shadow-sm">
-            <div className="text-sm font-bold text-[#7A7267] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{FREE_TIER.name}</div>
-            <div className="text-3xl font-bold text-[#17140F] mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{CURRENCY}0</div>
+            <div className="text-sm font-bold text-[#7A7267] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{FREE_PLAN.label}</div>
+            <div className="text-3xl font-bold text-[#17140F] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>$0</div>
+            <div className="text-xs text-[#7A7267] mb-4">{FREE_PLAN.credits_total} credits to try the platform, one time</div>
             <ul className="space-y-2 text-sm text-[#7A7267] mb-6">
-              {FREE_TIER.features.map(f => (
+              {FREE_PLAN.includes.map(f => (
                 <li key={f} className="flex gap-2"><span style={{ color: '#2E7D5B' }}>✓</span> {f}</li>
               ))}
             </ul>
-            <Link href={FREE_TIER.ctaHref} className="block text-center text-sm font-medium border border-[#E7E2D8] text-[#374151] px-4 py-2.5 rounded-lg hover:bg-[#F5F4F0] transition-all">
-              {FREE_TIER.cta} →
+            <Link href="/signup" className="block text-center text-sm font-medium border border-[#E7E2D8] text-[#374151] px-4 py-2.5 rounded-lg hover:bg-[#F5F4F0] transition-all">
+              Try it free →
             </Link>
           </div>
           {/* Pro */}
           <div className="rounded-xl border-2 border-[#F5A524] p-6 shadow-md relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1E2A44 0%, #2d3f61 100%)' }}>
             <div className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5A524] text-[#17140F]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>POPULAR</div>
-            <div className="text-sm font-bold text-[#EEF1F6] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{PRO_TIER.name}</div>
-            <div className="text-3xl font-bold text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              {CURRENCY}{PRO_TIER.price}<span className="text-sm font-normal text-[#C7D0E0]">/mo</span>
+            <div className="text-sm font-bold text-[#EEF1F6] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{PRO_PLAN.label}</div>
+            <div className="text-3xl font-bold text-white mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              ${PRO_PLAN.price_monthly}<span className="text-sm font-normal text-[#C7D0E0]">/mo</span>
             </div>
+            <div className="text-xs text-[#C7D0E0] mb-4">{PRO_PLAN.credits_total} credits every month, renews monthly</div>
             <ul className="space-y-2 text-sm text-[#C7D0E0] mb-6">
-              {PRO_TIER.features.map(f => (
+              {PRO_PLAN.includes.map(f => (
                 <li key={f} className="flex gap-2"><span style={{ color: '#F5A524' }}>✓</span> {f}</li>
               ))}
             </ul>
-            <Link href={PRO_TIER.ctaHref} className="block text-center text-sm font-bold bg-[#F5A524] text-[#17140F] px-4 py-2.5 rounded-lg hover:bg-[#D98A0B] transition-all shadow-sm"
+            <Link href="/pricing" className="block text-center text-sm font-bold bg-[#F5A524] text-[#17140F] px-4 py-2.5 rounded-lg hover:bg-[#D98A0B] transition-all shadow-sm"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              {PRO_TIER.cta}
+              Upgrade to Pro →
             </Link>
           </div>
         </div>
-        <p className="text-center text-xs text-[#7A7267] mt-4">Cancel anytime. No surprise charges.</p>
+        <p className="text-center text-xs text-[#7A7267] mt-4">
+          Free credits are a one-time trial. Pro credits refresh monthly.
+          The Community Database is always free to browse and join, on any plan.
+        </p>
       </section>
 
       {/* Footer */}
@@ -240,16 +196,15 @@ export default function Home() {
             <span>Sonne AI © 2026</span>
           </div>
           <div className="flex gap-5">
-            <Link href="/cv"      className="hover:text-[#17140F] transition-colors">CV Diagnostic</Link>
-            <Link href="/pricing" className="hover:text-[#17140F] transition-colors">Pricing</Link>
-            <Link href="/login"   className="hover:text-[#17140F] transition-colors">Sign in</Link>
-            <Link href="/privacy" className="hover:text-[#17140F] transition-colors">Privacy</Link>
-            <Link href="/terms"   className="hover:text-[#17140F] transition-colors">Terms</Link>
+            <Link href="/cv"         className="hover:text-[#17140F] transition-colors">CV Diagnostic</Link>
+            <Link href="/community"  className="hover:text-[#17140F] transition-colors">Community</Link>
+            <Link href="/pricing"    className="hover:text-[#17140F] transition-colors">Pricing</Link>
+            <Link href="/login"      className="hover:text-[#17140F] transition-colors">Sign in</Link>
+            <Link href="/privacy"    className="hover:text-[#17140F] transition-colors">Privacy</Link>
+            <Link href="/terms"      className="hover:text-[#17140F] transition-colors">Terms</Link>
           </div>
         </div>
       </footer>
-
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
     </div>
   )
 }

@@ -5,6 +5,8 @@ import { gradeSubmission } from '@/lib/claude/technical-grader'
 import { gradeRubricSubmission, type RubricCriterion } from '@/lib/claude/rubric-grader'
 import { trackServerEvent } from '@/lib/analytics'
 import { getServerUser } from '@/lib/supabase/server'
+import { CreditService } from '@/lib/credits'
+import { PRO_ONLY_PILLARS } from '@/config/plans'
 import { v4 as uuidv4 } from 'uuid'
 
 // Service role client — bypasses RLS for server-side writes (submissions, topic performance)
@@ -73,6 +75,20 @@ export async function POST(req: NextRequest) {
 
   if (exErr || !exercise) {
     return NextResponse.json({ error: 'Exercise not found' }, { status: 404 })
+  }
+
+  // Credit gate for standalone practice hub submissions (no session_id = not inside an interview session).
+  // Pro-only topic pillars are also enforced here as a backstop.
+  const isStandalonePractice = !session_id
+  if (isStandalonePractice) {
+    const isPillarProOnly = PRO_ONLY_PILLARS.includes(exercise.topic_pillar as typeof PRO_ONLY_PILLARS[number])
+    const creditResult = await CreditService.checkAndDeductCredits(
+      supabase, user.id, 'practice_exercise',
+      isPillarProOnly ? { requirePro: true } : undefined,
+    )
+    if (!creditResult.ok) {
+      return NextResponse.json({ ...creditResult.body, upgrade: true }, { status: creditResult.status })
+    }
   }
 
   const isRubric = exercise.grading_mode === 'rubric'

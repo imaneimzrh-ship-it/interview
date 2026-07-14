@@ -30,21 +30,13 @@ export async function POST(req: NextRequest) {
 
   if (isRateLimited(user.id)) return NextResponse.json({ error: 'Too many requests — try again later.' }, { status: 429 })
 
-  // ── Free-tier CV lifetime gate (server-side, DB-backed) ──
-  // markCvScoreUsed() was already recording usage but hasUsedFreeCvScore() was
-  // never checked — so the 1-lifetime limit was phantom. Fixed here.
+  // ── Credit gate (user_plans system) ──────────────────────────────────────
   const adminSb = adminClient()
-  const { data: profileData } = await adminSb.from('profiles').select('plan').eq('id', user.id).single()
-  const isPro = profileData?.plan === 'pro'
-  if (!isPro) {
-    const hasUsed = await CreditService.hasUsedFreeCvScore(adminSb, user.id, user.email ?? '')
-    if (hasUsed) {
-      return NextResponse.json({
-        error: 'You have already used your free CV diagnostic. Upgrade to Pro for unlimited access.',
-        upgrade: true,
-      }, { status: 403 })
-    }
+  const creditResult = await CreditService.checkAndDeductCredits(adminSb, user.id, 'cv_diagnostic')
+  if (!creditResult.ok) {
+    return NextResponse.json({ ...creditResult.body, upgrade: true }, { status: creditResult.status })
   }
+  const isPro = creditResult.plan.plan === 'pro'
 
   let body: { cv: string; lang?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 }) }
@@ -83,14 +75,6 @@ Return ONLY this JSON, no markdown, human text in ${lang}:
     })
     const raw  = (msg.content[0] as any).text as string
     const data = extractJson(raw)
-
-    // Mark usage after successful scoring (not before, so a failed Claude call
-    // doesn't consume the user's one free score). Reuses adminSb from gate above.
-    if (!isPro) {
-      await CreditService.markCvScoreUsed(adminSb, user.id, user.email ?? '').catch(err =>
-        console.error('[cv/score] markCvScoreUsed failed:', err)
-      )
-    }
 
     return NextResponse.json(data)
   } catch (e: any) {
