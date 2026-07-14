@@ -47,7 +47,19 @@ export default function Dashboard() {
     loadData()
     // Fire pro upgrade conversion once, on Stripe success redirect
     if (new URLSearchParams(window.location.search).get('upgraded') === '1') {
-      trackGtagEvent('pro_upgrade_completed', { plan: 'pro' })
+      // GA4 event
+      trackGtagEvent('pro_upgrade_completed', { plan: 'pro', value: 39.99, currency: 'USD' })
+      // Google Ads conversion with actual value — requires NEXT_PUBLIC_GADS_PRO_UPGRADE_LABEL
+      // set in Vercel env vars after creating the conversion action in Google Ads UI:
+      // Goals → Conversions → + New conversion action → Website → Category: Purchase
+      const convLabel = process.env.NEXT_PUBLIC_GADS_PRO_UPGRADE_LABEL
+      if (convLabel) {
+        trackGtagEvent('conversion', {
+          send_to: `AW-18314404853/${convLabel}`,
+          value: 39.99,
+          currency: 'USD',
+        })
+      }
       // Remove param from URL so refresh doesn't re-fire
       const url = new URL(window.location.href)
       url.searchParams.delete('upgraded')
