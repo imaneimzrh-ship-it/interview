@@ -141,6 +141,20 @@ export async function POST(req: NextRequest) {
   }
   const gradeElapsedMs = Date.now() - gradeStart
 
+  // Grading audit — spot-check that feedback references the actual submission
+  console.log(JSON.stringify({
+    event: 'grading_audit',
+    exercise_id,
+    grading_mode: exercise.grading_mode,
+    submission_preview: submissionText.slice(0, 200),
+    overall_score: rawGrading.overall_score,
+    pass_fail: rawGrading.pass_fail,
+    line_notes: isRubric ? null : (rawGrading.line_notes ?? null),
+    gaps: isRubric ? (rawGrading.gaps ?? null) : null,
+    summary_preview: (rawGrading.summary_feedback ?? '').slice(0, 150),
+    ts: new Date().toISOString(),
+  }))
+
   // Score cap from hints (only for test_cases exercises)
   let cappedScore = rawGrading.overall_score
   if (!isRubric) {

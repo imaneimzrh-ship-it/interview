@@ -104,9 +104,12 @@ export default function CvPage() {
     if (!cv.trim() || loading) return
     setLoading(true); setError(''); setResult(null); setSaved(false)
     try {
+      const { data: { session } } = await createClient().auth.getSession()
+      const hdrs: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) hdrs.Authorization = `Bearer ${session.access_token}`
       const res  = await fetch('/api/cv/score', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: hdrs,
         body: JSON.stringify({ cv, lang }),
       })
       const data = await res.json()

@@ -175,25 +175,39 @@ export default function ReportDetailPage() {
   }, [])
 
   const loadData = useCallback(async () => {
-    const [rRes, cRes] = await Promise.all([
+    const hdrs = await authHeader()
+    const [rRes, cRes, uvRes] = await Promise.all([
       fetch(`/api/reports/${id}`),
       fetch(`/api/reports/${id}/comments`),
+      fetch(`/api/reports/${id}/upvote`, { headers: hdrs }),
     ])
     if (rRes.status === 404) { router.replace('/app/question-bank'); return }
-    const [r, c] = await Promise.all([rRes.json(), cRes.json()])
+    const [r, c, uv] = await Promise.all([rRes.json(), cRes.json(), uvRes.json()])
     setReport(r)
     setComments(Array.isArray(c) ? c : [])
+    setUpvoted(uv.upvoted ?? false)
     setLoading(false)
   }, [id, router])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function upvote() {
-    if (!currentUserId || upvoted) return
-    setUpvoted(true)
-    setReport(r => r ? { ...r, upvote_count: r.upvote_count + 1 } : r)
+    if (!currentUserId) return
+    // Optimistic update
+    const wasUpvoted = upvoted
+    setUpvoted(!wasUpvoted)
+    setReport(r => r ? { ...r, upvote_count: r.upvote_count + (wasUpvoted ? -1 : 1) } : r)
     const hdrs = await authHeader()
-    fetch(`/api/reports/${id}/upvote`, { method: 'POST', headers: hdrs })
+    const res = await fetch(`/api/reports/${id}/upvote`, { method: 'POST', headers: hdrs })
+    if (res.ok) {
+      const { upvoted: serverUpvoted, upvote_count } = await res.json()
+      setUpvoted(serverUpvoted)
+      setReport(r => r ? { ...r, upvote_count } : r)
+    } else {
+      // Revert on failure
+      setUpvoted(wasUpvoted)
+      setReport(r => r ? { ...r, upvote_count: r.upvote_count + (wasUpvoted ? 1 : -1) } : r)
+    }
   }
 
   async function postComment(e: React.FormEvent) {
