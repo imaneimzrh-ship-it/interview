@@ -19,11 +19,16 @@ export async function POST(
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
+  const body = await req.json().catch(() => ({}))
   const sb = adminClient()
-  const { error } = await sb
-    .from('interview_reports')
-    .update({ status: 'approved', approved_at: new Date().toISOString() })
-    .eq('id', id)
+
+  const update: Record<string, unknown> = { status: 'approved', approved_at: new Date().toISOString() }
+  // Allow editing question_text before approving
+  if (body.question_text && typeof body.question_text === 'string' && body.question_text.trim()) {
+    update.question_text = body.question_text.trim()
+  }
+
+  const { error } = await sb.from('interview_reports').update(update).eq('id', id)
 
   if (error) return NextResponse.json({ error: 'Failed to approve report' }, { status: 500 })
   return NextResponse.json({ ok: true })

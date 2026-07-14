@@ -21,8 +21,7 @@ const NAV = [
     items: [
       { href: '/cv',              label: 'CV Diagnostic',       icon: '📄' },
       { href: '/app/practice',    label: 'Practice Hub',        icon: '🎯' },
-      { href: '/community',       label: 'Community DB',        icon: '🌐' },
-      { href: '/app/questions',   label: 'Question Bank',       icon: '🗂️' },
+      { href: '/app/question-bank', label: 'Question Bank',       icon: '🗂️' },
       { href: '/app/glossary',    label: 'Tools Glossary',      icon: '📖' },
     ],
   },
@@ -148,6 +147,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         ) : null}
       </div>
+
+      {user?.email === 'support@sonneai.com' && (
+        <div className="px-3 pb-2">
+          <Link href="/admin/moderation"
+            className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all"
+            style={{ color: pathname.startsWith('/admin') ? '#D98A0B' : '#9CA3AF', background: pathname.startsWith('/admin') ? '#FFF8EE' : 'transparent' }}>
+            <span>🛡️</span><span>Moderation</span>
+          </Link>
+        </div>
+      )}
 
       <div className="border-t border-[#E5E7EB] px-3 py-3">
         <div className="flex items-center gap-2.5">
