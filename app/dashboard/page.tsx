@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import AppLayout from '@/components/app/AppLayout'
 import { trackGtagEvent } from '@/lib/analytics'
@@ -34,7 +34,6 @@ function timeAgo(iso: string) {
 
 export default function Dashboard() {
   const router  = useRouter()
-  const params  = useSearchParams()
   const sb      = createClient()
   const [profile,        setProfile]        = useState<Profile | null>(null)
   const [sessions,       setSessions]       = useState<Session[]>([])
@@ -47,7 +46,7 @@ export default function Dashboard() {
   useEffect(() => {
     loadData()
     // Fire pro upgrade conversion once, on Stripe success redirect
-    if (params.get('upgraded') === '1') {
+    if (new URLSearchParams(window.location.search).get('upgraded') === '1') {
       trackGtagEvent('pro_upgrade_completed', { plan: 'pro' })
       // Remove param from URL so refresh doesn't re-fire
       const url = new URL(window.location.href)
