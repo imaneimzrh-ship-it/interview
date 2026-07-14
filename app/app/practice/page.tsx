@@ -161,7 +161,7 @@ export default function PracticeHubPage() {
         body: JSON.stringify({ loop_slug: loopSlug }),
       })
       const data = await res.json()
-      if (!res.ok) { setStarting(null); return }
+      if (!res.ok) { setStarting(null); setUpgradeReason(data.message ?? data.error ?? 'This feature requires a Pro plan.'); return }
       if (Array.isArray(data.weak_topics_used) && data.weak_topics_used.length > 0) {
         setWeakTopicsBanner(data.weak_topics_used)
         setTimeout(() => setWeakTopicsBanner([]), 6000)

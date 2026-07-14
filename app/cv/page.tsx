@@ -110,7 +110,7 @@ export default function CvPage() {
         body: JSON.stringify({ cv, lang }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Something went wrong.'); setLoading(false); return }
+      if (!res.ok) { setError(data.message ?? data.error ?? 'Something went wrong.'); setLoading(false); return }
       setResult(data)
     } catch { setError('Network error — please try again.') }
     finally { setLoading(false) }
