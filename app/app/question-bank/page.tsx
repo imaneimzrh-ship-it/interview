@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import AppLayout from '@/components/app/AppLayout'
 import { createClient } from '@/lib/supabase/client'
 
@@ -16,7 +17,7 @@ interface CuratedReport {
 interface CommunityReport {
   id: string; question_text: string; cluster: string; round: string
   role_track?: string; company_name?: string; year?: number; outcome?: string
-  upvote_count: number
+  upvote_count: number; comment_count: number
 }
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
@@ -358,6 +359,7 @@ function CuratedSubmitForm({ onSuccess }: { onSuccess: () => void }) {
 
 /* ─── Community tab ──────────────────────────────────────────────────────── */
 function CommunityTab({ userId }: { userId: string | null }) {
+  const router = useRouter()
   const [reports, setReports] = useState<CommunityReport[]>([])
   const [loading, setLoading] = useState(true)
   const [cluster, setCluster] = useState<string | null>(null)
@@ -431,7 +433,9 @@ function CommunityTab({ userId }: { userId: string | null }) {
           {reports.map(r => {
             const oc = r.outcome ? COMM_OUTCOME[r.outcome] : null
             return (
-              <div key={r.id} className="bg-white border border-[#E5E7EB] rounded-xl p-5 hover:border-[#D1D5DB] transition-all">
+              <div key={r.id}
+                className="bg-white border border-[#E5E7EB] rounded-xl p-5 hover:border-[#D1D5DB] hover:shadow-sm transition-all cursor-pointer"
+                onClick={() => router.push(`/app/question-bank/report/${r.id}`)}>
                 <p className="text-sm text-[#17140F] leading-relaxed mb-3">&ldquo;{r.question_text}&rdquo;</p>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -440,8 +444,10 @@ function CommunityTab({ userId }: { userId: string | null }) {
                     {r.role_track && <span className="text-[11px] text-[#9CA3AF]">{r.role_track}</span>}
                     {r.year && <span className="text-[11px] text-[#9CA3AF]">{r.year}</span>}
                     {oc && <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: oc.bg, color: oc.color }}>{oc.label}</span>}
+                    {r.comment_count > 0 && <span className="text-[11px] text-[#9CA3AF]">💬 {r.comment_count}</span>}
                   </div>
-                  <button onClick={() => upvote(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                  <button onClick={e => { e.stopPropagation(); upvote(r.id) }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
                     style={upvoted.has(r.id) ? { background: '#FFF8EE', color: '#D98A0B', borderColor: '#F5A524' } : { background: 'white', color: '#6B7280', borderColor: '#E5E7EB' }}>
                     ▲ {r.upvote_count}
                   </button>

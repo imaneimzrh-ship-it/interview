@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import SunMark from '@/components/SunMark'
 
@@ -157,8 +158,13 @@ function SubmitForm({ userId, onSuccess }: { userId: string; onSuccess: () => vo
 
 export default function CommunityPage() {
   const user = useAuthUser()
+  const router = useRouter()
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (user && user !== 'loading') router.replace('/app/question-bank')
+  }, [user, router])
   const [cluster, setCluster] = useState<string | null>(null)
   const [showSubmit, setShowSubmit] = useState(false)
   const [showPrompt, setShowPrompt] = useState(false)

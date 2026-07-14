@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const sb = adminClient()
   let query = sb
     .from('interview_reports')
-    .select('id, question_text, cluster, round, role_track, company_name, year, outcome, upvote_count, created_at, approved_at')
+    .select('id, question_text, cluster, round, role_track, company_name, year, outcome, upvote_count, comment_count, created_at, approved_at')
     .eq('status', 'approved')
     .order('upvote_count', { ascending: false })
     .order('approved_at', { ascending: false })

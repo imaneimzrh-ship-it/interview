@@ -10,7 +10,7 @@ export async function GET(
   const sb = adminClient()
   const { data, error } = await sb
     .from('interview_reports')
-    .select('id, question_text, cluster, round, role_track, company_name, year, outcome, upvote_count, created_at, approved_at')
+    .select('id, question_text, cluster, round, role_track, company_name, year, outcome, upvote_count, comment_count, created_at, approved_at')
     .eq('id', id)
     .eq('status', 'approved')
     .maybeSingle()
