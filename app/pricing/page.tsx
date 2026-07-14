@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { CURRENCY, FREE_TIER, PRO_TIER, PRICING_NOTE, REFUND_NOTE, SUPPORT_EMAIL } from '@/lib/pricing'
+import { trackGtagEvent } from '@/lib/analytics'
 
 function PricingInner() {
   const router  = useRouter()
@@ -22,6 +23,8 @@ function PricingInner() {
       const sb = createClient()
       const { data: { session } } = await sb.auth.getSession()
       if (!session) { router.push('/login?next=/pricing'); return }
+
+      trackGtagEvent('begin_checkout', { plan: 'pro' })
 
       const res  = await fetch('/api/stripe/checkout', {
         method: 'POST',

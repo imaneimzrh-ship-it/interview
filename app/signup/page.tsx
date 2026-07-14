@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import SunMark from '@/components/SunMark'
+import { trackGtagEvent } from '@/lib/analytics'
 
 function getOrCreateDeviceId(): string {
   try {
@@ -136,11 +137,16 @@ function SignupForm() {
 
       if (data?.user && !data.session) {
         // Email verification required — after verifying they'll land on the right page
+        trackGtagEvent('signup_completed', { method: 'email', plan: selectedPlan })
         setSuccess(true)
         setLoading(false); return
       }
 
+      // Session available immediately (e.g. Google OAuth or no-verify flow)
+      trackGtagEvent('signup_completed', { method: 'immediate', plan: selectedPlan })
+
       if (selectedPlan === 'pro' && data?.session?.access_token) {
+        trackGtagEvent('begin_checkout', { plan: 'pro' })
         // Session available immediately — call Stripe checkout directly
         const res = await fetch('/api/stripe/checkout', {
           method: 'POST',

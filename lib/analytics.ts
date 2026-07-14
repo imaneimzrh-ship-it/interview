@@ -41,3 +41,27 @@ export function trackClientEvent(event: FunnelEvent): void {
     body: JSON.stringify(event),
   }).catch(() => { /* fire-and-forget */ })
 }
+
+/**
+ * Fire a GA4 / Google Ads event via window.gtag.
+ * Safe to call on any page — no-ops if gtag hasn't loaded yet.
+ * Also fires as a Google Ads conversion when send_to is provided.
+ *
+ * Usage:
+ *   trackGtagEvent('signup_completed', { method: 'email' })
+ *   trackGtagEvent('conversion', { send_to: 'AW-18314404853/LABEL' })
+ */
+export function trackGtagEvent(
+  eventName: string,
+  params?: Record<string, unknown>,
+): void {
+  if (typeof window === 'undefined') return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gtag = (window as any).gtag
+  if (typeof gtag !== 'function') return
+  try {
+    gtag('event', eventName, params ?? {})
+  } catch {
+    // never crash the caller
+  }
+}

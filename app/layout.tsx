@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
 import { Inter, Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import Script from 'next/script'
+import { GoogleAnalytics } from '@next/third-parties/google'
 import './globals.css'
+
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID  // set to G-XXXXXXXXXX once GA4 property is created
 
 const inter         = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const spaceGrotesk  = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' })
@@ -29,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${inter.className} antialiased`}>
         {children}
+        {/* Google Ads tag */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-18314404853"
           strategy="afterInteractive"
@@ -38,7 +42,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', 'AW-18314404853');
+          ${GA4_ID ? `gtag('config', '${GA4_ID}');` : ''}
         `}</Script>
+        {/* GA4 — loads once NEXT_PUBLIC_GA4_ID is set in env */}
+        {GA4_ID && <GoogleAnalytics gaId={GA4_ID} />}
       </body>
     </html>
   )
