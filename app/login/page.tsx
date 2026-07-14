@@ -7,7 +7,17 @@ import { createClient } from '@/lib/supabase/client'
 function LoginForm() {
   const params  = useSearchParams()
   const next    = params.get('next') ?? '/dashboard'
-  const message = params.get('message')
+  const rawMessage = params.get('message')
+  // Map technical Supabase errors to friendly copy; suppress pure-technical ones
+  const message = rawMessage
+    ? rawMessage.toLowerCase().includes('pkce') || rawMessage.toLowerCase().includes('code verifier') || rawMessage.toLowerCase().includes('flow state')
+      ? 'Session expired — please sign in again.'
+      : rawMessage.toLowerCase().includes('email not confirmed')
+      ? 'Please confirm your email first — check your inbox.'
+      : rawMessage.toLowerCase().includes('invalid') || rawMessage.toLowerCase().includes('expired')
+      ? 'Your session has expired. Please sign in again.'
+      : rawMessage
+    : null
 
   const [email,       setEmail]       = useState('')
   const [pw,          setPw]          = useState('')
