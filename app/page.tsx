@@ -62,7 +62,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="flex items-center justify-center gap-5 text-sm text-[#7A7267]">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-[#7A7267]">
           <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> {FREE_PLAN.credits_total} free credits — no card</span>
           <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> Sign up in 30 seconds</span>
           <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> EN & FR</span>

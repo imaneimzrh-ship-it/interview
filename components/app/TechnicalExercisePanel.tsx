@@ -598,6 +598,13 @@ export default function TechnicalExercisePanel({ exercise, sessionId, onContinue
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'Inter,sans-serif', background: '#F8F9FB' }}>
 
+      {/* ── Mobile notice (hidden on sm+) ──────────────────────────────────── */}
+      <div className="sm:hidden" style={{ background: '#FFF8EE', borderBottom: '1px solid #FDE68A', padding: '10px 16px', flexShrink: 0 }}>
+        <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
+          <strong>Coding exercises are best on desktop.</strong> You can still read the task and results here, but the code editor works best with a keyboard.
+        </p>
+      </div>
+
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <div style={{ height: 44, background: '#fff', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,.05)', zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

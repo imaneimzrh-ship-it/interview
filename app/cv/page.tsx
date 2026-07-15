@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { BAND_COLORS, type Band } from '@/lib/signals'
 import { GAP_TO_MODULE, MODULE_NAME_TO_SLUG, SUB_SKILL_TO_MODULE } from '@/lib/gap-module-map'
 import AppLayout from '@/components/app/AppLayout'
+import { trackGtagEvent } from '@/lib/analytics'
 
 const SIGNAL_LABELS: Record<string, { en: string; fr: string; icon: string }> = {
   production: { en: 'Production Evidence', fr: 'Expérience en production',   icon: '🚀' },
@@ -71,6 +72,7 @@ export default function CvPage() {
         text = text.replace(/\s+/g, ' ').trim().slice(0, 9000)
         if (text.length < 50) { setError('Could not extract text from file. Try pasting your CV directly.'); return }
         setCv(text); setError('')
+        trackGtagEvent('cv_file_uploaded', { type: 'pdf' })
       } else {
         // DOCX, TXT, MD → server-side parse
         const fd = new FormData()
@@ -79,6 +81,7 @@ export default function CvPage() {
         const data = await res.json()
         if (!res.ok) { setError(data.error ?? 'Could not parse file. Try pasting your CV directly.'); return }
         setCv(data.text); setError('')
+        trackGtagEvent('cv_file_uploaded', { type: ext })
       }
     } catch (e: any) {
       console.error('[cv/handleFile]', e)
@@ -103,6 +106,7 @@ export default function CvPage() {
   async function score() {
     if (!cv.trim() || loading) return
     setLoading(true); setError(''); setResult(null); setSaved(false)
+    trackGtagEvent('cv_score_submitted')
     try {
       const { data: { session } } = await createClient().auth.getSession()
       const hdrs: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -115,6 +119,7 @@ export default function CvPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.message ?? data.error ?? 'Something went wrong.'); setLoading(false); return }
       setResult(data)
+      trackGtagEvent('cv_result_viewed', { overall_score: data.overall, gap: data.gap?.slice(0, 80) })
     } catch { setError('Network error — please try again.') }
     finally { setLoading(false) }
   }
@@ -385,7 +390,8 @@ export default function CvPage() {
                     </div>
                   </div>
                   <Link
-                    href={`/app/start?module=${gapModule.slug}&lang=${lang}${result?.recommendSubSkill ? `&sub_skill=${result.recommendSubSkill}` : (gapModule.subSkillSlug ? `&sub_skill=${gapModule.subSkillSlug}` : '')}`}
+                    href={`/app/start?module=${gapModule.slug}&lang=${lang}${result?.recommendSubSkill ? `&sub_skill=${result.recommendSubSkill}` : (gapModule.subSkillSlug ? `&sub_skill=${gapModule.subSkillSlug}` : '')}&source=cv_result`}
+                    onClick={() => trackGtagEvent('cv_result_cta_clicked', { target: gapModule.slug, source: 'gap_cta' })}
                     className="inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl transition-all whitespace-nowrap"
                     style={{ background: '#F5A524', color: '#17140F', fontFamily: "'Space Grotesk', sans-serif", boxShadow: '0 2px 8px rgba(245,165,36,.4)' }}>
                     {lang === 'en' ? 'Practice this now →' : 'Pratiquer maintenant →'}
@@ -408,7 +414,8 @@ export default function CvPage() {
                 <div className="text-xs font-semibold text-[#1E2A44] uppercase tracking-widest mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>→ {lang === 'en' ? 'Recommended module' : 'Module recommandé'}</div>
                 <div className="text-base font-bold text-[#17140F] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{result.recommendModule}</div>
                 <p className="text-sm text-[#7A7267] mb-4">{result.recommendWhy}</p>
-                <Link href={`/app/start?module=${moduleSlug}&lang=${lang}${subSkillParam}`}
+                <Link href={`/app/start?module=${moduleSlug}&lang=${lang}${subSkillParam}&source=cv_result`}
+                  onClick={() => trackGtagEvent('cv_result_cta_clicked', { target: moduleSlug, source: 'recommended_module' })}
                   className="inline-flex items-center gap-2 bg-[#1E2A44] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#2d3f61] transition-all shadow-sm"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                   {lang === 'en' ? 'Start this interview →' : 'Démarrer cet entretien →'}
@@ -433,6 +440,26 @@ export default function CvPage() {
               <div className="mb-4 bg-[#FEF2F2] border border-[#FECACA] rounded-xl p-4 flex items-center justify-between">
                 <span className="text-sm text-[#B24C3F]">{error}</span>
                 <button onClick={() => setError('')} className="text-[#B24C3F]/50 hover:text-[#B24C3F] text-lg ml-3">×</button>
+              </div>
+            )}
+
+            {/* Soft Pro teaser — only for free users */}
+            {!isPro && (
+              <div className="bg-[#FAFAF8] border border-[#E7E2D8] rounded-2xl p-5 mb-5 text-center">
+                <p className="text-sm font-semibold text-[#17140F] mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  {lang === 'en' ? 'Want the full interview loop?' : 'Vous voulez la simulation complète ?'}
+                </p>
+                <p className="text-xs text-[#7A7267] mb-3 leading-relaxed">
+                  {lang === 'en'
+                    ? 'Pro unlocks all 4 practice modules and full mock interview panels — AI-graded scorecards on every round.'
+                    : 'Pro débloque les 4 modules et des panels entiers d'entretien simulés, avec scores détaillés.'}
+                </p>
+                <Link
+                  href="/pricing?source=cv_result"
+                  onClick={() => trackGtagEvent('cv_result_cta_clicked', { target: 'pro_upgrade', source: 'teaser' })}
+                  className="text-sm font-semibold text-[#F5A524] hover:underline">
+                  {lang === 'en' ? 'See Pro →' : 'Voir Pro →'}
+                </Link>
               </div>
             )}
 

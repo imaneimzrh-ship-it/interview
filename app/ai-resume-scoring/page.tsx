@@ -49,7 +49,7 @@ export default function AIResumeScoringPage() {
           Check My Resume Score →
         </Link>
 
-        <div className="flex items-center justify-center gap-5 text-sm text-[#7A7267]">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-[#7A7267]">
           <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> Free, no card</span>
           <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> 30-second diagnostic</span>
           <span className="flex items-center gap-1.5"><span style={{ color: '#2E7D5B' }}>✓</span> AI & ML roles</span>

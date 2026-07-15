@@ -111,7 +111,7 @@ function SignupForm() {
         password: pw,
         options: {
           data: { full_name: name.trim() },
-          emailRedirectTo: `https://sonneai.com/api/auth/callback?next=${selectedPlan === 'pro' ? '/pricing?checkout=1' : '/app/start'}`,
+          emailRedirectTo: `https://sonneai.com/api/auth/callback?next=${selectedPlan === 'pro' ? '/pricing?checkout=1' : '/cv'}`,
         },
       })
 
@@ -167,7 +167,7 @@ function SignupForm() {
         }
       }
 
-      router.push(selectedPlan === 'pro' ? '/pricing?checkout=1' : '/app/start')
+      router.push(selectedPlan === 'pro' ? '/pricing?checkout=1' : '/cv')
       router.refresh()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
