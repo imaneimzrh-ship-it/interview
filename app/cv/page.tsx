@@ -452,7 +452,7 @@ export default function CvPage() {
                 <p className="text-xs text-[#7A7267] mb-3 leading-relaxed">
                   {lang === 'en'
                     ? 'Pro unlocks all 4 practice modules and full mock interview panels — AI-graded scorecards on every round.'
-                    : 'Pro débloque les 4 modules et des panels entiers d'entretien simulés, avec scores détaillés.'}
+                    : "Pro débloque les 4 modules et des panels entiers d'entretien simulés, avec scores détaillés."}
                 </p>
                 <Link
                   href="/pricing?source=cv_result"
