@@ -115,10 +115,10 @@ export default function Terms() {
           </section>
 
           <section>
-            <H>12. Governing law and dispute resolution</H>
-            <P className="mb-3">These Terms are governed by the laws of <strong>Morocco</strong>. Any dispute that cannot be resolved informally (by emailing us first) shall be subject to the jurisdiction of the competent courts of Morocco.</P>
-            <P className="mb-3"><strong>EU consumers:</strong> Nothing in these Terms removes your right to rely on mandatory consumer-protection provisions of the law of your country of habitual residence. If you are an EU consumer, you may also use the <strong>EU Online Dispute Resolution platform</strong>: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener" className="text-[#F5A524] hover:underline">ec.europa.eu/consumers/odr</a>.</P>
-            <P><strong>UK consumers:</strong> UK mandatory consumer rights under the Consumer Rights Act 2015 and Consumer Contracts Regulations 2013 are preserved.</P>
+            <H>12. Dispute resolution</H>
+            <P className="mb-3">If you have a dispute with us, please contact us first at <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a> — we will do our best to resolve it informally within 14 days.</P>
+            <P className="mb-3"><strong>EU consumers:</strong> You may rely on the mandatory consumer-protection laws of your country of habitual residence, regardless of any other provision in these Terms. You may also use the <strong>EU Online Dispute Resolution platform</strong>: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener" className="text-[#F5A524] hover:underline">ec.europa.eu/consumers/odr</a>.</P>
+            <P><strong>UK consumers:</strong> Your rights under the Consumer Rights Act 2015 and Consumer Contracts Regulations 2013 are fully preserved.</P>
           </section>
 
           <section>
