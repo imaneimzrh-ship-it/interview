@@ -135,6 +135,14 @@ function SignupForm() {
         }).catch(() => {})
       }
 
+      // Record which Terms version the user accepted at signup
+      if (data?.user?.id) {
+        sb.from('profiles')
+          .update({ terms_accepted_version: '2026-07', terms_accepted_at: new Date().toISOString() })
+          .eq('id', data.user.id)
+          .then(() => {})
+      }
+
       if (data?.user && !data.session) {
         // Email verification required — after verifying they'll land on the right page
         trackGtagEvent('signup_completed', { method: 'email', plan: selectedPlan })

@@ -90,6 +90,16 @@ export default function AIResumeScoringPage() {
         </Link>
       </section>
 
+      <footer className="border-t border-[#E7E2D8] py-6 mt-4">
+        <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#7A7267]">
+          <span>© 2026 Sonne AI</span>
+          <div className="flex gap-5">
+            <a href="/privacy" className="hover:text-[#17140F] transition-colors">Privacy Policy</a>
+            <a href="/terms"   className="hover:text-[#17140F] transition-colors">Terms of Service</a>
+          </div>
+        </div>
+      </footer>
+
     </div>
   )
 }

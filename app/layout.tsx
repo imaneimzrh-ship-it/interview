@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import Script from 'next/script'
 import { GoogleAnalytics } from '@next/third-parties/google'
+import CookieConsent from '@/components/CookieConsent'
 import './globals.css'
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID  // set to G-XXXXXXXXXX once GA4 property is created
@@ -31,8 +32,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${inter.className} antialiased`}>
+        {/* Consent Mode v2 — must run before any gtag config call */}
+        <Script id="consent-defaults" strategy="beforeInteractive">{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('consent', 'default', {
+            analytics_storage: 'denied',
+            ad_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied',
+            wait_for_update: 500,
+          });
+        `}</Script>
         {children}
-        {/* Google Ads tag */}
+        {/* Google Ads + GA4 — fire only after consent (Consent Mode v2 enforces this) */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-18314404853"
           strategy="afterInteractive"
@@ -44,8 +57,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           gtag('config', 'AW-18314404853');
           ${GA4_ID ? `gtag('config', '${GA4_ID}');` : ''}
         `}</Script>
-        {/* GA4 — loads once NEXT_PUBLIC_GA4_ID is set in env */}
         {GA4_ID && <GoogleAnalytics gaId={GA4_ID} />}
+        <CookieConsent />
       </body>
     </html>
   )
