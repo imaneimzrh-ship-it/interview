@@ -1,12 +1,19 @@
 'use client'
-import React, { Suspense, useState } from 'react'
+import React, { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 function LoginForm() {
+  const router  = useRouter()
   const params  = useSearchParams()
-  const next    = params.get('next') ?? '/dashboard'
+  const next    = params.get('next') ?? '/cv'
+
+  useEffect(() => {
+    createClient().auth.getSession().then(({ data }) => {
+      if (data.session) router.replace('/cv')
+    })
+  }, [router])
   const rawMessage = params.get('message')
   // Map technical Supabase errors to friendly copy; suppress pure-technical ones
   const message = rawMessage
