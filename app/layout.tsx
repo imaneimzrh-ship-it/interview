@@ -26,6 +26,9 @@ export const metadata: Metadata = {
     url: 'https://sonneai.com',
     siteName: 'Sonne AI',
   },
+  other: {
+    'impact-site-verification': '45ec153b-485e-45cf-86d2-0e5cb644bf73',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
