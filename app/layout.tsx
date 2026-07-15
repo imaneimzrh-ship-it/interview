@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import Script from 'next/script'
 import { GoogleAnalytics } from '@next/third-parties/google'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID  // set to G-XXXXXXXXXX once GA4 property is created
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}</Script>
         {/* GA4 — loads once NEXT_PUBLIC_GA4_ID is set in env */}
         {GA4_ID && <GoogleAnalytics gaId={GA4_ID} />}
+        <Analytics />
       </body>
     </html>
   )
