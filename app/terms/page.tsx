@@ -2,11 +2,20 @@ import Link from 'next/link'
 
 export const metadata = { title: 'Terms of Service — Sonne AI' }
 
+const H = ({ children }: { children: React.ReactNode }) => (
+  <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{children}</h2>
+)
+const P = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <p className={`text-sm text-[#374151] leading-relaxed ${className}`}>{children}</p>
+)
+const UL = ({ children }: { children: React.ReactNode }) => (
+  <ul className="space-y-2 list-disc pl-5 text-sm text-[#374151] leading-relaxed">{children}</ul>
+)
+
 export default function Terms() {
   return (
     <div className="min-h-screen" style={{ background: '#FBFAF7', fontFamily: "'Inter', system-ui, sans-serif" }}>
 
-      {/* Nav */}
       <nav className="border-b border-[#E7E2D8] bg-[#FBFAF7]/80 backdrop-blur-sm sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
@@ -18,87 +27,103 @@ export default function Terms() {
       </nav>
 
       <main className="max-w-2xl mx-auto px-4 py-14">
-
         <h1 className="text-3xl font-bold text-[#17140F] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Terms of Service</h1>
-        <p className="text-sm text-[#7A7267] mb-10">Last updated: July 2026</p>
+        <P className="text-[#7A7267] mb-2">Last updated: 15 July 2026</P>
+        <P className="text-[#7A7267] mb-10">These Terms govern your use of sonneai.com and all associated services (&ldquo;the Service&rdquo;). By creating an account or using the Service you agree to these Terms. If you do not agree, do not use the Service. Where mandatory consumer-protection law in your country grants you stronger rights than these Terms, those rights prevail.</P>
 
-        <div className="space-y-10 text-[#374151] text-sm leading-relaxed">
+        <div className="space-y-10">
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>1. Acceptance</h2>
-            <p>By creating an account or using Sonne AI at <strong>sonneai.com</strong>, you agree to these Terms. If you do not agree, do not use the service. These Terms apply to all users including free and paid subscribers.</p>
+            <H>1. Who we are</H>
+            <P>Sonne AI operates the interview-preparation platform at <strong>sonneai.com</strong>. Contact: <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a>.</P>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>2. Service description</h2>
-            <p>Sonne AI is an AI-powered interview preparation platform for Applied AI Engineer roles. It provides adaptive practice sessions, diagnostic reports, and CV analysis powered by large language models. The service is for personal, non-commercial practice use only.</p>
+            <H>2. Service description</H>
+            <P>Sonne AI is an AI-powered interview-preparation platform for Applied AI Engineer roles. It provides adaptive practice sessions, diagnostic reports, coding exercises, and CV analysis powered by large language models. The Service is for your personal, non-commercial practice use only.</P>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>3. Accounts</h2>
-            <ul className="space-y-2 list-disc pl-5">
-              <li>You must be at least 16 years old to create an account.</li>
-              <li>You are responsible for maintaining the confidentiality of your password.</li>
+            <H>3. Eligibility and accounts</H>
+            <UL>
+              <li>You must be at least <strong>16 years old</strong> to create an account (or the minimum digital age of consent in your country if higher).</li>
+              <li>You are responsible for maintaining the confidentiality of your password and for all activity that occurs under your account.</li>
               <li>You may not share your account or allow others to access it.</li>
-              <li>We may suspend accounts that violate these Terms without prior notice.</li>
-            </ul>
+              <li>You must provide accurate information when registering. We may suspend accounts linked to false information.</li>
+              <li>We may suspend or terminate accounts that violate these Terms, with or without prior notice depending on the severity of the violation.</li>
+            </UL>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>4. Subscription and billing</h2>
-            <ul className="space-y-2 list-disc pl-5">
-              <li><strong>Free tier</strong> — available to all registered users at no cost, subject to the feature limits described on the pricing page.</li>
-              <li><strong>Pro tier</strong> — billed monthly at the price shown on <Link href="/pricing" className="text-[#F5A524] hover:underline">/pricing</Link>. Prices may change with 30 days&apos; notice.</li>
-              <li><strong>Cancellation</strong> — you may cancel at any time from your account settings. Your Pro access continues until the end of the current billing period. All sales are final — no partial refunds.</li>
-              <li>All payments are processed by Stripe and subject to their terms.</li>
-            </ul>
+            <H>4. Subscription and billing</H>
+            <UL>
+              <li><strong>Free tier</strong> — available at no cost to all registered users, subject to feature limits described on the <Link href="/pricing" className="text-[#F5A524] hover:underline">pricing page</Link>.</li>
+              <li><strong>Pro tier</strong> — billed monthly at the price shown on the pricing page at the time you subscribe. Prices shown exclude VAT/GST; applicable taxes will be added at checkout depending on your location. We will give at least <strong>30 days&apos; notice</strong> of any price increase before it applies to your subscription.</li>
+              <li><strong>Cancellation</strong> — you may cancel at any time from your account settings. Your Pro access continues until the end of the current billing period. No pro-rata refunds are issued for unused days.</li>
+              <li>All payments are processed by <strong>Stripe</strong> and subject to <a href="https://stripe.com/legal" target="_blank" rel="noopener" className="text-[#F5A524] hover:underline">Stripe&apos;s terms</a>.</li>
+            </UL>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>5. Acceptable use</h2>
-            <p className="mb-2">You agree not to:</p>
-            <ul className="space-y-2 list-disc pl-5">
-              <li>Use the service to cheat in actual job interviews in a way that misrepresents your abilities.</li>
-              <li>Reverse-engineer, scrape, or extract the AI questions, scoring rubrics, or training methodologies in bulk.</li>
+            <H>5. EU / UK right of withdrawal</H>
+            <P className="mb-3">If you are a consumer located in the European Union or the United Kingdom, you ordinarily have a <strong>14-day right of withdrawal</strong> from a distance contract under the Consumer Rights Directive (2011/83/EU) or the UK Consumer Contracts Regulations 2013.</P>
+            <P className="mb-3">However, when you start a paid Pro subscription you will be asked to <strong>expressly request that we begin providing the digital service immediately</strong> and to acknowledge that your right of withdrawal is thereby waived once the service has been fully performed — or, for a subscription, once delivery has begun. This is standard for digital services under Art. 16(m) of the Directive.</P>
+            <P>If performance has not yet begun (e.g. you subscribed but have not accessed any Pro feature), you may exercise your right of withdrawal within 14 days by emailing <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a> with the subject &ldquo;Right of Withdrawal.&rdquo; We will refund your payment within 14 days.</P>
+          </section>
+
+          <section>
+            <H>6. Acceptable use</H>
+            <P className="mb-2">You agree not to:</P>
+            <UL>
+              <li>Use the Service to impersonate someone else or misrepresent your abilities in actual job interviews.</li>
+              <li>Reverse-engineer, scrape, or extract AI questions, scoring rubrics, or training methodologies in bulk.</li>
               <li>Resell, sublicense, or share your account credentials.</li>
               <li>Attempt to circumvent rate limits, credit systems, or access controls.</li>
-              <li>Submit content that is harmful, unlawful, or violates third-party rights.</li>
-            </ul>
+              <li>Submit content that is harmful, unlawful, defamatory, or that infringes third-party intellectual property rights.</li>
+              <li>Use automated tools (bots, scrapers) to access the Service without our written consent.</li>
+            </UL>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>6. AI-generated content</h2>
-            <p>Interview questions, follow-ups, and diagnostic reports are generated by AI and are provided for practice and educational purposes only. They may not perfectly reflect a specific employer&apos;s interview process. We make no guarantee that using this service will result in passing any particular interview or receiving a job offer.</p>
+            <H>7. AI-generated content and no guarantee of results</H>
+            <P>Interview questions, follow-up prompts, diagnostic reports, and CV scores are generated by AI and are provided for <strong>educational and practice purposes only</strong>. They may not reflect any specific employer&apos;s actual interview process. <strong>We make no guarantee that using this Service will result in passing any interview or receiving a job offer.</strong> AI outputs can be inaccurate — treat them as one input among many, not as a definitive assessment.</P>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>7. Intellectual property</h2>
-            <p>The platform, interface, scoring methodology, and all original content are owned by Sonne AI. Your interview answers and CV content remain your property. You grant us a limited licence to process that content solely to deliver the service to you.</p>
+            <H>8. Intellectual property</H>
+            <P>The platform, interface, scoring methodology, question bank, and all original content are owned by Sonne AI and protected by copyright and other intellectual property laws. Your interview answers and CV content remain <strong>your property</strong>. You grant us a limited, non-exclusive licence to process that content solely to deliver the Service to you. We do not claim ownership of your content and do not use it to train AI models.</P>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>8. Limitation of liability</h2>
-            <p>To the maximum extent permitted by law, Sonne AI is not liable for indirect, incidental, or consequential damages arising from your use of the service. Our total liability in any 12-month period shall not exceed the amount you paid us in that period.</p>
+            <H>9. Limitation of liability</H>
+            <P className="mb-2">To the maximum extent permitted by applicable law:</P>
+            <UL>
+              <li>Sonne AI is not liable for indirect, incidental, special, or consequential damages arising from your use of or inability to use the Service.</li>
+              <li>Our total aggregate liability to you in any 12-month period shall not exceed the greater of (a) the amount you paid us in that period, or (b) €50.</li>
+            </UL>
+            <P className="mt-3">Nothing in these Terms excludes or limits liability for death or personal injury caused by negligence, fraud, or any other liability that cannot be limited by law. If you are a consumer in the EU or UK, your statutory rights are not affected by this clause.</P>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>9. Termination</h2>
-            <p>We may terminate or suspend your account at any time for violations of these Terms. You may delete your account at any time from Settings. Upon termination, your right to use the service ceases immediately.</p>
+            <H>10. Termination</H>
+            <P>We may terminate or suspend your account immediately for material violations of these Terms (e.g. abuse, fraud, scraping). For less serious violations we will give you notice and an opportunity to cure. You may delete your account at any time from Settings. Upon termination, your right to use the Service ceases immediately; your data is deleted per our <Link href="/privacy" className="text-[#F5A524] hover:underline">Privacy Policy</Link>.</P>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>10. Changes to Terms</h2>
-            <p>We may update these Terms. We will notify you of material changes by email or in-app notice at least 14 days before they take effect. Continued use after that date constitutes acceptance.</p>
+            <H>11. Changes to Terms</H>
+            <P>We may update these Terms. We will notify you of material changes by email and in-app notice at least <strong>14 days</strong> before they take effect. Continued use after the effective date constitutes acceptance. If you do not accept the new Terms, you must stop using the Service and may delete your account.</P>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>11. Governing law</h2>
-            <p>These Terms are governed by the laws of Morocco. Any dispute that cannot be resolved informally shall be subject to the jurisdiction of the competent courts of Morocco. Nothing in these Terms limits mandatory consumer protection rights you may have under the laws of your country of residence. For questions, contact <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a>.</p>
+            <H>12. Governing law and dispute resolution</H>
+            <P className="mb-3">These Terms are governed by the laws of <strong>Morocco</strong>. Any dispute that cannot be resolved informally (by emailing us first) shall be subject to the jurisdiction of the competent courts of Morocco.</P>
+            <P className="mb-3"><strong>EU consumers:</strong> Nothing in these Terms removes your right to rely on mandatory consumer-protection provisions of the law of your country of habitual residence. If you are an EU consumer, you may also use the <strong>EU Online Dispute Resolution platform</strong>: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener" className="text-[#F5A524] hover:underline">ec.europa.eu/consumers/odr</a>.</P>
+            <P><strong>UK consumers:</strong> UK mandatory consumer rights under the Consumer Rights Act 2015 and Consumer Contracts Regulations 2013 are preserved.</P>
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-[#17140F] mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>12. Contact</h2>
-            <p>Questions about these Terms: <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a>.</p>
+            <H>13. Contact</H>
+            <P>Questions about these Terms or any disputes: <a href="mailto:support@sonneai.com" className="text-[#F5A524] hover:underline">support@sonneai.com</a>. We will respond within 5 business days.</P>
           </section>
 
         </div>
