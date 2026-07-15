@@ -254,6 +254,13 @@ export default function SettingsPage() {
             </button>
           </section>
 
+          {/* Legal */}
+          <div className="flex gap-4 text-xs text-[#9CA3AF] pb-2">
+            <Link href="/privacy" className="hover:text-[#374151] transition-colors">Privacy Policy</Link>
+            <Link href="/terms"   className="hover:text-[#374151] transition-colors">Terms of Service</Link>
+            <a href="mailto:support@sonneai.com" className="hover:text-[#374151] transition-colors">support@sonneai.com</a>
+          </div>
+
         </div>
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
