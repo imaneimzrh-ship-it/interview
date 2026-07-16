@@ -72,14 +72,9 @@ function SignupForm() {
     })
   }, [router])
 
-  async function handleGoogle() {
+  function handleGoogle() {
     setError(''); setOauthLoading('google')
-    const sb = createClient()
-    const { error: err } = await sb.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/api/auth/callback?next=/cv` },
-    })
-    if (err) { setError(err.message); setOauthLoading(null) }
+    window.location.href = '/api/auth/google/start?next=%2Fcv'
   }
 
   async function handleLinkedIn() {
