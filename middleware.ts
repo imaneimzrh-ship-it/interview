@@ -34,6 +34,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(`https://${req.nextUrl.host}${pathname}${search}`, 308)
   }
 
+  // Block direct access via *.vercel.app — force through sonneai.com (and Cloudflare)
+  const host = req.headers.get('host') ?? ''
+  if (host.endsWith('.vercel.app')) {
+    return NextResponse.redirect(`https://sonneai.com${pathname}${search}`, 301)
+  }
+
   // Block headless browsers / automation tools on auth endpoints
   if (isBot(req) && (pathname.startsWith('/api/auth') || pathname === '/login' || pathname === '/signup')) {
     return new NextResponse('Forbidden', { status: 403 })
